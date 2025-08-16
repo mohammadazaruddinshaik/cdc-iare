@@ -37,7 +37,6 @@ async function start() {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      dbName: process.env.DB_NAME, // optional if DB name already in URI
     });
     console.log("🚀 Connected to MongoDB");
 
