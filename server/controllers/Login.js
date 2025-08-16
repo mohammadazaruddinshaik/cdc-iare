@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 
 async function HandleLogin(req, res) {
     try {
+        console.log(req.body)
         const { username, password, role } = req.body;
         if (!username || !password || !role) {
             return res.status(400).json({ error: "All fields are required" });
