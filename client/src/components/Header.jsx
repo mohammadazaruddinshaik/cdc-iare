@@ -39,7 +39,7 @@ const Header = ({ animate }) => {
     navigate('/');
   };
 
-  // Handle profile navigation
+  // Handle profile navigation from dropdown
   const handleProfileClick = () => {
     setIsProfileOpen(false);
     navigate('/profile');
@@ -73,7 +73,7 @@ const Header = ({ animate }) => {
             <Link to="/logs" className={`${getLinkClass('/logs').link} relative group transition-all duration-300 hover:scale-105`}>
               Logs
               <div className={`absolute -bottom-1 left-0 w-full h-0.5 bg-white transform ${getLinkClass('/logs').underline} transition-transform duration-300`}></div>
-            </Link>
+            </Link>           
           </nav>
         </div>
         

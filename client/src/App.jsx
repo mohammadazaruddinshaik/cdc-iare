@@ -7,8 +7,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import LeaderboardPage from './pages/LeaderBoardPage';
 import TimeTablePage from './pages/TimeTablePage';
-import LogsPage from './pages/LogsPage'; // <-- Your new page
+import LogsPage from './pages/LogsPage';
 import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage'; // <-- Imported the ProfilePage
 
 function App() {
   return (
@@ -19,9 +20,10 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/timetable" element={<TimeTablePage />} />
-        <Route path="/logs" element={<LogsPage />} /> {/* <-- Here's the new route */}
+        <Route path="/logs" element={<LogsPage />} />
+        <Route path="/profile" element={<ProfilePage />} /> {/* <-- Here's the new route */}
 
-        {/* A default route to show the dashboard at the base URL */}
+        {/* A default route to show the login page at the base URL */}
         <Route path="/" element={<LoginPage />} />
       </Routes>
     </Router>
