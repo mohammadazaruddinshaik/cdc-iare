@@ -8,16 +8,24 @@ const fetchCodeChef = require("../modules/codechef");
 
 async function HandleInformation(req, res) {
   try {
-    const { rollno, batch } = req.body; // or req.body if sent in body
+    const { rollno} = req.body; // or req.body if sent in body
 
     // 1. Student profile
-    const student = await Student.findOne({ rollno });
+    const student = await Student.findOne({ rollno }).select("-password -qrdata -updatedAt -__v -_id");
+    console.log(student);
+    const batch = student.batch;
+    const formattedBatch = batch
+    .replace(/BATCH/gi, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
     }
 
     // 2. Pick the correct attendance collection dynamically
-    const collectionName = `attendance_${batch.toLowerCase()}`;
+    const collectionName = `attendance_${formattedBatch.toLowerCase()}`;
     const AttendanceModel = mongoose.model(collectionName, attendanceSchema, collectionName);
 
     const attendance = await AttendanceModel.findOne({
@@ -36,7 +44,11 @@ async function HandleInformation(req, res) {
     const dailyLogs = attendance.dailyLogs
       .filter(log => new Date(log.date) >= past7Days)
       .sort((a, b) => new Date(b.date) - new Date(a.date));
+    
 
+    // Coding data of all students
+
+    const students = await Coder.find().select("-updatedAt -__v -_id");
     // 4. Send combined data
     res.json({
       profile: student,
@@ -44,7 +56,8 @@ async function HandleInformation(req, res) {
         overallAttendance: attendance.overallAttendance,
         courseAttendance: attendance.courseAttendance,
         dailyLogs
-      }
+      },
+      CodingData:students
     });
 
   } catch (err) {

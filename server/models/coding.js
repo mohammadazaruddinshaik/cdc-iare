@@ -20,4 +20,4 @@ const codingSchema = new mongoose.Schema({
   lastUpdated: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Coding", codingSchema);
+module.exports = mongoose.model("Coder", codingSchema, "leaderboard");
