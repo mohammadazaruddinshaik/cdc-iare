@@ -5,10 +5,10 @@ const mongoose = require("mongoose");
 const { getDashboardData, HandleGetAnnouncements, getLeaderBoardData, getLogData, getProfileData } = require('../controllers/Student');
 
 
-router.post('/UpdatePassword', HandleChangePassword);
+router.patch('/UpdatePassword', HandleChangePassword);
 router.post('/getDashboardData', getDashboardData);
-router.post('/getLeaderBoardData', getLeaderBoardData);
-router.post('/getLogData', getLogData);
+router.get('/getLeaderBoardData/:rollno', getLeaderBoardData);
+router.get('/getLogData/:rollno', getLogData);
 router.post('/getProfileData', getProfileData);
 router.get('/GetAnnouncements/:batch', HandleGetAnnouncements);
 
