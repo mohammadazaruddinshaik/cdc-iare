@@ -8,66 +8,138 @@ const fetchCodeChef = require("../modules/codechef");
 const Announcement = require("../models/Announcement");
 
 
-async function HandleInformation(req, res) {
+async function getDashboardData(req, res) {
   try {
-    const { rollno} = req.body; // or req.body if sent in body
-
-    // 1. Student profile
-    const student = await Student.findOne({ rollno }).select("-password -qrdata -updatedAt -__v -_id");
-    console.log(student);
-    const batch = student.batch;
-    const formattedBatch = batch
-    .replace(/BATCH/gi, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .toLowerCase();
-    if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
+    const { rollno } = req.body;
+    if (!rollno) {
+      return res.status(400).json({ error: "rollno is required" });
     }
 
-    // 2. Pick the correct attendance collection dynamically
-    const collectionName = `attendance_${formattedBatch.toLowerCase()}`;
+    // 1. Get student profile (only rollno and batch)
+    const student = await Student.findOne({ rollno })
+      .select("rollno batch");
+    
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    // 2. Get student's coding performance
+    const studentCoding = await Coder.findOne({ rollno })
+      .select("scores totalScore"); // assuming performance field exists
+
+    // 3. Get top 3 coders overall (sorted by performance)
+    const topCoders = await Coder.find()
+      .sort({ totalScore: -1 }) // descending
+      .limit(3)
+      .select("scores totalScore");
+
+    // 4. Get attendance summary
+    const batchFormatted = student.batch
+      .replace(/BATCH/gi, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
+
+    const collectionName = `attendance_${batchFormatted}`;
     const AttendanceModel = mongoose.model(collectionName, attendanceSchema, collectionName);
 
-    const attendance = await AttendanceModel.findOne({
-      rollno: new RegExp(`^${rollno}$`, 'i')
-    });
+    const attendance = await AttendanceModel.findOne({ rollno: new RegExp(`^${rollno}$`, "i") })
+      .select("overallAttendance courseAttendance");
 
-    if (!attendance) {
-      return res.status(404).json({ error: 'Attendance record not found' });
-    }
-
-    // 3. Last 7 days logs
-    const today = new Date();
-    const past7Days = new Date(today);
-    past7Days.setDate(today.getDate() - 6);
-
-    const dailyLogs = attendance.dailyLogs
-      .filter(log => new Date(log.date) >= past7Days)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-
-    // Coding data of all students
-
-    const students = await Coder.find().select("-updatedAt -__v -_id");
-    // 4. Send combined data
     res.json({
-      profile: student,
-      attendance: {
-        overallAttendance: attendance.overallAttendance,
-        courseAttendance: attendance.courseAttendance,
-        dailyLogs
-      },
-      CodingData:students
+      student: student,
+      codingPerformance: studentCoding || {},
+      topCoders,
+      attendance: attendance || {}
     });
 
   } catch (err) {
-    console.error('Error fetching profile & attendance:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error fetching dashboard data:", err);
+    res.status(500).json({ error: "Server error" });
   }
 }
 
+async function getLeaderBoardData(req, res) {
+  try {
+    const { rollno } = req.body;
+    if (!rollno) {
+      return res.status(400).json({ error: "rollno is required" });
+    }
+
+    const student = await Coder.findOne({ rollno });
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+
+    // Get All coders overall (sorted by performance)
+    const AllCoders = await Coder.find()
+      .sort({ totalScore: -1 }) // descending
+      .select("rollno batch handles scores totalScore");
+
+
+    res.json({AllCoders});
+
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getLogData(req, res) {
+  try {
+    const { rollno } = req.body;
+    if (!rollno) {
+      return res.status(400).json({ error: "rollno is required" });
+    }
+
+    const student = await Student.findOne({ rollno });
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+
+    const batchFormatted = student.batch
+      .replace(/BATCH/gi, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
+
+    const collectionName = `attendance_${batchFormatted}`;
+    const AttendanceModel = mongoose.model(collectionName, attendanceSchema, collectionName);
+
+    const attendance = await AttendanceModel.findOne({ rollno: new RegExp(`^${rollno}$`, "i") })
+      .select("dailyLogs");
+
+      res.json({attendance});
+
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getProfileData(req, res) {
+  try {
+    const { rollno } = req.body;
+    if (!rollno) {
+      return res.status(400).json({ error: "rollno is required" });
+    }
+
+    const student = await Student.findOne({ rollno }).select("name rollno branch batch email qrLink");
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+      res.json({student});
+
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
 
 async function updateAllStudentScores() {
   const students = await Coder.find();
@@ -154,7 +226,10 @@ async function HandleGetAnnouncements(req, res) {
 };
 
 module.exports={
-    HandleInformation,
+    getDashboardData,
     updateAllStudentScores,
-    HandleGetAnnouncements
+    HandleGetAnnouncements,
+    getLeaderBoardData,
+    getLogData,
+    getProfileData
 }
