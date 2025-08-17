@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const Faculty = require('../models/faculty');
 const Announcement=require('../models/Announcement');
 const getAttendanceModel = require('../services/GetAttendanceModel');
