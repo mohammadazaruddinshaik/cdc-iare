@@ -44,21 +44,22 @@ const LoginPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password, role }),
             });
-
+            console.log(username)
             const data = await response.json();
+            console.log(data);
+
 
             if (response.ok) {
                 // **PRODUCTION CHANGE: Store the authentication token.**
                 // The server should return a token (e.g., a JWT) upon successful login.
                 // We store this token in localStorage to use for future authenticated requests.
-                if (data.token) {
-                    localStorage.setItem('authToken', data.token);
-                    console.log('Login successful, token stored.');
+                // if (data.token) {
+                    localStorage.setItem("rollno", username);
                     navigate('/dashboard');
-                } else {
-                    // This handles cases where the server gives a 200 OK but no token.
-                    setError('Login successful, but no authentication token was received.');
-                }
+                // } else {
+                //     // This handles cases where the server gives a 200 OK but no token.
+                //     setError('Login successful, but no authentication token was received.');
+                // }
             } else {
                 setError(data.message || 'Login failed. Please check your credentials.');
             }

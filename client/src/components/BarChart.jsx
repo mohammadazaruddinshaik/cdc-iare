@@ -1,31 +1,51 @@
-
-// src/components/BarChart.jsx
 import React from 'react';
+
+// Define a color mapping for each platform
+const platformColors = {
+  'GeeksforGeeks': 'bg-gradient-to-r from-green-400 to-green-600',
+  'LeetCode': 'bg-gradient-to-r from-yellow-400 to-orange-500',
+  'CodeChef': 'bg-gradient-to-r from-blue-400 to-indigo-600',
+};
+
 const BarChart = ({ data }) => {
-  const maxScore = Math.max(...data.map(item => item.score));
-  
-  return (
-    <div className="space-y-4">
-      {data.map((platform, index) => (
-        <div key={platform.platform} className="relative" style={{ animationDelay: `${index * 200}ms` }}>
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center space-x-3">
-              <span className="font-semibold text-gray-800 text-sm sm:text-base">{platform.platform}</span>
-            </div>
-            <span className="text-xs sm:text-sm font-bold text-[#071225] px-2 py-0.5 bg-gray-100 rounded-full animate-bounce">
-              {platform.score}
-            </span>
-          </div>
-          <div className="relative">
-            <div className="w-full bg-gray-200 rounded-full h-2.5 sm:h-3 shadow-inner">
-              <div className="bg-[#071225] h-2.5 sm:h-3 rounded-full transition-all duration-1000 ease-out shadow-md relative overflow-hidden animate-pulse" style={{ width: `${(platform.score / maxScore) * 100}%` }}>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white opacity-20"></div>
-              </div>
-            </div>
-          </div>
+  // If data is not an array or is empty, show a fallback message
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+        <div className="text-center text-gray-500 py-8">
+            <p>No coding scores available.</p>
+            <p className="text-sm mt-2">Start coding to see your performance!</p>
         </div>
-      ))}
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {data.map((item, index) => {
+        // Calculate percentage based on the specific maxScore for each platform
+        const percentage = item.maxScore > 0 ? (item.score / item.maxScore) * 100 : 0;
+        
+        // Get the specific color for the platform, with a default fallback
+        const barColor = platformColors[item.platform] || 'bg-gray-500';
+
+        return (
+          <div key={item.platform} style={{ animation: `fadeInUp 0.5s ease-out ${index * 150}ms forwards`, opacity: 0 }}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-semibold text-gray-700">{item.platform}</span>
+              <span className="text-xs font-bold text-gray-600">
+                {item.score} / {item.maxScore}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner overflow-hidden">
+              <div
+                className={`${barColor} h-3 rounded-full transition-all duration-1000 ease-out`}
+                style={{ width: `${percentage}%` }}
+              ></div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
+
 export default BarChart;
