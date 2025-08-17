@@ -2,100 +2,94 @@
  * @file LogsPage.jsx
  * @author Shaik Mohammad Azaruddin
  * @date 17 Aug 2025
- * @description A page component to display attendance logs. It features a
- * responsive table, search functionality, and status indicators.
+ * @description A page component to display attendance logs. It fetches data from a
+ * backend, features a responsive table, search functionality, and status indicators.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ClipboardList, Search, Calendar, BookOpen, User, ChevronDown } from 'lucide-react';
-
-// --- Reusable Header Component ---
-// NOTE: This component assumes it is rendered within a <Router> context
-// provided by a higher-level component like App.jsx.
-const Header = ({ animate }) => {
-  const location = useLocation();
-
-  const getLinkClass = (path) => {
-    const isActive = location.pathname === path;
-    return {
-      link: isActive ? 'text-white font-semibold' : 'text-gray-400 hover:text-white',
-      underline: isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-    };
-  };
-
-  return (
-    <header className="text-white py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4 sm:space-x-8">
-          <div className={`flex items-center space-x-2 transform transition-all duration-1000 ${animate ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'}`}>
-            <span className="font-bold text-white text-lg sm:text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              CDC PORTAL
-            </span>
-          </div>
-          <nav className={`hidden lg:flex space-x-6 transform transition-all duration-1000 delay-200 ${animate ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
-            <Link to="/dashboard" className={`${getLinkClass('/dashboard').link} relative group transition-all duration-300 hover:scale-105`}>
-              Dashboard
-              <div className={`absolute -bottom-1 left-0 w-full h-0.5 bg-white transform ${getLinkClass('/dashboard').underline} transition-transform duration-300`}></div>
-            </Link>
-            <Link to="/leaderboard" className={`${getLinkClass('/leaderboard').link} relative group transition-all duration-300 hover:scale-105`}>
-              LeaderBoard
-              <div className={`absolute -bottom-1 left-0 w-full h-0.5 bg-white transform ${getLinkClass('/leaderboard').underline} transition-transform duration-300`}></div>
-            </Link>
-            <Link to="/timetable" className={`${getLinkClass('/timetable').link} relative group transition-all duration-300 hover:scale-105`}>
-              Time Table
-              <div className={`absolute -bottom-1 left-0 w-full h-0.5 bg-white transform ${getLinkClass('/timetable').underline} transition-transform duration-300`}></div>
-            </Link>
-            <Link to="/logs" className={`${getLinkClass('/logs').link} relative group transition-all duration-300 hover:scale-105`}>
-              Logs
-              <div className={`absolute -bottom-1 left-0 w-full h-0.5 bg-white transform ${getLinkClass('/logs').underline} transition-transform duration-300`}></div>
-            </Link>
-          </nav>
-        </div>
-        <div className={`flex items-center space-x-4 transform transition-all duration-1000 delay-400 ${animate ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}>
-          <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2 border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
-              <User className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-semibold text-white">Shaik Mohammad Azaruddin</p>
-              <p className="text-xs text-gray-300">AI/ML Engineer</p>
-            </div>
-            <ChevronDown className="w-4 h-4 text-gray-300 group-hover:rotate-180 transition-transform duration-300" />
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};
-
-// --- Mock Data Generation ---
-const generateMockLogs = () => {
-  const courses = ['Data Structures & Algorithms', 'Operating Systems', 'Database Management Systems', 'Computer Networks', 'Software Engineering', 'Artificial Intelligence'];
-  const statuses = ['Present', 'Absent'];
-  const logs = [];
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(2025, 7, 16 - i);
-    logs.push({
-      id: `log_${i}`,
-      date: date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      courseName: courses[i % courses.length],
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-    });
-  }
-  return logs;
-};
+import { ClipboardList, Search, Calendar, BookOpen, Loader2 } from 'lucide-react';
+import Header from '../components/Header'; // CHANGED: Header is now imported from components
 
 // --- Logs Page Component ---
 const LogsPage = () => {
-  const [logs] = useState(generateMockLogs());
+  // --- State for fetched data, loading, and errors ---
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // --- State for UI controls ---
   const [searchTerm, setSearchTerm] = useState('');
   const [animate, setAnimate] = useState(false);
 
+  // --- Effect for initial animation ---
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // --- Course Name Mapping ---
+  const courseNameMapping = {
+    'CP': 'Competitive Programming',
+    'JFS': 'Java Full Stack',
+    'AWS': 'Amazon Web Services',
+    'DBMS': 'Database Management System',
+  };
+
+  const getFullCourseName = (shortName) => {
+    return courseNameMapping[shortName] || shortName;
+  };
+
+  // --- Effect for fetching log data from the backend ---
+  useEffect(() => {
+    const fetchLogData = async () => {
+      try {
+        setLoading(true);
+        const rollno = localStorage.getItem('rollno');
+
+        if (!rollno) {
+          throw new Error("Roll number not found in local storage.");
+        }
+
+        // --- Updated fetch call with GET method and query parameter ---
+        const response = await fetch(`http://localhost:5000/api/Student/getLogData/${rollno}`, {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // --- Adapt backend data to fit the frontend's expected structure ---
+        if (data.attendance && data.attendance.dailyLogs) {
+          const processedLogs = data.attendance.dailyLogs.map((log, index) => ({
+            id: log._id || `log_${index}`,
+            date: new Date(log.date).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+            courseName: getFullCourseName(log.course),
+            status: log.status ? log.status.charAt(0).toUpperCase() + log.status.slice(1) : 'Unknown',
+          }));
+          setLogs(processedLogs.reverse()); // Show most recent logs first
+        } else {
+          setLogs([]);
+        }
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch log data:", err);
+        setError(err.message);
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogData();
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
 
   const filteredLogs = useMemo(() => {
     if (!searchTerm) return logs;
@@ -141,7 +135,13 @@ const LogsPage = () => {
               <div className="col-span-2 text-right">Status</div>
             </div>
             <div className="max-h-[65vh] overflow-y-auto custom-scrollbar">
-              {filteredLogs.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center items-center p-16">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                </div>
+              ) : error ? (
+                <div className="text-center p-8 text-red-400">Error: {error}</div>
+              ) : filteredLogs.length > 0 ? (
                 filteredLogs.map((log, index) => (
                   <div key={log.id} className="p-4 border-b border-white/5 transition-all duration-300 hover:bg-white/10" style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.05}s forwards`, opacity: 0 }}>
                     <div className="grid grid-cols-2 md:grid-cols-10 gap-4 items-center">
@@ -157,7 +157,9 @@ const LogsPage = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-center p-8 text-gray-400">No logs found for "{searchTerm}".</div>
+                <div className="text-center p-8 text-gray-400">
+                  {searchTerm ? `No logs found for "${searchTerm}".` : "No attendance logs available."}
+                </div>
               )}
             </div>
           </div>

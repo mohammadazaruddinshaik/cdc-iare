@@ -6,7 +6,6 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      dbName: process.env.DB_NAME, // optional, if DB name is not in URI
     });
     console.log("✅ MongoDB Connected (Mongoose)");
   } catch (err) {
