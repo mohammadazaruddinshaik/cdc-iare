@@ -9,9 +9,9 @@ router.post("/announcements", HandelPostAnnouncements);
 
 router.post('/Mark-Attendance', HandleMarkAttendance);
 
-router.post("/attendance-report", HandleAttendanceReport);
+router.get("/attendance-report/:batch", HandleAttendanceReport);
 
-router.post("/attendance-report-excel", HandleAttendanceReportExcel);
+router.get("/attendance-report-excel/:batch", HandleAttendanceReportExcel);
 
 
 

@@ -16,7 +16,9 @@ async function getDashboardData(req, res) {
     }
 
     // 1. Get student profile (only rollno and batch)
-    const student = await Student.findOne({ rollno })
+    const student = await Student.findOne({ 
+  rollno: new RegExp(`^${rollno}$`, "i")   // "i" = case-insensitive
+})
       .select("rollno batch");
     
     if (!student) {
@@ -31,7 +33,7 @@ async function getDashboardData(req, res) {
     const topCoders = await Coder.find()
       .sort({ totalScore: -1 }) // descending
       .limit(3)
-      .select("scores totalScore");
+      .select("rollno scores totalScore");
 
     // 4. Get attendance summary
     const batchFormatted = student.batch
@@ -62,39 +64,43 @@ async function getDashboardData(req, res) {
 
 async function getLeaderBoardData(req, res) {
   try {
-    const { rollno } = req.body;
+    const { rollno } = req.params; // <-- now comes from URL param
     if (!rollno) {
       return res.status(400).json({ error: "rollno is required" });
     }
 
-    const student = await Coder.findOne({ rollno });
+    // Find student
+    const student = await Coder.findOne({ 
+  rollno: new RegExp(`^${rollno}$`, "i")   // "i" = case-insensitive
+});
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
 
-
-    // Get All coders overall (sorted by performance)
+    // Get all coders sorted by totalScore
     const AllCoders = await Coder.find()
       .sort({ totalScore: -1 }) // descending
       .select("rollno batch handles scores totalScore");
 
-
-    res.json({AllCoders});
+    res.json({ AllCoders });
 
   } catch (err) {
-    console.error("Error fetching dashboard data:", err);
+    console.error("Error fetching leaderboard data:", err);
     res.status(500).json({ error: "Server error" });
   }
 }
 
+
 async function getLogData(req, res) {
   try {
-    const { rollno } = req.body;
+    const { rollno } = req.params;
     if (!rollno) {
       return res.status(400).json({ error: "rollno is required" });
     }
 
-    const student = await Student.findOne({ rollno });
+    const student = await Student.findOne({ 
+  rollno: new RegExp(`^${rollno}$`, "i")   // "i" = case-insensitive
+});
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }

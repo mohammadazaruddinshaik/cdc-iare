@@ -136,7 +136,7 @@ async function HandleMarkAttendance(req, res) {
 
 async function HandleAttendanceReport(req, res) {
   try {
-    const { batch } = req.body;
+    const { batch } = req.params;
 
     if (!batch) {
       return res.status(400).json({ error: "Batch is required" });
