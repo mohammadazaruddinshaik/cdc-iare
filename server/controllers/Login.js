@@ -32,17 +32,22 @@ async function HandleLogin(req, res) {
 
         // Create token
         const identifier = role === "student" ? user.rollno :
-                           role === "faculty" ? user.facultyid :
-                           user.adminId;
+            role === "faculty" ? user.facultyid :
+                user.adminId;
 
         const token = jwt.sign(
             { id: user._id, role: role, username: identifier },
             process.env.JWT_SECRET,
             { expiresIn: "10m" }
         );
-        res.cookie(token);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,   // use true in production with https
+            sameSite: "None",
+            maxAge: 10 * 60 * 1000
+        });
 
-        res.json({ message: "Login successful", token });
+        res.json({ message: "Login successful" });
     } catch (err) {
         console.error("Login Error:", err);
         res.status(500).json({ error: "Server error" });

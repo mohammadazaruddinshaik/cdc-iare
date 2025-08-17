@@ -5,6 +5,8 @@ const Coder=require('../models/coding')
 const fetchLeetCode = require("../modules/leetcode");
 const fetchGFG = require("../modules/gfg");
 const fetchCodeChef = require("../modules/codechef");
+const Announcement = require("../models/Announcement");
+
 
 async function HandleInformation(req, res) {
   try {
@@ -128,7 +130,31 @@ async function updateAllStudentScores() {
   }
 }
 
+async function HandleGetAnnouncements(req, res) {
+  
+  try {
+    const studentBatch = req.params.batch;
+
+    if (!studentBatch) {
+      return res.status(400).json({ message: "Batch parameter is required." });
+    }
+
+    const announcements = await Announcement.find(
+      { batches: studentBatch },
+      "title subtitle content" // Only these fields
+    )
+      .sort({ createdAt: -1 }) // Latest first
+      .limit(3); // Top 3 only
+
+    res.status(200).json({ announcements });
+  } catch (error) {
+    console.error("Error fetching announcements:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports={
     HandleInformation,
-    updateAllStudentScores
+    updateAllStudentScores,
+    HandleGetAnnouncements
 }

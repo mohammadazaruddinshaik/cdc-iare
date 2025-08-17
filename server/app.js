@@ -18,8 +18,6 @@ app.use(express.json());
 
 connectDB();
 
-
-
 //  LOGIN ROUTE 
 app.use('/api/login', LoginRouter);
 
@@ -28,7 +26,6 @@ app.use('/api/Student',StudentRouter);
 
 //  Faculty Routes
 app.use('/api/Faculty',FacultyRouter);
-
 
 
 
@@ -41,7 +38,7 @@ async function start() {
     console.log("🚀 Connected to MongoDB");
 
     // Run once immediately
-    await updateAllStudentScores();
+    // await updateAllStudentScores();
 
     // Schedule every day at 2:30 AM IST
     cron.schedule("30 2 * * *", updateAllStudentScores, {
