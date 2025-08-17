@@ -4,6 +4,7 @@ const mongoose=require('mongoose');
 const LoginRouter = require('./routes/Login');
 const StudentRouter = require('./routes/Student')
 const FacultyRouter = require('./routes/Faculty')
+const AdminRouter = require('./routes/Admin')
 const cors=require('cors');
 const cron=require('node-cron');
 const { updateAllStudentScores } = require("./controllers/Student");
@@ -18,14 +19,12 @@ app.use(express.json());
 
 connectDB();
 
-//  LOGIN ROUTE 
+// ROUTES
 app.use('/api/login', LoginRouter);
-
-//  Student Routes
 app.use('/api/Student',StudentRouter);
-
-//  Faculty Routes
 app.use('/api/Faculty',FacultyRouter);
+app.use('/api/Admin',AdminRouter);
+
 
 
 

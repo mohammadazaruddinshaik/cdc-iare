@@ -19,7 +19,7 @@ async function getDashboardData(req, res) {
     const student = await Student.findOne({ 
   rollno: new RegExp(`^${rollno}$`, "i")   // "i" = case-insensitive
 })
-      .select("rollno batch");
+      .select("rollno batch -_id");
     
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
@@ -27,13 +27,13 @@ async function getDashboardData(req, res) {
 
     // 2. Get student's coding performance
     const studentCoding = await Coder.findOne({ rollno })
-      .select("scores totalScore"); // assuming performance field exists
+      .select("scores totalScore -_id"); // assuming performance field exists
 
     // 3. Get top 3 coders overall (sorted by performance)
     const topCoders = await Coder.find()
       .sort({ totalScore: -1 }) // descending
       .limit(3)
-      .select("rollno scores totalScore");
+      .select("rollno scores totalScore -_id");
 
     // 4. Get attendance summary
     const batchFormatted = student.batch
@@ -47,7 +47,7 @@ async function getDashboardData(req, res) {
     const AttendanceModel = mongoose.model(collectionName, attendanceSchema, collectionName);
 
     const attendance = await AttendanceModel.findOne({ rollno: new RegExp(`^${rollno}$`, "i") })
-      .select("overallAttendance courseAttendance");
+      .select("overallAttendance courseAttendance -_id");
 
     res.json({
       student: student,
@@ -64,23 +64,39 @@ async function getDashboardData(req, res) {
 
 async function getLeaderBoardData(req, res) {
   try {
-    const { rollno } = req.params; // <-- now comes from URL param
+    const { rollno } = req.params;
     if (!rollno) {
       return res.status(400).json({ error: "rollno is required" });
     }
 
-    // Find student
-    const student = await Coder.findOne({ 
-  rollno: new RegExp(`^${rollno}$`, "i")   // "i" = case-insensitive
-});
+    // Find student (case-insensitive)
+    const student = await Coder.findOne({
+      rollno: new RegExp(`^${rollno}$`, "i")
+    });
+
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
 
     // Get all coders sorted by totalScore
-    const AllCoders = await Coder.find()
-      .sort({ totalScore: -1 }) // descending
-      .select("rollno batch handles scores totalScore");
+    let AllCoders = await Coder.find()
+      .sort({ totalScore: -1 })
+      .select("rollno batch handles scores totalScore -_id")
+      .lean(); // <-- use lean() so we can freely modify objects
+
+    // Convert handles into URLs
+    AllCoders = AllCoders.map(coder => {
+      const h = coder.handles || {};
+      return {
+        ...coder,
+        handles: {
+          leetcode: h.leetcode ? `https://leetcode.com/u/${h.leetcode}` : null,
+          gfg: h.gfg ? `https://www.geeksforgeeks.org/user/${h.gfg}/` : null,
+          codechef: h.codechef ? `https://www.codechef.com/users/${h.codechef}` : null,
+          hackerank: h.hackerank ? `https://www.hackerrank.com/profile/${h.hackerank}` : null
+        }
+      };
+    });
 
     res.json({ AllCoders });
 
@@ -117,7 +133,7 @@ async function getLogData(req, res) {
     const AttendanceModel = mongoose.model(collectionName, attendanceSchema, collectionName);
 
     const attendance = await AttendanceModel.findOne({ rollno: new RegExp(`^${rollno}$`, "i") })
-      .select("dailyLogs");
+      .select("dailyLogs -_id");
 
       res.json({attendance});
 
@@ -134,7 +150,7 @@ async function getProfileData(req, res) {
       return res.status(400).json({ error: "rollno is required" });
     }
 
-    const student = await Student.findOne({ rollno }).select("name rollno branch batch email qrLink");
+    const student = await Student.findOne({ rollno }).select("name rollno branch batch email qrLink -_id");
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
