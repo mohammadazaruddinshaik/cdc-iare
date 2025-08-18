@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const Student = require('../models/student');
 const Faculty = require('../models/faculty');
 const Admin = require('../models/admin');
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 
 
 async function HandleLogin(req, res) {
@@ -23,6 +23,8 @@ async function HandleLogin(req, res) {
         const query = {};
         query[Check] = new RegExp(`^${username}$`, "i");
         const user = await Model.findOne(query);
+        console.log("Faculty query:", query);
+
 
         if (!user) return res.status(401).json({ error: "User not found" });
 

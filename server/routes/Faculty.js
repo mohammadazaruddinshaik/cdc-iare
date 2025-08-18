@@ -2,14 +2,14 @@ const express = require('express');
 const { HandleChangePassword, HandleResetPassword} = require('../services/UpdatePassword');
 const { HandelPostAnnouncements, 
         HandleMarkAttendance, 
-        HandleAttendanceReport, 
-        HandleAttendanceReportExcel, 
         getDashboardData, 
         getLeaderBoardData, 
         getViewStudentData, 
         getProfileData, 
         getTimetableData, 
-        getStudentData 
+        getStudentData, 
+        HandleAttendanceReportPDF,
+        HandleAttendanceReportExcel
     } = require('../controllers/Faculty');
 const router = express.Router();
 
@@ -31,9 +31,9 @@ router.post("/announcements", HandelPostAnnouncements);
 
 router.post('/Mark-Attendance', HandleMarkAttendance);
 
-router.get("/batch-report/:batch",HandleAttendanceReport);
+router.get("/batch-report-excel/",HandleAttendanceReportExcel);
 
-router.get("/batch-report-pdf/:batch", HandleAttendanceReportExcel);
+router.get("/batch-report-pdf", HandleAttendanceReportPDF);
 
 
 module.exports = router;

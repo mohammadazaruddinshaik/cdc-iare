@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const Faculty=require('../models/faculty');
 const saltRounds = 10;
 
@@ -16,7 +16,7 @@ async function HandleAllPasswordsHashing() {
       user.password = hashed;
 
       await user.save();
-      console.log(`Updated password for ${user.username}`);
+      console.log(`Updated password for ${user.facultyid}`);
     }
 
     console.log("✅ Password migration complete!");

@@ -28,6 +28,7 @@ app.use('/api/Faculty',FacultyRouter);
 app.use('/api/Admin',AdminRouter);
 
 
+
 async function start() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
