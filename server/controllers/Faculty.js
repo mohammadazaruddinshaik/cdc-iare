@@ -222,7 +222,7 @@ async function getStudentData(req, res) {
     const student = await Student.findOne({
       rollno: new RegExp(`^${rollno}$`, "i")   // "i" = case-insensitive
     })
-      .select("rollno batch branch email");
+      .select("rollno batch branch email -_id");
 
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
@@ -392,31 +392,41 @@ async function HandleMarkAttendance(req, res) {
     }
 
     const Attendance = getAttendanceModel(collectionName);
-    const presentSet = new Set(presentArrays.map(s => s.rollno));
+    const presentSet = new Set(
+      presentArrays.map(s => typeof s === "string" ? s : s.rollno)
+    );
+
     const attendanceDocs = await Attendance.find(); // Get all students for this collection
 
     const bulkUpdates = [];
     const updatedStudents = [];
     const now = new Date();
 
+    // Normalize date once
+    function normalizeDate(d) {
+      return new Date(d).toISOString().split("T")[0];
+    }
+    const reqDate = normalizeDate(date);
+
+    // 🔍 Check if attendance already marked for this course & date
+    const alreadyMarked = attendanceDocs.some(doc =>
+      doc.dailyLogs.some(log =>
+        normalizeDate(log.date) === reqDate && log.course === course
+      )
+    );
+
+    if (alreadyMarked) {
+      return res.status(400).json({ message: "Attendance already marked for this course on this date" });
+    }
+
+    // 🚀 Process each student
     for (const doc of attendanceDocs) {
       const { rollno, dailyLogs } = doc;
       const isPresent = presentSet.has(rollno);
 
-      let hasCourseMarkedToday = false;
-      let hasAnyMarkedToday = false;
-
-      for (const log of dailyLogs) {
-        if (log.date === date) {
-          hasAnyMarkedToday = true;
-          if (log.course === course) {
-            hasCourseMarkedToday = true;
-            break;
-          }
-        }
-      }
-
-      if (hasCourseMarkedToday) continue; // Skip if already marked for this course today
+      let hasAnyMarkedToday = dailyLogs.some(
+        log => normalizeDate(log.date) === reqDate
+      );
 
       const newLog = {
         date,
@@ -463,7 +473,7 @@ async function HandleMarkAttendance(req, res) {
       .filter(s => s.status === "absent")
       .map(s => s.rollno);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Attendance marked successfully for the course',
       totalMarked: updatedStudents.length,
       presentiesCount,
@@ -473,9 +483,12 @@ async function HandleMarkAttendance(req, res) {
 
   } catch (error) {
     console.error('Error marking attendance:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Internal server error' });
+    }
   }
 };
+
 
 async function HandleAttendanceReportPDF(req, res) {
   try {
@@ -529,20 +542,20 @@ async function HandleAttendanceReportPDF(req, res) {
     const totalSummaryText = `Total Students: ${allStudentData.length}`;
     const presentSummaryText = `Present: ${presentStudents.length}`;
     const absentSummaryText = `Absent: ${absentStudents.length}`;
-    drawTable(doc, allStudentData, { 
-        title: "Complete Report (Present & Absent)", 
-        totalSummary: totalSummaryText,
-        presentSummary: presentSummaryText,
-        absentSummary: absentSummaryText
+    drawTable(doc, allStudentData, {
+      title: "Complete Report (Present & Absent)",
+      totalSummary: totalSummaryText,
+      presentSummary: presentSummaryText,
+      absentSummary: absentSummaryText
     });
 
     // --- Section 2: Absent Only List ---
     if (absentStudents.length > 0) {
       doc.addPage();
       const absentSummary = `Total Absentees: ${absentStudents.length}`;
-      drawTable(doc, absentStudents, { 
-          title: "Absent Only Report", 
-          absentSummary: absentSummary 
+      drawTable(doc, absentStudents, {
+        title: "Absent Only Report",
+        absentSummary: absentSummary
       });
     }
 
@@ -550,9 +563,9 @@ async function HandleAttendanceReportPDF(req, res) {
     if (presentStudents.length > 0) {
       doc.addPage();
       const presentSummary = `Total Present: ${presentStudents.length}`;
-      drawTable(doc, presentStudents, { 
-          title: "Present Only Report", 
-          presentSummary: presentSummary 
+      drawTable(doc, presentStudents, {
+        title: "Present Only Report",
+        presentSummary: presentSummary
       });
     }
 
@@ -607,7 +620,7 @@ async function HandleAttendanceReportExcel(req, res) {
     const createWorksheet = (sheetName, data, headers) => {
       const worksheet = workbook.addWorksheet(sheetName);
       worksheet.columns = headers;
-      
+
       let sno = 1;
       data.forEach(item => {
         worksheet.addRow({ ...item, sno: sno });

@@ -19,7 +19,7 @@ router.get('/getLeaderBoardData', getLeaderBoardData);
 
 router.get('/getViewStudentData', getViewStudentData);
 
-router.get('/getStudentData', getStudentData);
+router.get('/getStudentData/:rollno', getStudentData);
 
 router.get('/getProfileData/:facultyid',getProfileData);
 
@@ -31,9 +31,9 @@ router.post("/announcements", HandelPostAnnouncements);
 
 router.post('/Mark-Attendance', HandleMarkAttendance);
 
-router.get("/batch-report-excel/",HandleAttendanceReportExcel);
+router.post("/batch-report-excel/",HandleAttendanceReportExcel);
 
-router.get("/batch-report-pdf", HandleAttendanceReportPDF);
+router.post("/batch-report-pdf", HandleAttendanceReportPDF);
 
 
 module.exports = router;
