@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.11",
     "framer-motion": "^12.23.12",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.539.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

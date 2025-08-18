@@ -26,7 +26,7 @@ const maxCodingScores = {
     LeetCode: 8000,
     CodeChef: 500,
 };
-const DashboardPage = () => {
+const StudentDashboardPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [animate, setAnimate] = useState(false);
     const [studentData, setStudentData] = useState(null);
@@ -42,7 +42,7 @@ const DashboardPage = () => {
     useEffect(() => {
         const fetchStudentData = async () => {
             try {
-                const rollno = localStorage.getItem('rollno');
+                const rollno = localStorage.getItem('userIdentifier');
                 if (!rollno) {
                     throw new Error('Roll number not found in localStorage');
                 }
@@ -332,4 +332,4 @@ const DashboardPage = () => {
     );
 };
 
-export default DashboardPage;
+export default StudentDashboardPage;
