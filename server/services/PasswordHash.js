@@ -1,38 +1,49 @@
+// scripts/hashPasswords.js
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const Faculty=require('../models/faculty');
-const saltRounds = 10;
+const bcrypt = require("bcryptjs");
 
+// Adjust these paths to your models
+const Faculty = require("../models/faculty");
+const Student = require("../models/student");
+const Admin = require("../models/admin");
 
-// 3. Migration function
-async function HandleAllPasswordsHashing() {
-  try {
-    const users = await Faculty.find();
+// ✅ Utility: check if already a bcrypt hash
+function isHashed(password) {
+  return password.startsWith("$2a$") || password.startsWith("$2b$") || password.startsWith("$2y$");
+}
 
-    for (let user of users) {
-     
-      // Hash password
-      const hashed = await bcrypt.hash(user.password, saltRounds);
+async function hashPasswordsForModel(Model, modelName, identifierKey) {
+  const users = await Model.find({});
+  console.log(`Found ${users.length} ${modelName}`);
+
+  for (const user of users) {
+    if (user.password && !isHashed(user.password)) {
+      // hash only plain-text passwords
+      const plainPassword = user.password || user[identifierKey]; 
+      const hashed = await bcrypt.hash(plainPassword, 10);
       user.password = hashed;
-
       await user.save();
-      console.log(`Updated password for ${user.facultyid}`);
+      console.log(`🔐 Updated ${modelName} - ${user[identifierKey]}`);
+    } else {
+      console.log(`⏩ Skipped ${modelName} - ${user[identifierKey]} (already hashed)`);
     }
+  }
+}
 
-    console.log("✅ Password migration complete!");
-    process.exit();
+async function run() {
+  try {
+    
+
+    await hashPasswordsForModel(Faculty, "Faculty", "facultyid");
+    await hashPasswordsForModel(Student, "Student", "rollno");
+    await hashPasswordsForModel(Admin, "Admin", "adminId");
+
+    console.log("✅ All passwords checked & hashed successfully!");
+    process.exit(0);
   } catch (err) {
-    console.error("Migration error:", err);
+    console.error("❌ Error hashing passwords:", err);
     process.exit(1);
   }
 }
 
-async function HandleOnePasswordHashing(plainPassword) {
-  const hashed = await bcrypt.hash(plainPassword, saltRounds);
-  return hashed;
-}
-
-module.exports={
-    HandleAllPasswordsHashing,
-    HandleOnePasswordHashing
-}
+// run();
