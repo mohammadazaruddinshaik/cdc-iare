@@ -26,7 +26,7 @@ const ProfilePage = () => {
             try {
                 setLoading(true);
                 // Retrieve the roll number from localStorage.
-                const rollno = localStorage.getItem('rollno');
+                const rollno = localStorage.getItem('userIdentifier');
 
                 if (!rollno) {
                     throw new Error("Roll number not found in local storage.");
