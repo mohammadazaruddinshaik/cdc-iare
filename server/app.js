@@ -7,7 +7,9 @@ const FacultyRouter = require('./routes/Faculty')
 const AdminRouter = require('./routes/Admin')
 const cors=require('cors');
 const cron=require('node-cron');
+const bcrypt = require("bcryptjs");
 const { updateAllStudentScores } = require("./controllers/Student");
+const { HandleAllPasswordsHashing } = require("./services/PasswordHash");
 
 
 const app = express();
@@ -24,8 +26,6 @@ app.use('/api/login', LoginRouter);
 app.use('/api/Student',StudentRouter);
 app.use('/api/Faculty',FacultyRouter);
 app.use('/api/Admin',AdminRouter);
-
-
 
 
 async function start() {
