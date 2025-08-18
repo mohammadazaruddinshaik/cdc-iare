@@ -138,7 +138,7 @@ async function getLogData(req, res) {
       res.json({attendance});
 
   } catch (err) {
-    console.error("Error fetching dashboard data:", err);
+    console.error("Error fetching Log data:", err);
     res.status(500).json({ error: "Server error" });
   }
 }
@@ -158,7 +158,7 @@ async function getProfileData(req, res) {
       res.json({student});
 
   } catch (err) {
-    console.error("Error fetching dashboard data:", err);
+    console.error("Error fetching Student data:", err);
     res.status(500).json({ error: "Server error" });
   }
 }

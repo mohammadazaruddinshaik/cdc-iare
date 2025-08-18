@@ -1,14 +1,177 @@
 const express = require('express');
 const Faculty = require('../models/faculty');
-const Announcement=require('../models/Announcement');
+const Announcement = require('../models/Announcement');
 const getAttendanceModel = require('../services/GetAttendanceModel');
-const Student=require('../models/student');
+const Student = require('../models/student');
+const Coder = require('../models/coding')
 const ExcelJS = require("exceljs");
+const mongoose = require('mongoose');
+const attendanceSchema = require('../models/attendance.model'); // export schema only, not model
 
 
+
+async function getDashboardData(req, res) {
+  try {
+    const { facultyid } = req.params;
+    if (!facultyid) {
+      return res.status(400).json({ error: "facultyid is required" });
+    }
+
+    // 1. Get student profile (only rollno and batch)
+    const faculty = await Faculty.findOne({
+      facultyid: new RegExp(`^${facultyid}$`, "i")   // "i" = case-insensitive
+    })
+      .select("facultyid batches_assigned -_id");
+
+    if (!faculty) {
+      return res.status(404).json({ error: "Faculty not found" });
+    }
+
+
+    // 2. Get top 3 coders overall (sorted by performance)
+    const topCoders = await Coder.find()
+      .sort({ totalScore: -1 }) // descending
+      .limit(3)
+      .select("rollno scores totalScore -_id");
+
+    res.json({
+      faculty: faculty,
+      topCoders
+    });
+
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getLeaderBoardData(req, res) {
+  try {
+
+    // Get all coders sorted by totalScore
+    let AllCoders = await Coder.find()
+      .sort({ totalScore: -1 })
+      .select("rollno batch handles scores totalScore -_id")
+      .lean(); // <-- use lean() so we can freely modify objects
+
+    // Convert handles into URLs
+    AllCoders = AllCoders.map(coder => {
+      const h = coder.handles || {};
+      return {
+        ...coder,
+        handles: {
+          leetcode: h.leetcode ? `https://leetcode.com/u/${h.leetcode}` : null,
+          gfg: h.gfg ? `https://www.geeksforgeeks.org/user/${h.gfg}/` : null,
+          codechef: h.codechef ? `https://www.codechef.com/users/${h.codechef}` : null,
+          hackerank: h.hackerank ? `https://www.hackerrank.com/profile/${h.hackerank}` : null
+        }
+      };
+    });
+
+    res.json({ AllCoders });
+
+  } catch (err) {
+    console.error("Error fetching leaderboard data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getTimetableData(req, res) {
+  try {
+    const { facultyid } = req.params;
+    if (!facultyid) {
+      return res.status(400).json({ error: "facultyid is required" });
+    }
+
+    // 1. Get student profile (only rollno and batch)
+    const faculty = await Faculty.findOne({
+      facultyid: new RegExp(`^${facultyid}$`, "i")   // "i" = case-insensitive
+    })
+      .select("facultyid batches_assigned -_id");
+
+    if (!faculty) {
+      return res.status(404).json({ error: "Faculty not found" });
+    }
+
+    res.json({
+      Faculty: faculty
+    });
+
+  } catch (err) {
+    console.error("Error fetching Timetable data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getViewStudentData(req, res) {
+  try {
+    // 1. Get all students
+    let students = await Student.find()
+      .select("rollno name batch -_id")
+      .lean();
+
+    // 2. For each student, fetch attendance
+    const AllStudents = await Promise.all(
+      students.map(async (student) => {
+        // format batch name into collectionName
+        const batchFormatted = student.batch
+          .replace(/BATCH/gi, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "")
+          .toLowerCase();
+
+        const collectionName = `attendance_${batchFormatted}`;
+        const AttendanceModel = mongoose.model(
+          collectionName,
+          attendanceSchema,
+          collectionName
+        );
+
+        // find attendance by rollno
+        const attendance = await AttendanceModel.findOne({
+          rollno: new RegExp(`^${student.rollno}$`, "i"),
+        }).select("overallAttendance courseAttendance dailyLogs -_id");
+
+        // merge student + attendance
+        return {
+          ...student,
+          ...(attendance ? attendance.toObject() : {}), // avoid null
+        };
+      })
+    );
+
+    res.json({ AllStudents });
+  } catch (err) {
+    console.error("Error fetching Students data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getProfileData(req, res) {
+  try {
+    const { facultyid } = req.params;
+    if (!facultyid) {
+      return res.status(400).json({ error: "facultyid is required" });
+    }
+
+    const faculty = await Faculty.findOne({
+      facultyid: new RegExp(`^${facultyid}$`, "i")
+    }).select("name facultyid batches_assigned subjects_assigned email -_id");
+    if (!faculty) {
+      return res.status(404).json({ error: "Faculty not found" });
+    }
+
+    res.json({ faculty });
+
+  } catch (err) {
+    console.error("Error fetching Faculty data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
 
 async function HandelPostAnnouncements(req, res) {
-    
+
   try {
     const { postedby, title, subtitle, content, batches } = req.body;
 
@@ -249,9 +412,14 @@ async function HandleAttendanceReportExcel(req, res) {
   }
 }
 
-module.exports={
-    HandelPostAnnouncements,
-    HandleMarkAttendance,
-    HandleAttendanceReport,
-    HandleAttendanceReportExcel
+module.exports = {
+  getDashboardData,
+  getLeaderBoardData,
+  getTimetableData,
+  getViewStudentData,
+  getProfileData,
+  HandelPostAnnouncements,
+  HandleMarkAttendance,
+  HandleAttendanceReport,
+  HandleAttendanceReportExcel
 }

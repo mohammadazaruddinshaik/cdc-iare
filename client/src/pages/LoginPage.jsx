@@ -41,7 +41,9 @@ const LoginPage = () => {
             // Use the API_URL from the environment variable.
             const response = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ username, password, role }),
             });
             console.log(username)
