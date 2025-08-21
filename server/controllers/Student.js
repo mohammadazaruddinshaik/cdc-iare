@@ -62,51 +62,6 @@ async function getDashboardData(req, res) {
   }
 }
 
-async function getLeaderBoardData(req, res) {
-  try {
-    const { rollno } = req.params;
-    if (!rollno) {
-      return res.status(400).json({ error: "rollno is required" });
-    }
-
-    // Find student (case-insensitive)
-    const student = await Coder.findOne({
-      rollno: new RegExp(`^${rollno}$`, "i")
-    });
-
-    if (!student) {
-      return res.status(404).json({ error: "Student not found" });
-    }
-
-    // Get all coders sorted by totalScore
-    let AllCoders = await Coder.find()
-      .sort({ totalScore: -1 })
-      .select("rollno batch handles scores totalScore -_id")
-      .lean(); // <-- use lean() so we can freely modify objects
-
-    // Convert handles into URLs
-    AllCoders = AllCoders.map(coder => {
-      const h = coder.handles || {};
-      return {
-        ...coder,
-        handles: {
-          leetcode: h.leetcode ? `https://leetcode.com/u/${h.leetcode}` : null,
-          gfg: h.gfg ? `https://www.geeksforgeeks.org/user/${h.gfg}/` : null,
-          codechef: h.codechef ? `https://www.codechef.com/users/${h.codechef}` : null,
-          hackerank: h.hackerank ? `https://www.hackerrank.com/profile/${h.hackerank}` : null
-        }
-      };
-    });
-
-    res.json({ AllCoders });
-
-  } catch (err) {
-    console.error("Error fetching leaderboard data:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-}
-
-
 async function getLogData(req, res) {
   try {
     const { rollno } = req.params;
@@ -251,7 +206,6 @@ module.exports={
     getDashboardData,
     updateAllStudentScores,
     HandleGetAnnouncements,
-    getLeaderBoardData,
     getLogData,
     getProfileData
 }

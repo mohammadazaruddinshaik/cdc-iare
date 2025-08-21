@@ -1,13 +1,34 @@
 const express=require('express');
-const { AttendanceSessionReportEx, AttendanceSessionReportPdf, AttendanceCompleteReportEx, AttendanceCompleteReportPdf, AttendanceBatchReportEx, AttendanceBatchReportPdf } = require('../controllers/Admin');
 const router=express.Router();
+const ExcelJS = require('exceljs');
+const {HandleSessionAttendanceReportPDF, 
+      HandleBatchAttendanceReportPDF, 
+      HandleBatchAttendanceReportExcel, 
+      HandleSessionAttendanceReportExcel, 
+      HandleMarkAttendance, 
+      HandleMonthlyAttendanceReportExcel,
+      getDashboardData
+    
+    } = require('../controllers/Admin');
+const getAttendanceModel=require('../services/GetAttendanceModel');
+const { HandleChangePassword } = require('../services/CommonRoutes');
 
 
-router.get('/attendance-session-report-excel',AttendanceSessionReportEx);
-router.get('/attendance-session-report-pdf', AttendanceSessionReportPdf);
-router.get("/attendance/complete-report-excel/:collectionName",AttendanceCompleteReportEx);
-router.get("/attendance/complete-report-pdf/:collectionName",AttendanceCompleteReportPdf);
-router.get("/attendance-batch-report-excel", AttendanceBatchReportEx);
-router.get("/attendance-batch-report-pdf", AttendanceBatchReportPdf);
+
+router.get("/attendance-batch-report-excel", HandleBatchAttendanceReportPDF);
+
+router.get("/attendance-batch-report-pdf", HandleBatchAttendanceReportExcel);
+
+router.get("/attendance-Session-report-excel", HandleSessionAttendanceReportExcel);
+
+router.get("/attendance-Session-report-pdf", HandleSessionAttendanceReportPDF);
+
+router.post('/Mark-Attendance', HandleMarkAttendance);
+
+router.get('/attendance-monthly-excel', HandleMonthlyAttendanceReportExcel)
+
+router.patch('/UpdatePassword', HandleChangePassword);
+
+router.get('/getDashboardData',getDashboardData);
 
 module.exports=router;

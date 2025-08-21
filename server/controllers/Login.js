@@ -36,6 +36,8 @@ async function HandleLogin(req, res) {
         if (!user) {
             return res.status(401).json({ error: "User not found" });
         }
+        // console.log(user.password);
+        console.log(await bcrypt.hash(password,10));
         // ✅ Compare entered password with hashed password in DB
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {

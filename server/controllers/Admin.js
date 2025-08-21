@@ -9,6 +9,7 @@ const ExcelJS = require("exceljs");
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const Announcement = require("../models/Announcement");
+const mongoose = require('mongoose');
 
 function getShortBatchName(fullBatchName) {
   const parts = fullBatchName.toUpperCase().split(" ");
@@ -16,10 +17,10 @@ function getShortBatchName(fullBatchName) {
     parts[0] === "SKILLUP"
       ? "SU"
       : parts[0] === "SKILLNEXT"
-      ? "SN"
-      : parts[0] === "SKILLBRIDGE"
-      ? "SB"
-      : "NA";
+        ? "SN"
+        : parts[0] === "SKILLBRIDGE"
+          ? "SB"
+          : "NA";
 
   const number =
     parts
@@ -30,7 +31,444 @@ function getShortBatchName(fullBatchName) {
   return `V-${code}-${number}`;
 }
 
-async function AttendanceSessionReportEx(req,res){
+const drawTableHeaders = (doc, y) => {
+  const tableColumns = [
+    { label: "S.No", width: 40, align: "center" },
+    { label: "Roll No", width: 90, align: "center" },
+    { label: "Name", width: 200, align: "left" },
+    { label: "Branch", width: 100, align: "center" },
+    { label: "Status", width: 60, align: "center" }
+  ];
+
+  let currentX = doc.page.margins.left;
+  const headerHeight = 20;
+
+  // Draw a solid background for the header row
+  doc.fillColor("#34495e").rect(currentX, y, 540, headerHeight).fill();
+
+  // Draw header text
+  doc.font("Helvetica-Bold").fontSize(10).fillColor("#FFFFFF");
+  tableColumns.forEach(column => {
+    doc.text(column.label, currentX, y + 5, {
+      width: column.width,
+      align: column.align
+    });
+    currentX += column.width;
+  });
+
+  // Reset font and color for subsequent rows
+  doc.font("Helvetica").fontSize(10).fillColor("#000000");
+
+  return y + headerHeight;
+};
+
+const drawTable = (doc, data, { title, totalSummary, presentSummary, absentSummary }) => {
+  doc.moveDown(1.5);
+
+  // Section Title
+  doc.font("Helvetica-Bold").fontSize(14).text(title, { align: "center" });
+  doc.moveDown(0.5);
+
+  const tableColumns = [
+    { key: "sno", width: 40, align: "center" },
+    { key: "rollno", width: 90, align: "center" },
+    { key: "name", width: 200, align: "left" },
+    { key: "branch", width: 100, align: "center" },
+    { key: "status", width: 60, align: "center" }
+  ];
+  const rowHeight = 20;
+
+  // Draw initial headers
+  let y = drawTableHeaders(doc, doc.y);
+
+  // Draw table data with alternating and conditional row colors
+  doc.font("Helvetica").fontSize(10);
+  let sno = 1;
+
+  data.forEach((entry, index) => {
+    const isPresent = entry.isPresent;
+    const statusText = isPresent ? "Present" : "Absent";
+    const statusColor = isPresent ? "#2E7D32" : "#C62828";
+    const rowBgColor = index % 2 === 0 ? "#F5F5F5" : "#FFFFFF"; // Alternating row color
+
+    // Check for new page and redraw headers if necessary
+    if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      y = doc.page.margins.top + 30;
+      y = drawTableHeaders(doc, y);
+    }
+
+    // Draw row background
+    doc.fillColor(rowBgColor).rect(doc.page.margins.left, y, 540, rowHeight).fill();
+
+    const rowData = [
+      sno.toString(),
+      entry.student.rollno,
+      entry.student.name,
+      entry.student.branch || "UNKNOWN",
+      statusText
+    ];
+
+    let currentX = doc.page.margins.left;
+    rowData.forEach((text, i) => {
+      // Apply conditional color and font for the status column
+      if (tableColumns[i].key === "status") {
+        doc.fillColor(statusColor).font("Helvetica-Bold");
+      } else {
+        doc.fillColor("#000000").font("Helvetica");
+      }
+
+      doc.text(text, currentX, y + 5, {
+        width: tableColumns[i].width,
+        align: tableColumns[i].align
+      });
+      currentX += tableColumns[i].width;
+    });
+
+    y += rowHeight;
+    sno++;
+  });
+
+  // Draw summary section
+  doc.moveDown(1.5);
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#000000");
+
+  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const currentY = doc.y;
+
+  if (totalSummary && presentSummary && absentSummary) {
+    // Combined report summary
+    doc.text(totalSummary, doc.page.margins.left, currentY, { width: pageWidth / 3, align: "left" });
+    doc.fillColor("#2E7D32").text(presentSummary, doc.page.margins.left + pageWidth / 3, currentY, { width: pageWidth / 3, align: "center" });
+    doc.fillColor("#C62828").text(absentSummary, doc.page.margins.left + (pageWidth * 2 / 3), currentY, { width: pageWidth / 3, align: "right" });
+  } else if (absentSummary) {
+    // Absent-only report summary
+    doc.fillColor("#C62828").text(absentSummary, { align: "center" });
+  } else if (presentSummary) {
+    // Present-only report summary
+    doc.fillColor("#2E7D32").text(presentSummary, { align: "center" });
+  }
+};
+
+async function HandleBatchAttendanceReportPDF(req, res) {
+  try {
+    const { batch, date } = req.query;
+    if (!batch || !date) {
+      return res.status(400).json({ message: "Missing batch or date parameter" });
+    }
+
+    const reportDate = date;
+    const displayDate = new Date(date).toLocaleDateString("en-GB").split("/").join("-");
+
+    const Attendance = getAttendanceModel(batch);
+    const attendanceRecords = await Attendance.find({});
+    const sampleStudent = await Student.findOne({ rollno: attendanceRecords[0]?.rollno });
+    const batchName = sampleStudent?.batch || "UNKNOWN BATCH";
+    const shortBatchName = getShortBatchName(batchName);
+
+    const students = await Student.find({ batch: batchName }).sort({ branch: 1, rollno: 1 });
+
+    // Compute presence for all students
+    const allStudentData = students.map((student) => {
+      const attendance = attendanceRecords.find((a) => a.rollno === student.rollno);
+      const isPresent = attendance?.dailyLogs?.some((log) => log.date === reportDate && log.status === "present") || false;
+      return { student, isPresent };
+    });
+
+    // Separate students into present and absent lists
+    const absentStudents = allStudentData.filter((entry) => !entry.isPresent);
+    const presentStudents = allStudentData.filter((entry) => entry.isPresent);
+
+    const doc = new PDFDocument({ size: "A4", margin: 30 });
+    const filename = `${shortBatchName}_${displayDate}.pdf`;
+
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", "application/pdf");
+    doc.pipe(res);
+
+    // Main Document Header
+    doc.fontSize(16).font("Helvetica-Bold").text("Institute of Aeronautical Engineering", { align: "center" });
+    doc.fontSize(12).font("Helvetica").text("Career Development Center", { align: "center" });
+    doc.moveDown(0.5);
+    doc.fontSize(14).font("Helvetica-Bold").text(`PAT Attendance Summary`, { align: "center" });
+    doc.fontSize(10).font("Helvetica").text(`Date: ${displayDate}`, { align: "center" });
+    doc.moveDown(1);
+    doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+    doc.moveDown(1);
+    doc.fontSize(11).font("Helvetica-Bold").text(`Batch: ${shortBatchName}`);
+    doc.moveDown(0.5);
+
+    // --- Section 1: Complete Report ---
+    const totalSummaryText = `Total Students: ${allStudentData.length}`;
+    const presentSummaryText = `Present: ${presentStudents.length}`;
+    const absentSummaryText = `Absent: ${absentStudents.length}`;
+    drawTable(doc, allStudentData, {
+      title: "Complete Report (Present & Absent)",
+      totalSummary: totalSummaryText,
+      presentSummary: presentSummaryText,
+      absentSummary: absentSummaryText
+    });
+
+    // --- Section 2: Absent Only List ---
+    if (absentStudents.length > 0) {
+      doc.addPage();
+      const absentSummary = `Total Absentees: ${absentStudents.length}`;
+      drawTable(doc, absentStudents, {
+        title: "Absent Only Report",
+        absentSummary: absentSummary
+      });
+    }
+
+    // --- Section 3: Present Only List ---
+    if (presentStudents.length > 0) {
+      doc.addPage();
+      const presentSummary = `Total Present: ${presentStudents.length}`;
+      drawTable(doc, presentStudents, {
+        title: "Present Only Report",
+        presentSummary: presentSummary
+      });
+    }
+
+    doc.end();
+  } catch (err) {
+    console.error("Error generating attendance PDF:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+async function HandleBatchAttendanceReportExcel(req, res) {
+  try {
+    const { batch, date } = req.query;
+    if (!batch || !date) {
+      return res.status(400).json({ message: "Missing batch or date parameter" });
+    }
+
+    const reportDate = date;
+    const displayDate = new Date(date).toLocaleDateString("en-GB").split("/").join("-");
+
+    const Attendance = getAttendanceModel(batch);
+    const attendanceRecords = await Attendance.find({});
+
+    // **FIXED: Correctly determine the full batch name from the requested batch**
+    let batchName = "UNKNOWN BATCH";
+    if (attendanceRecords.length > 0 && attendanceRecords[0].rollno) {
+      // Find a sample student from the attendance records to get the full batch name
+      const sampleStudent = await Student.findOne({ rollno: attendanceRecords[0].rollno });
+      if (sampleStudent) {
+        batchName = sampleStudent.batch;
+      }
+    } else {
+      // Fallback if no attendance records exist for that day yet
+      // We find a student whose batch name contains the requested batch identifier (e.g., "2021-2025")
+      const studentInBatch = await Student.findOne({ batch: new RegExp(batch, "i") });
+      if (studentInBatch) {
+        batchName = studentInBatch.batch;
+      } else {
+        return res.status(404).json({ message: `No students or attendance data could be linked to the batch identifier: ${batch}` });
+      }
+    }
+
+    const shortBatchName = getShortBatchName(batchName);
+    const students = await Student.find({ batch: batchName }).sort({ branch: 1, rollno: 1 });
+
+    const allStudentData = students.map((student) => {
+      const attendance = attendanceRecords.find((a) => a.rollno === student.rollno);
+      const isPresent = attendance?.dailyLogs?.some(
+        (log) => log.date === reportDate && log.status === "present"
+      ) || false;
+
+      return {
+        rollno: student.rollno,
+        name: student.name || "UNKNOWN NAME",
+        branch: student.branch || "UNKNOWN",
+        status: isPresent ? "Present" : "Absent",
+      };
+    });
+
+    const absentStudents = allStudentData.filter((s) => s.status === "Absent");
+    const presentStudents = allStudentData.filter((s) => s.status === "Present");
+
+    const workbook = new ExcelJS.Workbook();
+    const filename = `${shortBatchName}_${displayDate}.xlsx`;
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    const createWorksheet = (sheetName, data, title, summary = {}) => {
+      const sheet = workbook.addWorksheet(sheetName);
+      const columns = [
+        { header: "S.No", key: "sno", width: 8 },
+        { header: "Roll No", key: "rollno", width: 18 },
+        { header: "Name", key: "name", width: 35 },
+        { header: "Branch", key: "branch", width: 15 },
+        { header: "Status", key: "status", width: 12 },
+      ];
+      sheet.columns = columns;
+      const numColumns = columns.length;
+      let currentRow = 1;
+
+      // Main Document Header
+      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
+      const mainHeader = sheet.getCell(currentRow, 1);
+      mainHeader.value = "Institute of Aeronautical Engineering";
+      mainHeader.font = { bold: true, size: 16 };
+      mainHeader.alignment = { horizontal: 'center' };
+      currentRow++;
+
+      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
+      const subHeader = sheet.getCell(currentRow, 1);
+      subHeader.value = "Career Development Center";
+      subHeader.font = { size: 12 };
+      subHeader.alignment = { horizontal: 'center' };
+      currentRow++;
+
+      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
+      const dateHeader = sheet.getCell(currentRow, 1);
+      dateHeader.value = `PAT Attendance Summary - Date: ${displayDate}`;
+      dateHeader.font = { bold: true, size: 14 };
+      dateHeader.alignment = { horizontal: 'center' };
+      currentRow += 2; // Add a space
+
+      // Section Title
+      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
+      const sectionTitle = sheet.getCell(currentRow, 1);
+      sectionTitle.value = title;
+      sectionTitle.font = { bold: true, size: 14 };
+      sectionTitle.alignment = { horizontal: 'center' };
+      currentRow++;
+
+      // Summary Section
+      if (summary.total) {
+        sheet.mergeCells(currentRow, 1, currentRow, 2);
+        const totalCell = sheet.getCell(currentRow, 1);
+        totalCell.value = summary.total;
+        totalCell.font = { bold: true, size: 11 };
+        totalCell.alignment = { horizontal: 'left' };
+
+        sheet.mergeCells(currentRow, 3, currentRow, 3);
+        const presentCell = sheet.getCell(currentRow, 3);
+        presentCell.value = summary.present;
+        presentCell.font = { bold: true, size: 11, color: { argb: "FF2E7D32" } };
+        presentCell.alignment = { horizontal: 'center' };
+
+        sheet.mergeCells(currentRow, 4, currentRow, 5);
+        const absentCell = sheet.getCell(currentRow, 4);
+        absentCell.value = summary.absent;
+        absentCell.font = { bold: true, size: 11, color: { argb: "FFC62828" } };
+        absentCell.alignment = { horizontal: 'right' };
+      } else if (summary.single) {
+        sheet.mergeCells(currentRow, 1, currentRow, numColumns);
+        const singleSummaryCell = sheet.getCell(currentRow, 1);
+        singleSummaryCell.value = summary.single;
+        singleSummaryCell.font = { bold: true, size: 11 };
+        singleSummaryCell.alignment = { horizontal: 'center' };
+      }
+      currentRow += 2;
+
+      // Table Headers
+      const headerRow = sheet.getRow(currentRow);
+      headerRow.height = 20;
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+
+      // **FIXED: Explicitly set the header cell values**
+      headerRow.values = columns.map(c => c.header);
+
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF34495E" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+      });
+
+      // Table Data
+      data.forEach((item, idx) => {
+        const row = sheet.addRow({
+          sno: idx + 1,
+          ...item
+        });
+
+        const rowBgColor = (idx % 2 === 0) ? "FFF5F5F5" : "FFFFFFFF";
+
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowBgColor } };
+          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+          cell.alignment = { vertical: 'middle', horizontal: sheet.getColumn(colNumber).key === 'name' ? 'left' : 'center' };
+          cell.font = { size: 10 };
+        });
+
+        const statusCell = row.getCell('status');
+        if (item.status === 'Present') {
+          statusCell.font = { bold: true, color: { argb: 'FF2E7D32' }, size: 10 };
+          statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F4EA' } };
+        } else if (item.status === 'Absent') {
+          statusCell.font = { bold: true, color: { argb: 'FFC62828' }, size: 10 };
+          statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
+        }
+      });
+    };
+
+    // --- Create all necessary worksheets ---
+
+    createWorksheet(
+      "Complete Report",
+      allStudentData,
+      "Complete Attendance Report", {
+      total: `Total Students: ${allStudentData.length}`,
+      present: `Present: ${presentStudents.length}`,
+      absent: `Absent: ${absentStudents.length}`
+    }
+    );
+
+    if (absentStudents.length > 0) {
+      createWorksheet(
+        "Absent Students",
+        absentStudents,
+        "Absent Only Report", {
+        single: `Total Absentees: ${absentStudents.length}`
+      }
+      );
+    }
+
+    if (presentStudents.length > 0) {
+      createWorksheet(
+        "Present Students",
+        presentStudents,
+        "Present Only Report", {
+        single: `Total Present: ${presentStudents.length}`
+      }
+      );
+    }
+
+    const groupedByBranch = allStudentData.reduce((acc, student) => {
+      acc[student.branch] = acc[student.branch] || [];
+      acc[student.branch].push(student);
+      return acc;
+    }, {});
+
+    for (const branch in groupedByBranch) {
+      const branchData = groupedByBranch[branch];
+      const branchPresent = branchData.filter(s => s.status === 'Present').length;
+      const branchAbsent = branchData.length - branchPresent;
+
+      createWorksheet(
+        `${branch} Report`,
+        branchData,
+        `${branch} Attendance Report`, {
+        total: `Total: ${branchData.length}`,
+        present: `Present: ${branchPresent}`,
+        absent: `Absent: ${branchAbsent}`
+      }
+      );
+    }
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err) {
+    console.error("Error generating attendance Excel:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+async function HandleSessionAttendanceReportExcel(req, res) {
   const { batch, date, format = "excel" } = req.query;
 
   if (!batch || !date || format !== "excel") {
@@ -251,7 +689,7 @@ async function AttendanceSessionReportEx(req,res){
   }
 };
 
-async function AttendanceSessionReportPdf(req, res){
+async function HandleSessionAttendanceReportPDF(req, res) {
   const { batch, date } = req.query;
 
   if (!batch || !date) {
@@ -359,19 +797,19 @@ async function AttendanceSessionReportPdf(req, res){
     const addSimpleText = (text, x, y, width, height, bgColor, textColor, fontSize = 11, align = "center") => {
       // Draw background
       doc.rect(x, y, width, height).fill(bgColor);
-      
+
       // Draw border
       doc.rect(x, y, width, height).stroke("#cccccc");
-      
+
       // Add text
       doc
         .fillColor(textColor)
         .fontSize(fontSize)
         .font("Helvetica");
-      
+
       const padding = align === "center" ? 0 : 5;
       const textWidth = width - (padding * 2);
-      
+
       doc.text(
         text,
         x + padding,
@@ -511,7 +949,7 @@ async function AttendanceSessionReportPdf(req, res){
     });
 
     let rowIndex = 0;
-    
+
     // Flatten the data and show batch name in every row (simpler approach)
     allSummaries.forEach((item) => {
       totalPresent += item.presenties;
@@ -538,7 +976,7 @@ async function AttendanceSessionReportPdf(req, res){
       ];
 
       let tableX = 50;
-      
+
       rowData.forEach((data, colIndex) => {
         let bgColor = rowBgColor;
         let textColor = colors.black;
@@ -554,7 +992,7 @@ async function AttendanceSessionReportPdf(req, res){
 
         // Draw background rectangle
         doc.rect(tableX, currentY, colWidths[colIndex], rowHeight).fill(bgColor);
-        
+
         // Draw border (stroke only, no fill)
         doc.rect(tableX, currentY, colWidths[colIndex], rowHeight).stroke("#cccccc");
 
@@ -567,7 +1005,7 @@ async function AttendanceSessionReportPdf(req, res){
         const textAlign = colIndex === 1 ? "left" : "center";
         const padding = textAlign === "center" ? 0 : 5;
         const textWidth = colWidths[colIndex] - (padding * 2);
-        
+
         doc.text(
           data,
           tableX + padding,
@@ -660,1639 +1098,620 @@ async function AttendanceSessionReportPdf(req, res){
   }
 };
 
-async function AttendanceCompleteReportEx(req, res){
+async function HandleMarkAttendance(req, res) {
   try {
-    const collectionName = req.params.collectionName;
-    if (!collectionName) {
-      return res.status(400).json({ message: "Missing collectionName parameter" });
+    const { collectionName, date, course, presentMap } = req.body;
+
+    // 🛡️ Input validation
+    if (!collectionName || !date || !course || typeof presentMap !== "object") {
+      return res.status(400).json({ message: "Missing or invalid input data" });
     }
 
-    const reportDate = new Date().toISOString().slice(0, 10);
-    const displayDate = new Date().toLocaleDateString("en-GB").split("/").join("-");
-
     const Attendance = getAttendanceModel(collectionName);
-    const attendanceRecords = await Attendance.find({});
+    const now = new Date();
 
-    const sampleAttendance = attendanceRecords[0];
-    const sampleStudent = sampleAttendance
-      ? await Student.findOne({ rollno: sampleAttendance.rollno })
-      : null;
+    // Normalize date
+    const normalizeDate = (d) => new Date(d).toISOString().split("T")[0];
+    const reqDate = normalizeDate(date);
 
-    const batchName = sampleStudent?.batch || "UNKNOWN BATCH";
-    const shortBatchName = getShortBatchName(batchName);
-    const students = await Student.find({ batch: batchName });
+    // Get attendance docs (for updating attendance collection)
+    const attendanceDocs = await Attendance.find();
 
-    // Compute presence
-    const completeData = students.map(student => {
-      const attendance = attendanceRecords.find(a => a.rollno === student.rollno);
-      const logs = attendance?.dailyLogs?.filter(log => log.date === reportDate) || [];
-      const isPresent = logs.some(log => log.status === "present");
-      return { student, isPresent };
-    });
-
-    // Sort by Branch > Roll No
-    const sortedData = [...completeData].sort((a, b) => {
-      const branchA = (a.student.branch || "UNKNOWN").trim().toUpperCase();
-      const branchB = (b.student.branch || "UNKNOWN").trim().toUpperCase();
-
-      if (branchA === branchB) {
-        return a.student.rollno.localeCompare(b.student.rollno);
-      }
-      return branchA.localeCompare(branchB);
-    });
-
-    // Create PDF
-    const doc = new PDFDocument({ 
-      size: 'A4', 
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
-    });
-
-    // Set response headers
-    const fileName = `${shortBatchName}_${displayDate}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    const encodedFileName = encodeURIComponent(fileName);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`
+    // 🔍 Check if attendance already marked for this course & date
+    const alreadyMarkedDocs = attendanceDocs.filter(doc =>
+      doc.dailyLogs.some(log =>
+        normalizeDate(log.date) === reqDate && log.course === course
+      )
     );
-  
-    // Pipe PDF to response
-    doc.pipe(res);
 
-    // Helper function to add headers
-    const addHeaders = (doc, title) => {
-      let yPos = 50; // Always start from top margin
-      
-      // Header 1: Institute name
-      doc.rect(50, yPos, 495, 35)
-         .fillAndStroke('#1f4e79', '#000000')
-         .fillColor('#ffffff')
-         .fontSize(16)
-         .font('Helvetica-Bold')
-         .text('Institute of Aeronautical Engineering', 50, yPos + 12, { 
-           width: 495, 
-           align: 'center' 
-         });
-      
-      yPos += 35;
-      
-      // Header 2: PAT Attendance Summary
-      doc.rect(50, yPos, 495, 30)
-         .fillAndStroke('#2e75b6', '#000000')
-         .fillColor('#ffffff')
-         .fontSize(14)
-         .text(`PAT Attendance Summary - ${displayDate}`, 50, yPos + 10, { 
-           width: 495, 
-           align: 'center' 
-         });
-      
-      yPos += 30;
-      
-      // Header 3: Career Development Center
-      doc.rect(50, yPos, 495, 25)
-         .fillAndStroke('#3d85c6', '#000000')
-         .fillColor('#ffffff')
-         .fontSize(12)
-         .text('Career Development Center', 50, yPos + 8, { 
-           width: 495, 
-           align: 'center' 
-         });
-      
-      yPos += 25;
-      
-      // Header 4: Title
-      doc.rect(50, yPos, 495, 25)
-         .fillAndStroke('#4a90e2', '#000000')
-         .fillColor('#ffffff')
-         .fontSize(11)
-         .text(title, 50, yPos + 8, { 
-           width: 495, 
-           align: 'center' 
-         });
-      
-      return yPos + 35; // Return next Y position
-    };
+    if (alreadyMarkedDocs.length > 0) {
+      // Count present & absent from already marked logs
+      let presentiesCount = 0;
+      let absenteesCount = 0;
 
-    // Helper function to create table with proper page management
-    const createTable = (doc, data, startY, showSummary = false, summaryType = 'complete') => {
-      let yPos = startY;
-      const headerHeight = 25;
-      const rowHeight = 20;
-      const colWidths = [40, 70, 180, 80, 80, 45]; // S.No, Roll No, Name, Branch, Batch, Status
-      const pageBottom = 750; // Bottom margin for page break
-      
-      // Function to add table header
-      const addTableHeader = (yPosition) => {
-        let xPos = 50;
-        
-        // Draw header background
-        doc.rect(50, yPosition, 495, headerHeight)
-           .fillAndStroke('#34495e', '#000000')
-           .fillColor('#ffffff')
-           .fontSize(10)
-           .font('Helvetica-Bold');
-        
-        // Header text
-        const headers = ['S.No', 'Roll No', 'Name', 'Branch', 'Batch', 'Status'];
-        headers.forEach((header, i) => {
-          doc.text(header, xPos + 5, yPosition + 8, { 
-            width: colWidths[i] - 10, 
-            align: 'center' 
-          });
-          xPos += colWidths[i];
-        });
-        
-        return yPosition + headerHeight;
-      };
-      
-      // Add initial table header
-      yPos = addTableHeader(yPos);
-      
-      // Table rows
-      data.forEach((item, index) => {
-        // Check if we need a new page
-        if (yPos + rowHeight > pageBottom) {
-          doc.addPage();
-          yPos = addTableHeader(50); // Add header at top of new page
-        }
-        
-        let xPos = 50;
-        
-        // Alternating row colors
-        const fillColor = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
-        doc.rect(50, yPos, 495, rowHeight).fillAndStroke(fillColor, '#cccccc');
-        
-        // Row data
-        const rowData = [
-          (index + 1).toString(),
-          item.student.rollno,
-          item.student.name,
-          item.student.branch || "UNKNOWN",
-          getShortBatchName(item.student.batch),
-          item.isPresent ? "Present" : "Absent"
-        ];
-        
-        rowData.forEach((cell, i) => {
-          // Special styling for status column
-          if (i === 5) {
-            const statusColor = item.isPresent ? '#d4f3d0' : '#ffebee';
-            const textColor = item.isPresent ? '#2e7d32' : '#c62828';
-            
-            doc.rect(xPos, yPos, colWidths[i], rowHeight)
-               .fillAndStroke(statusColor, '#cccccc')
-               .fillColor(textColor)
-               .fontSize(9)
-               .font('Helvetica-Bold');
-          } else {
-            doc.fillColor('#000000')
-               .fontSize(9)
-               .font('Helvetica');
-          }
-          
-          const align = i === 2 ? 'left' : 'center'; // Left align names
-          doc.text(cell, xPos + 5, yPos + 6, { 
-            width: colWidths[i] - 10, 
-            align: align 
-          });
-          
-          xPos += colWidths[i];
-        });
-        
-        yPos += rowHeight;
-      });
-      
-      // Add summary
-      if (showSummary) {
-        // Check if we need space for summary
-        if (yPos + 65 > pageBottom) {
-          doc.addPage();
-          yPos = 50;
-        }
-        
-        yPos += 20;
-        const present = data.filter(item => item.isPresent).length;
-        const absent = data.filter(item => !item.isPresent).length;
-        
-        if (summaryType === 'branch') {
-          // Branch-wise summary header
-          doc.rect(50, yPos, 495, 25)
-             .fillAndStroke('#3498db', '#000000')
-             .fillColor('#ffffff')
-             .fontSize(12)
-             .font('Helvetica-Bold')
-             .text('SUMMARY', 50, yPos + 8, { 
-               width: 495, 
-               align: 'center' 
-             });
-          
-          yPos += 25;
-          
-          // Summary data - Only show absent count for branch-specific sheets
-          doc.rect(50, yPos, 495, 20)
-             .fillAndStroke('#e74c3c', '#000000')
-             .fillColor('#ffffff')
-             .fontSize(10)
-             .text(`Absent: ${absent}`, 50, yPos + 6, { 
-               width: 495, 
-               align: 'center' 
-             });
-             
-        } else {
-          // Complete report summary
-          doc.rect(50, yPos, 495, 25)
-             .fillAndStroke('#3498db', '#000000')
-             .fillColor('#ffffff')
-             .fontSize(12)
-             .font('Helvetica-Bold')
-             .text('TOTAL SUMMARY', 50, yPos + 8, { 
-               width: 495, 
-               align: 'center' 
-             });
-          
-          yPos += 25;
-          
-          // Three columns for complete summary
-          doc.rect(50, yPos, 165, 20)
-             .fillAndStroke('#3498db', '#000000')
-             .fillColor('#ffffff')
-             .fontSize(10)
-             .text(`TOTAL: ${data.length}`, 50, yPos + 6, { 
-               width: 165, 
-               align: 'center' 
-             });
-          
-          doc.rect(215, yPos, 165, 20)
-             .fillAndStroke('#27ae60', '#000000')
-             .fillColor('#ffffff')
-             .text(`Present: ${present}`, 215, yPos + 6, { 
-               width: 165, 
-               align: 'center' 
-             });
-          
-          doc.rect(380, yPos, 165, 20)
-             .fillAndStroke('#e74c3c', '#000000')
-             .fillColor('#ffffff')
-             .text(`Absent: ${absent}`, 380, yPos + 6, { 
-               width: 165, 
-               align: 'center' 
-             });
+      for (const doc of alreadyMarkedDocs) {
+        const log = doc.dailyLogs.find(
+          l => normalizeDate(l.date) === reqDate && l.course === course
+        );
+        if (log) {
+          if (log.status === "present") presentiesCount++;
+          else absenteesCount++;
         }
       }
-      
-      return yPos;
-    };
 
-    // Generate Complete Report
-    let currentY = addHeaders(doc, `B.Tech V Semester - ${shortBatchName}(Both Present & Absent)`);
-    createTable(doc, sortedData, currentY, true, 'complete');
-
-    // Generate Branch-wise Absentee Reports
-    const branchMap = {};
-    for (const entry of completeData) {
-      const branch = (entry.student.branch || "UNKNOWN").trim().toUpperCase();
-      if (!branchMap[branch]) branchMap[branch] = [];
-      branchMap[branch].push(entry);
+      return res.status(400).json({
+        message: `Attendance already posted for this batch: ${course} on ${reqDate}`
+      });
     }
 
-    // Get branches with absentees only
-    const branchesWithAbsentees = Object.keys(branchMap)
-      .filter(branch => branchMap[branch].some(entry => !entry.isPresent))
-      .sort();
+    // 🎯 Validate QR hash using Student collection
+    const rollnos = Object.keys(presentMap); // rollnos sent in request
+    const students = await Student.find(
+      { rollno: { $in: rollnos } },
+      { rollno: 1, qrData: 1 }
+    );
 
-    console.log(`Generating reports for ${branchesWithAbsentees.length} branches with absentees`);
+    // Build a set of rollnos validated by QR + track mismatches
+    const validatedPresentSet = new Set();
+    const mismatchedStudents = [];
 
-    for (const branch of branchesWithAbsentees) {
-      const absentees = branchMap[branch].filter(entry => !entry.isPresent);
-      
-      if (absentees.length === 0) continue;
-
-      console.log(`Processing branch ${branch} with ${absentees.length} absentees`);
-
-      // Sort absentees by roll number
-      const sortedAbsentees = absentees.sort((a, b) => {
-        return a.student.rollno.localeCompare(b.student.rollno);
-      });
-
-      // Add new page for each branch
-      doc.addPage();
-      const title = `B.Tech V Semester - ${shortBatchName}_${branch}(Absent Only)`;
-      currentY = addHeaders(doc, title);
-      createTable(doc, sortedAbsentees, currentY, true, 'branch');
-    }
-
-    // Finalize PDF
-    doc.end();
-
-  } catch (err) {
-    console.error("Error generating PDF report:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-async function AttendanceCompleteReportPdf(req, res){
-  try {
-    const collectionName = req.params.collectionName;
-    if (!collectionName) {
-      return res.status(400).json({ message: "Missing collectionName parameter" });
-    }
-
-    const reportDate = new Date().toISOString().slice(0, 10);
-    const displayDate = new Date().toLocaleDateString("en-GB").split("/").join("-");
-
-    const Attendance = getAttendanceModel(collectionName);
-    const attendanceRecords = await Attendance.find({});
-
-    const sampleAttendance = attendanceRecords[0];
-    const sampleStudent = sampleAttendance
-      ? await Student.findOne({ rollno: sampleAttendance.rollno })
-      : null;
-
-    const batchName = sampleStudent?.batch || "UNKNOWN BATCH";
-    const shortBatchName = getShortBatchName(batchName);
-    const students = await Student.find({ batch: batchName });
-
-    const workbook = new ExcelJS.Workbook();
-
-    const styleHeaders = (sheet, title) => {
-      sheet.views = [{ state: 'normal' }];
-
-      // Enhanced header styling with gradient colors and better fonts
-      const headerRows = [
-        ["Institute of Aeronautical Engineering", "1f4e79", 16, "FFFFFF"], // Dark blue background, white text
-        [`PAT Attendance Summary - ${displayDate}`, "2e75b6", 14, "FFFFFF"], // Medium blue
-        ["Career Development Center", "3d85c6", 12, "FFFFFF"], // Light blue
-        [title, "4a90e2", 11, "FFFFFF"], // Lighter blue
-      ];
-
-      headerRows.forEach(([text, bgColor, fontSize, textColor], i) => {
-        const row = sheet.addRow([text, "", "", "", "", ""]);
-        sheet.mergeCells(`A${i + 1}:F${i + 1}`);
-        
-        row.getCell(1).font = { 
-          bold: true, 
-          size: fontSize,
-          color: { argb: textColor },
-          name: "Calibri"
-        };
-        row.getCell(1).alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
-        };
-        row.height = fontSize + 8; // Dynamic row height
-        
-        row.eachCell(cell => {
-          cell.fill = { 
-            type: "pattern", 
-            pattern: "solid", 
-            fgColor: { argb: bgColor } 
-          };
-          cell.border = {
-            top: { style: "medium", color: { argb: "000000" } },
-            left: { style: "medium", color: { argb: "000000" } },
-            bottom: { style: "medium", color: { argb: "000000" } },
-            right: { style: "medium", color: { argb: "000000" } },
-          };
-        });
-      });
-
-      // Add spacing row
-      const spacingRow = sheet.addRow(["", "", "", "", "", ""]);
-      spacingRow.height = 5;
-      spacingRow.eachCell(cell => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8F9FA" } };
-      });
-
-      // Enhanced column headers with better styling
-      const headerRow = sheet.addRow(["S.No", "Roll No", "Name", "Branch", "Batch", "Status"]);
-      headerRow.height = 25;
-      
-      headerRow.eachCell((cell, colNumber) => {
-        cell.fill = { 
-          type: "pattern", 
-          pattern: "solid", 
-          fgColor: { argb: "34495e" } // Dark gray
-        };
-        cell.font = { 
-          bold: true, 
-          size: 12,
-          color: { argb: "FFFFFF" },
-          name: "Calibri"
-        };
-        cell.alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
-        };
-        cell.border = {
-          top: { style: "medium", color: { argb: "000000" } },
-          left: { style: "medium", color: { argb: "000000" } },
-          bottom: { style: "medium", color: { argb: "000000" } },
-          right: { style: "medium", color: { argb: "000000" } },
-        };
-      });
-
-      // Enhanced column widths
-      sheet.columns = [
-        { key: "sno", width: 10 },
-        { key: "roll", width: 18 },
-        { key: "name", width: 35 },
-        { key: "branch", width: 20 },
-        { key: "batch", width: 25 },
-        { key: "status", width: 16 },
-      ];
-    };
-
-    const addStudentRows = (sheet, data, showAbsentCountOnly = false) => {
-      let sr = 1;
-      let absent = 0;
-      let present = 0;
-
-      data.forEach(({ student, isPresent }) => {
-        if (!isPresent) {
-          absent++;
-        } else {
-          present++;
-        }
-
-        const row = sheet.addRow([
-          sr++,
-          student.rollno,
-          student.name,
-          student.branch || "UNKNOWN",
-          getShortBatchName(student.batch),
-          isPresent ? "Present" : "Absent",
-        ]);
-
-        row.height = 22;
-
-        row.eachCell((cell, colNumber) => {
-          // Enhanced font styling
-          cell.font = { 
-            name: "Calibri", 
-            size: 11,
-            bold: colNumber === 6 // Make status column bold
-          };
-          
-          // Better alignment
-          cell.alignment = { 
-            vertical: "middle", 
-            horizontal: colNumber === 3 ? "left" : "center" 
-          };
-          
-          // Enhanced borders
-          cell.border = {
-            top: { style: "thin", color: { argb: "CCCCCC" } },
-            left: { style: "thin", color: { argb: "CCCCCC" } },
-            bottom: { style: "thin", color: { argb: "CCCCCC" } },
-            right: { style: "thin", color: { argb: "CCCCCC" } },
-          };
-
-          // Conditional formatting for status
-          if (colNumber === 6) { // Status column
-            if (isPresent) {
-              cell.fill = { 
-                type: "pattern", 
-                pattern: "solid", 
-                fgColor: { argb: "D4F3D0" } // Light green for present
-              };
-              cell.font = { 
-                ...cell.font, 
-                color: { argb: "2E7D32" } // Dark green text
-              };
-            } else {
-              cell.fill = { 
-                type: "pattern", 
-                pattern: "solid", 
-                fgColor: { argb: "FFEBEE" } // Light red for absent
-              };
-              cell.font = { 
-                ...cell.font, 
-                color: { argb: "C62828" } // Dark red text
-              };
-            }
-          } else {
-            // Alternating row colors for better readability
-            const bgColor = (sr % 2 === 0) ? "F8F9FA" : "FFFFFF";
-            cell.fill = { 
-              type: "pattern", 
-              pattern: "solid", 
-              fgColor: { argb: bgColor } 
-            };
-          }
-        });
-      });
-
-      // Enhanced summary section
-      if (showAbsentCountOnly) {
-        // Add spacing
-        const spacingRow = sheet.addRow(["", "", "", "", "", ""]);
-        spacingRow.height = 10;
-        
-        // Summary header
-        const summaryHeaderRow = sheet.addRow(["", "", "SUMMARY", "", "", ""]);
-        sheet.mergeCells(`C${summaryHeaderRow.number}:F${summaryHeaderRow.number}`);
-        summaryHeaderRow.height = 25;
-        
-        summaryHeaderRow.getCell(3).font = { 
-          bold: true, 
-          size: 12,
-          color: { argb: "FFFFFF" },
-          name: "Calibri"
-        };
-        summaryHeaderRow.getCell(3).alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
-        };
-        summaryHeaderRow.getCell(3).fill = { 
-          type: "pattern", 
-          pattern: "solid", 
-          fgColor: { argb: "3498DB" } // Blue background for header
-        };
-        summaryHeaderRow.getCell(3).border = {
-          top: { style: "medium", color: { argb: "000000" } },
-          left: { style: "medium", color: { argb: "000000" } },
-          bottom: { style: "medium", color: { argb: "000000" } },
-          right: { style: "medium", color: { argb: "000000" } },
-        };
-        
-        // Summary data - Only show Absent count for branch-specific sheets
-        const summaryRow = sheet.addRow(["", "", "", "", "", `Absent: ${absent}`]);
-        summaryRow.height = 22;
-        
-        summaryRow.eachCell((cell, colNumber) => {
-          if (colNumber === 6) {
-            cell.font = { 
-              bold: true, 
-              size: 11,
-              color: { argb: "FFFFFF" },
-              name: "Calibri"
-            };
-            cell.alignment = { 
-              horizontal: "center", 
-              vertical: "middle" 
-            };
-            
-            cell.fill = { 
-              type: "pattern", 
-              pattern: "solid", 
-              fgColor: { argb: "E74C3C" } // Red background for Absent
-            };
-            
-            cell.border = {
-              top: { style: "thin", color: { argb: "000000" } },
-              left: { style: "thin", color: { argb: "000000" } },
-              bottom: { style: "thin", color: { argb: "000000" } },
-              right: { style: "thin", color: { argb: "000000" } },
-            };
-          }
-        });
+    for (const student of students) {
+      const expectedHash = student.qrData; // stored hash
+      const providedHash = presentMap[student.rollno]; // hash from client
+      if (expectedHash && providedHash && expectedHash === providedHash) {
+        validatedPresentSet.add(student.rollno);
       } else {
-        // Add summary for complete report
-        const spacingRow = sheet.addRow(["", "", "", "", "", ""]);
-        spacingRow.height = 10;
-        
-        const summaryRow = sheet.addRow(["", "", "TOTAL SUMMARY", "", `Present: ${present}`, `Absent: ${absent}`]);
-        sheet.mergeCells(`C${summaryRow.number}:D${summaryRow.number}`);
-        summaryRow.height = 25;
-        
-        summaryRow.eachCell((cell, colNumber) => {
-          if (colNumber >= 3) {
-            cell.font = { 
-              bold: true, 
-              size: 11,
-              color: { argb: "FFFFFF" },
-              name: "Calibri"
-            };
-            cell.alignment = { 
-              horizontal: "center", 
-              vertical: "middle" 
-            };
-            
-            if (colNumber === 3) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "3498DB" } }; // Blue
-            } else if (colNumber === 5) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "27AE60" } }; // Green
-            } else if (colNumber === 6) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "E74C3C" } }; // Red
+        mismatchedStudents.push(student.rollno);
+      }
+    }
+
+    const bulkUpdates = [];
+    const updatedStudents = [];
+
+    // 🚀 Process each student in attendance collection
+    for (const doc of attendanceDocs) {
+      const { rollno, dailyLogs } = doc;
+      const isPresent = validatedPresentSet.has(rollno);
+
+      const hasAnyMarkedToday = dailyLogs.some(
+        log => normalizeDate(log.date) === reqDate
+      );
+
+      const newLog = {
+        date,
+        course,
+        status: isPresent ? "present" : "absent"
+      };
+
+      const incOps = {
+        [`courseAttendance.${course}.totalDays`]: 1
+      };
+
+      if (isPresent) {
+        incOps[`courseAttendance.${course}.presentDays`] = 1;
+      }
+
+      if (!hasAnyMarkedToday) {
+        incOps["overallAttendance.totalDays"] = 1;
+        if (isPresent) {
+          incOps["overallAttendance.presentDays"] = 1;
+        }
+      }
+
+      bulkUpdates.push({
+        updateOne: {
+          filter: { rollno },
+          update: {
+            $push: { dailyLogs: newLog },
+            $inc: incOps,
+            $set: { lastUpdated: now }
+          }
+        }
+      });
+
+      updatedStudents.push({ rollno, status: newLog.status });
+    }
+
+    if (bulkUpdates.length > 0) {
+      await Attendance.bulkWrite(bulkUpdates);
+    }
+
+    // 📊 Count present & absent students
+    const presentiesCount = updatedStudents.filter(s => s.status === "present").length;
+    const absenteesCount = updatedStudents.filter(s => s.status === "absent").length;
+
+    return res.status(200).json({
+      message: `Attendance marked successfully for course: ${course} on ${reqDate}`,
+      totalMarked: updatedStudents.length,
+      presentiesCount,
+      absenteesCount,
+      mismatchedStudents
+    });
+
+  } catch (error) {
+    console.error("Error marking attendance:", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+}
+
+
+//--------- Attendace Monthly Report Analysis Code Start -------------------------------//
+
+// =========================================================================
+// CONSTANTS & STYLES
+// =========================================================================
+const dayjs = require("dayjs");
+const COLLECTION_PREFIX = "attendance_"; // e.g., attendance_skillup-1
+
+const COLORS = {
+  primary: "FF2C3E50",     // Dark blue-gray
+  secondary: "FF34495E",   // Slightly lighter blue-gray
+  white: "FFFFFFFF",
+  lightGray: "FFF8F9FA",
+  excellent: "FF27AE60",   // Green (>75%)
+  good: "FFF39C12",        // Orange (65-75%)
+  poor: "FFE74C3C",        // Red (<65%)
+  excellentBg: "FFD5F4E6", // Light green
+  goodBg: "FFFEF9E7",      // Light orange
+  poorBg: "FFFDEAEA",      // Light red
+  present: "FF27AE60",     // Green
+  absent: "FFE74C3C",       // Red
+  border: "FFD5DBDB"
+};
+
+const styles = {
+  titleStyle: {
+    font: { bold: true, size: 18, color: { argb: COLORS.white }, name: "Arial" },
+    alignment: { vertical: "middle", horizontal: "center" },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.primary } },
+    border: {
+      top: { style: "medium", color: { argb: COLORS.primary } },
+      left: { style: "medium", color: { argb: COLORS.primary } },
+      bottom: { style: "medium", color: { argb: COLORS.primary } },
+      right: { style: "medium", color: { argb: COLORS.primary } }
+    }
+  },
+  headerStyle: {
+    font: { bold: true, size: 11, color: { argb: COLORS.white }, name: "Arial" },
+    alignment: { vertical: "middle", horizontal: "center", wrapText: true },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.secondary } },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  },
+  dataCell: {
+    font: { size: 10, name: "Arial", color: { argb: COLORS.primary } },
+    alignment: { vertical: "middle", horizontal: "left", indent: 1 },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  },
+  numericCell: {
+    font: { size: 10, name: "Arial", color: { argb: COLORS.primary } },
+    alignment: { vertical: "middle", horizontal: "center" },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  },
+  presentCell: {
+    font: { bold: true, size: 10, color: { argb: COLORS.present }, name: "Arial" },
+    alignment: { vertical: "middle", horizontal: "center" },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  },
+  absentCell: {
+    font: { bold: true, size: 10, color: { argb: COLORS.absent }, name: "Arial" },
+    alignment: { vertical: "middle", horizontal: "center" },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  },
+  holidayCell: {
+    font: { bold: true, size: 50, color: { argb: COLORS.white }, name: "Arial" },
+    alignment: { vertical: "middle", horizontal: "center", textRotation: 90 },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.absent } },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  }
+};
+
+// =========================================================================
+// HELPER FUNCTIONS
+// =========================================================================
+
+function toISO(s) {
+  return dayjs(s, ["YYYY-MM-DD", "YYYY/MM/DD"]).format("YYYY-MM-DD");
+}
+
+function getPercentageStyle(percentage) {
+  const baseStyle = {
+    font: { size: 10, bold: true, name: "Arial" },
+    alignment: { vertical: "middle", horizontal: "center" },
+    border: {
+      top: { style: "thin", color: { argb: COLORS.border } },
+      left: { style: "thin", color: { argb: COLORS.border } },
+      bottom: { style: "thin", color: { argb: COLORS.border } },
+      right: { style: "thin", color: { argb: COLORS.border } }
+    }
+  };
+
+  if (percentage > 75) {
+    return { ...baseStyle, font: { ...baseStyle.font, color: { argb: COLORS.excellent } }, fill: { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.excellentBg } } };
+  } else if (percentage >= 65) {
+    return { ...baseStyle, font: { ...baseStyle.font, color: { argb: COLORS.good } }, fill: { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.goodBg } } };
+  } else {
+    return { ...baseStyle, font: { ...baseStyle.font, color: { argb: COLORS.poor } }, fill: { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.poorBg } } };
+  }
+}
+
+function buildDateRange(from, to) {
+  const days = [];
+  let cursor = dayjs(from);
+  const end = dayjs(to);
+  while (cursor.isSame(end) || cursor.isBefore(end)) {
+    days.push(cursor.format("YYYY-MM-DD"));
+    cursor = cursor.add(1, "day");
+  }
+  return days;
+}
+
+async function getAllCourses(collectionName) {
+  const Attendance = getAttendanceModel(collectionName);
+  const docs = await Attendance.find({}).lean();
+  const coursesSet = new Set();
+  docs.forEach(doc => { (doc.dailyLogs || []).forEach(log => { if (log.course) { coursesSet.add(log.course); } }); });
+  return Array.from(coursesSet).sort();
+}
+
+function summarizeStudent(doc, dates, allCourses) {
+  const logsInRange = (doc.dailyLogs || []).filter((x) => dates.has(x.date));
+  const totalDays = logsInRange.length;
+  const presentDays = logsInRange.reduce((acc, x) => acc + (x.status === "present" ? 1 : 0), 0);
+  const perCourse = {};
+  for (const course of allCourses) { perCourse[course] = { present: 0, total: 0 }; }
+  for (const lg of logsInRange) {
+    if (!lg.course) continue;
+    if (perCourse[lg.course]) {
+      perCourse[lg.course].total += 1;
+      if (lg.status === "present") perCourse[lg.course].present += 1;
+    }
+  }
+  const calendarMap = {};
+  for (const d of dates) calendarMap[d] = "H";
+  for (const lg of logsInRange) { calendarMap[lg.date] = lg.status === "present" ? "P" : "A"; }
+  return { totalDays, presentDays, perCourse, calendarMap };
+}
+
+function findCommonHolidays(docs, dates, allCourses) {
+    const holidayDates = [];
+    const dateArray = Array.from(dates);
+
+    for (const date of dateArray) {
+        let isCommonHoliday = true;
+        if (docs.length === 0) {
+            isCommonHoliday = false;
+        } else {
+            for (const doc of docs) {
+                const { calendarMap } = summarizeStudent(doc, dates, allCourses);
+                if (calendarMap[date] !== "H") {
+                    isCommonHoliday = false;
+                    break;
+                }
             }
-            
-            cell.border = {
-              top: { style: "medium", color: { argb: "000000" } },
-              left: { style: "medium", color: { argb: "000000" } },
-              bottom: { style: "medium", color: { argb: "000000" } },
-              right: { style: "medium", color: { argb: "000000" } },
-            };
-          }
-        });
-      }
-    };
-
-    // Compute presence
-    const completeData = students.map(student => {
-      const attendance = attendanceRecords.find(a => a.rollno === student.rollno);
-      const logs = attendance?.dailyLogs?.filter(log => log.date === reportDate) || [];
-      const isPresent = logs.some(log => log.status === "present");
-      return { student, isPresent };
-    });
-
-    // Sort by Branch > Roll No
-    const sortedData = [...completeData].sort((a, b) => {
-      const branchA = (a.student.branch || "UNKNOWN").trim().toUpperCase();
-      const branchB = (b.student.branch || "UNKNOWN").trim().toUpperCase();
-
-      if (branchA === branchB) {
-        return a.student.rollno.localeCompare(b.student.rollno);
-      }
-      return branchA.localeCompare(branchB);
-    });
-
-    // Sheet 1: Complete Report
-    const completeSheet = workbook.addWorksheet("Complete Report");
-    styleHeaders(completeSheet, `B.Tech V Semester - ${shortBatchName}(Both Present & Absent)`);
-    addStudentRows(completeSheet, sortedData);
-
-    // Branch-wise Absentee Sheets
-    const branchMap = {};
-    for (const entry of completeData) {
-      const branch = (entry.student.branch || "UNKNOWN").trim().toUpperCase();
-      if (!branchMap[branch]) branchMap[branch] = [];
-      branchMap[branch].push(entry);
+        }
+        if (isCommonHoliday) {
+            holidayDates.push(date);
+        }
     }
+    return holidayDates;
+}
 
-    for (const branch of Object.keys(branchMap).sort()) {
-      const absentees = branchMap[branch].filter(entry => !entry.isPresent);
-      if (absentees.length === 0) continue;
+async function listAttendanceCollections() {
+  const all = await mongoose.connection.db.listCollections().toArray();
+  return all.map((x) => x.name).filter((n) => n.startsWith(COLLECTION_PREFIX));
+}
 
-      // ✅ Sort absentees by roll number for each branch
-      const sortedAbsentees = absentees.sort((a, b) => {
-        return a.student.rollno.localeCompare(b.student.rollno);
-      });
+// =========================================================================
+// EXCEL SHEET BUILDERS
+// =========================================================================
 
-      const sheetName = `${shortBatchName}_${branch}`.replace(/[\\\/\?\*\[\]]/g, "").slice(0, 31);
-      const sheet = workbook.addWorksheet(sheetName);
-      styleHeaders(sheet, `B.Tech V Semester - ${shortBatchName}_${branch}(Absent Only)`);
-      addStudentRows(sheet, sortedAbsentees, true);
-    }
+async function buildSheetForCollection(workbook, collectionName, fromISO, toISO) {
+  const Attendance = getAttendanceModel(collectionName);
+  const allCourses = await getAllCourses(collectionName);
+  const ws = workbook.addWorksheet(collectionName.replace(COLLECTION_PREFIX, "").toUpperCase());
+  const dateList = buildDateRange(fromISO, toISO);
+  const dateSet = new Set(dateList);
 
-    const fileName = `${shortBatchName}_${displayDate}.xlsx`;
-    const encodedFileName = encodeURIComponent(fileName);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`
-    );
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (err) {
-    console.error("Error generating attendance report:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
+  const baseColumns = 6;
+  const courseColumns = allCourses.length;
+  const totalColumns = baseColumns + courseColumns + dateList.length;
 
-async function AttendanceBatchReportEx(req, res){
-  const { batch, date, session, format = "excel" } = req.query;
+  ws.views = [{ state: "frozen", xSplit: baseColumns + courseColumns, ySplit: 3, topLeftCell: `${String.fromCharCode(65 + baseColumns + courseColumns)}4` }];
 
-  if (!batch || !date || !session || format !== "excel") {
-    return res.status(400).json({
-      message: "batch (array), date, session (FN/AN), and format=excel are required",
+  ws.mergeCells(1, 1, 1, totalColumns);
+  const titleCell = ws.getCell(1, 1);
+  titleCell.value = `ATTENDANCE REPORT`;
+  titleCell.style = styles.titleStyle;
+  ws.getRow(1).height = 35;
+
+  ws.mergeCells(2, 1, 2, totalColumns);
+  const subtitleCell = ws.getCell(2, 1);
+  subtitleCell.value = `Period: ${dayjs(fromISO).format("DD MMM YYYY")} → ${dayjs(toISO).format("DD MMM YYYY")} | Batch: ${collectionName.replace(COLLECTION_PREFIX, "").toUpperCase()}`;
+  subtitleCell.font = { bold: true, size: 12, color: { argb: COLORS.primary }, name: "Arial" };
+  subtitleCell.alignment = { vertical: "middle", horizontal: "center" };
+  subtitleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.lightGray } };
+  ws.getRow(2).height = 25;
+
+  const headerRow = ws.addRow(["S.No", "Roll No", "Name", "Branch", "Batch", "Overall (%)", ...allCourses.map(c => `${c} (%)`), ...dateList.map(d => dayjs(d).format("DD MMM"))]);
+  headerRow.height = 40;
+  headerRow.eachCell((cell) => { cell.style = styles.headerStyle; });
+
+  const widths = [8, 18, 40, 18, 28, 15, ...Array(courseColumns).fill(18), ...Array(dateList.length).fill(10)];
+  widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
+
+  const docs = await Attendance.find({}).lean().sort({ rollno: 1 });
+  const batchSummary = { totalStudents: 0, totalPercentage: 0 };
+  const commonHolidays = findCommonHolidays(docs, dateSet, allCourses);
+
+  const firstDataRow = 4;
+  const lastDataRow = firstDataRow + docs.length - 1;
+
+  docs.forEach((doc, index) => {
+    const { totalDays, presentDays, perCourse, calendarMap } = summarizeStudent(doc, dateSet, allCourses);
+    const overallPct = totalDays > 0 ? Math.round((presentDays / totalDays) * 1000) / 10 : 0;
+    batchSummary.totalStudents++;
+    batchSummary.totalPercentage += overallPct;
+
+    const coursePercentages = allCourses.map(c => {
+      const data = perCourse[c];
+      return !data || data.total === 0 ? "N/A" : Math.round((data.present / data.total) * 1000) / 10;
     });
+
+    const row = ws.addRow([index + 1, doc.rollno || "N/A", doc.name || "Unknown", doc.branch || "N/A", doc.batch || "N/A", overallPct, ...coursePercentages, ...dateList.map(d => calendarMap[d] || "")]);
+    row.height = 25;
+
+    row.eachCell((cell, colNumber) => {
+      if (colNumber <= baseColumns) {
+        if (colNumber === 1) cell.style = styles.numericCell;
+        else if (colNumber === baseColumns) {
+          cell.style = getPercentageStyle(overallPct);
+          cell.value = `${overallPct}%`;
+        } else cell.style = styles.dataCell;
+      } else if (colNumber <= baseColumns + courseColumns) {
+        if (cell.value !== "N/A") {
+          cell.style = getPercentageStyle(cell.value);
+          cell.value = `${cell.value}%`;
+        } else {
+          cell.style = styles.dataCell;
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.lightGray } };
+        }
+      } else {
+        const value = cell.value;
+        if (value === "P") { cell.style = styles.presentCell; }
+        else if (value === "A") { cell.style = styles.absentCell; }
+        else if (value === "H") {
+          const currentDate = dateList[colNumber - baseColumns - courseColumns - 1];
+          cell.style = styles.holidayCell;
+          cell.value = commonHolidays.includes(currentDate) ? "" : "HOLIDAY";
+        } else {
+          cell.style = styles.dataCell;
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        }
+      }
+    });
+  });
+
+  for (const holiday of commonHolidays) {
+    const dateIndex = dateList.indexOf(holiday);
+    if (dateIndex !== -1) {
+      const col = baseColumns + courseColumns + 1 + dateIndex;
+      if (docs.length > 0) {
+        ws.mergeCells(firstDataRow, col, lastDataRow, col);
+        const mergedCell = ws.getCell(firstDataRow, col);
+        mergedCell.value = "HOLIDAY";
+        mergedCell.style = styles.holidayCell;
+      }
+    }
   }
 
-  const batches = Array.isArray(batch) ? batch : [batch];
-  const allSummaries = [];
-  const allAbsentees = [];
-  const branchWiseSummary = {}; // New object to track branch-wise data
+  workbook.batchSummaries = workbook.batchSummaries || [];
+  workbook.batchSummaries.push({
+    batchName: collectionName.replace(COLLECTION_PREFIX, "").toUpperCase(),
+    averagePercentage: batchSummary.totalStudents > 0 ? Math.round((batchSummary.totalPercentage / batchSummary.totalStudents) * 10) / 10 : 0,
+    totalStudents: batchSummary.totalStudents
+  });
+}
 
+function createSummarySheet(workbook, fromISO, toISO) {
+  const ws = workbook.addWorksheet("SUMMARY", { properties: { tabColor: { argb: COLORS.primary } } });
+  
+  ws.mergeCells('A1:D1');
+  ws.getCell('A1').value = `ATTENDANCE SUMMARY REPORT`;
+  ws.getCell('A1').style = styles.titleStyle;
+  ws.getRow(1).height = 35;
+
+  ws.mergeCells('A2:D2');
+  ws.getCell('A2').value = `Period: ${dayjs(fromISO).format("DD MMM YYYY")} → ${dayjs(toISO).format("DD MMM YYYY")}`;
+  ws.getCell('A2').font = { bold: true, size: 12, color: { argb: COLORS.primary }, name: "Arial" };
+  ws.getCell('A2').alignment = { vertical: "middle", horizontal: "center" };
+  ws.getCell('A2').fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.lightGray } };
+  ws.getRow(2).height = 25;
+
+  const headerRow = ws.addRow(["S.No", "Batch Name", "Total Students", "Average Percentage"]);
+  headerRow.height = 30;
+  headerRow.eachCell(cell => cell.style = styles.headerStyle);
+
+  ws.columns = [{ width: 8 }, { width: 30 }, { width: 18 }, { width: 20 }];
+
+  const grandTotal = { students: 0, percentage: 0 };
+  (workbook.batchSummaries || []).forEach((batch, index) => {
+    const row = ws.addRow([index + 1, batch.batchName, batch.totalStudents, batch.averagePercentage]);
+    row.height = 25;
+    row.getCell(1).style = styles.numericCell;
+    row.getCell(2).style = styles.dataCell;
+    row.getCell(3).style = styles.numericCell;
+    row.getCell(4).style = getPercentageStyle(batch.averagePercentage);
+    row.getCell(4).value = `${batch.averagePercentage}%`;
+    grandTotal.students += batch.totalStudents;
+    grandTotal.percentage += batch.averagePercentage;
+  });
+
+  const avgPercentage = workbook.batchSummaries.length > 0 ? Math.round((grandTotal.percentage / workbook.batchSummaries.length) * 10) / 10 : 0;
+  const totalRow = ws.addRow(["", "OVERALL AVERAGE", grandTotal.students, `${avgPercentage}%`]);
+  totalRow.height = 30;
+  ['B', 'C', 'D'].forEach(col => {
+    const cell = totalRow.getCell(col);
+    cell.style = styles.dataCell; // Base style
+    cell.font = { ...cell.font, bold: true };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.lightGray } };
+    if (col === 'C') cell.alignment = styles.numericCell.alignment;
+    if (col === 'D') cell.style = getPercentageStyle(avgPercentage);
+  });
+}
+
+// =========================================================================
+// MAIN CONTROLLER
+// =========================================================================
+
+const HandleMonthlyAttendanceReportExcel = async (req, res) => {
   try {
-    for (const b of batches) {
-      const collectionName = b;
-
-      const Attendance = getAttendanceModel(collectionName);
-      const students = await Attendance.find();
-
-      const branchData = {};
-
-      for (const student of students) {
-        const branch = student.branch || "UNKNOWN";
-        const shortBatch = getShortBatchName(student.batch);
-
-        if (!branchData[branch]) {
-          branchData[branch] = {
-            batch: shortBatch,
-            branch,
-            strength: 0,
-            presenties: 0,
-            absenties: 0,
-            absenteesList: []
-          };
-        }
-
-        // Initialize branch-wise summary
-        if (!branchWiseSummary[branch]) {
-          branchWiseSummary[branch] = {
-            branch,
-            batches: new Set(),
-            totalStrength: 0,
-            totalPresent: 0,
-            totalAbsent: 0,
-            absenteesList: []
-          };
-        }
-
-        const logsForDate = student.dailyLogs?.filter(
-          (log) => log.date === date
-        );
-
-        const wasPresent = logsForDate?.some(
-          (log) => log.status.toLowerCase() === "present"
-        );
-
-        branchData[branch].strength++;
-        branchWiseSummary[branch].totalStrength++;
-        branchWiseSummary[branch].batches.add(shortBatch);
-
-        if (wasPresent) {
-          branchData[branch].presenties++;
-          branchWiseSummary[branch].totalPresent++;
-        } else {
-          branchData[branch].absenties++;
-          branchWiseSummary[branch].totalAbsent++;
-          branchData[branch].absenteesList.push({
-            rollno: student.rollno,
-            name: student.name,
-            branch: student.branch || "UNKNOWN",
-            batch: shortBatch
-          });
-          branchWiseSummary[branch].absenteesList.push({
-            rollno: student.rollno,
-            name: student.name,
-            branch: student.branch || "UNKNOWN",
-            batch: shortBatch
-          });
-        }
-      }
-
-      allSummaries.push(...Object.values(branchData));
-      
-      // Add absentees for this batch
-      Object.values(branchData).forEach(branchInfo => {
-        if (branchInfo.absenteesList.length > 0) {
-          allAbsentees.push({
-            batch: branchInfo.batch,
-            branch: branchInfo.branch,
-            absentees: branchInfo.absenteesList.sort((a, b) => a.rollno.localeCompare(b.rollno))
-          });
-        }
-      });
+    const { from, to } = req.query;
+    if (!from || !to) {
+      return res.status(400).json({ message: "Missing required query parameters: from, to (YYYY-MM-DD)" });
     }
 
-    // Convert branchWiseSummary to array and format batches
-    const branchWiseData = Object.values(branchWiseSummary).map(branch => ({
-      ...branch,
-      batches: Array.from(branch.batches).sort().join(', ')
-    })).sort((a, b) => a.branch.localeCompare(b.branch));
+    const fromISO = toISO(from);
+    const toISODate = toISO(to);
+    if (!dayjs(fromISO).isValid() || !dayjs(toISODate).isValid() || dayjs(fromISO).isAfter(toISODate)) {
+      return res.status(400).json({ message: "Invalid date range." });
+    }
 
-    const ExcelJS = require("exceljs");
-    const workbook = new ExcelJS.Workbook();
+    const collections = await listAttendanceCollections();
+    if (collections.length === 0) {
+      return res.status(404).json({ message: "No attendance collections found." });
+    }
+    collections.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    const formatDateForDisplay = (dateString) => {
-      const dateObj = new Date(dateString);
-      if (isNaN(dateObj.getTime())) return dateString;
-      const day = String(dateObj.getDate()).padStart(2, "0");
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const year = dateObj.getFullYear();
-      return `${day}-${month}-${year}`;
-    };
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Attendance Management System";
+    wb.created = new Date();
 
-    const displayDate = formatDateForDisplay(date);
+    for (const colName of collections) {
+      console.log(`Building sheet for: ${colName}`);
+      await buildSheetForCollection(wb, colName, fromISO, toISODate);
+    }
+    
+    createSummarySheet(wb, fromISO, toISODate);
 
-    const styleHeaders = (sheet, title) => {
-      sheet.views = [{ state: 'normal' }];
-
-      const headerRows = [
-        ["Institute of Aeronautical Engineering", "1f4e79", 16, "FFFFFF"],
-        [`${session} Attendance Summary - ${displayDate}`, "2e75b6", 14, "FFFFFF"],
-        ["Career Development Center", "3d85c6", 12, "FFFFFF"],
-        [title, "4a90e2", 11, "FFFFFF"],
-      ];
-
-      headerRows.forEach(([text, bgColor, fontSize, textColor], i) => {
-        const row = sheet.addRow([text, "", "", "", "", ""]);
-        sheet.mergeCells(`A${i + 1}:F${i + 1}`);
-        
-        row.getCell(1).font = { 
-          bold: true, 
-          size: fontSize,
-          color: { argb: textColor },
-          name: "Calibri"
-        };
-        row.getCell(1).alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
-        };
-        row.height = fontSize + 8;
-        
-        row.eachCell(cell => {
-          cell.fill = { 
-            type: "pattern", 
-            pattern: "solid", 
-            fgColor: { argb: bgColor } 
-          };
-          cell.border = {
-            top: { style: "medium", color: { argb: "000000" } },
-            left: { style: "medium", color: { argb: "000000" } },
-            bottom: { style: "medium", color: { argb: "000000" } },
-            right: { style: "medium", color: { argb: "000000" } },
-          };
-        });
-      });
-
-      const spacingRow = sheet.addRow(["", "", "", "", "", ""]);
-      spacingRow.height = 5;
-      spacingRow.eachCell(cell => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8F9FA" } };
-      });
-    };
-
-    // Sheet 1: Attendance Summary
-    const summarySheet = workbook.addWorksheet("Attendance Summary");
-    styleHeaders(summarySheet, "B.Tech V Semester Attendance Summary");
-
-    const headerRow = summarySheet.addRow(["BATCH", "BRANCH", "Total Strength", "Present", "Absent"]);
-    headerRow.eachCell((cell, colNumber) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "34495e" } };
-      cell.font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = {
-        top: { style: "medium", color: { argb: "000000" } },
-        left: { style: "medium", color: { argb: "000000" } },
-        bottom: { style: "medium", color: { argb: "000000" } },
-        right: { style: "medium", color: { argb: "000000" } },
-      };
-    });
-
-    summarySheet.columns = [
-      { width: 25 },
-      { width: 25 },
-      { width: 20 },
-      { width: 20 },
-      { width: 20 },
-    ];
-
-    // Group by batch and sort
-    const batchGroups = {};
-    allSummaries.forEach(item => {
-      if (!batchGroups[item.batch]) batchGroups[item.batch] = [];
-      batchGroups[item.batch].push(item);
-    });
-
-    // Sort batches and branches
-    Object.keys(batchGroups).forEach(batch => {
-      batchGroups[batch].sort((a, b) => a.branch.localeCompare(b.branch));
-    });
-
-    let totalPresent = 0;
-    let totalAbsent = 0;
-
-    Object.entries(batchGroups).sort().forEach(([batchName, rows]) => {
-      const groupStartRow = summarySheet.lastRow.number + 1;
-
-      rows.forEach((item, index) => {
-        const batchCellValue = index === 0 ? batchName : "";
-        const row = summarySheet.addRow([batchCellValue, item.branch, item.strength, item.presenties, item.absenties]);
-        totalPresent += item.presenties;
-        totalAbsent += item.absenties;
-        row.height = 22;
-
-        row.eachCell((cell, colNumber) => {
-          cell.font = { name: "Calibri", size: 11 };
-          cell.alignment = { vertical: "middle", horizontal: colNumber === 2 ? "left" : "center" };
-          cell.border = {
-            top: { style: "thin", color: { argb: "CCCCCC" } },
-            left: { style: "thin", color: { argb: "CCCCCC" } },
-            bottom: { style: "thin", color: { argb: "CCCCCC" } },
-            right: { style: "thin", color: { argb: "CCCCCC" } },
-          };
-
-          if (colNumber === 4) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D4F3D0" } };
-            cell.font = { ...cell.font, color: { argb: "2E7D32" }, bold: true };
-          } else if (colNumber === 5) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEBEE" } };
-            cell.font = { ...cell.font, color: { argb: "C62828" }, bold: true };
-          } else {
-            const bgColor = (summarySheet.lastRow.number - groupStartRow) % 2 === 0 ? "F8F9FA" : "FFFFFF";
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
-          }
-        });
-      });
-
-      if (rows.length > 1) {
-        const groupEndRow = summarySheet.lastRow.number;
-        summarySheet.mergeCells(`A${groupStartRow}:A${groupEndRow}`);
-        const mergedCell = summarySheet.getCell(`A${groupStartRow}`);
-        mergedCell.alignment = { vertical: "middle", horizontal: "center" };
-      }
-    });
-
-    // Add total summary
-    summarySheet.addRow(["", "", "", "", ""]);
-    const summaryHeaderRow = summarySheet.addRow(["", "SUMMARY", "", "", ""]);
-    summarySheet.mergeCells(`B${summaryHeaderRow.number}:E${summaryHeaderRow.number}`);
-    summaryHeaderRow.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "3498DB" } };
-    summaryHeaderRow.getCell(2).font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
-    summaryHeaderRow.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
-
-    const totalRow = summarySheet.addRow([
-      "TOTAL",
-      `Total Students: ${totalPresent + totalAbsent}`,
-      totalPresent + totalAbsent,
-      totalPresent,
-      totalAbsent,
-    ]);
-
-    totalRow.eachCell((cell, colNumber) => {
-      cell.font = { bold: true, size: 11, color: { argb: "FFFFFF" }, name: "Calibri" };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      const colors = ["34495e", "3498DB", "9B59B6", "27AE60", "E74C3C"];
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: colors[colNumber - 1] } };
-      cell.border = {
-        top: { style: "medium", color: { argb: "000000" } },
-        left: { style: "medium", color: { argb: "000000" } },
-        bottom: { style: "medium", color: { argb: "000000" } },
-        right: { style: "medium", color: { argb: "000000" } },
-      };
-    });
-
-    // Sheet 2: Branch-wise Summary
-    const branchSummarySheet = workbook.addWorksheet("Branch-wise Summary");
-    styleHeaders(branchSummarySheet, "B.Tech V Semester Branch-wise Summary");
-
-    const branchHeaderRow = branchSummarySheet.addRow(["V SEM BRANCH (BATCHES)", "Total Strength", "Present", "Absent"]);
-    branchHeaderRow.eachCell((cell, colNumber) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "34495e" } };
-      cell.font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = {
-        top: { style: "medium", color: { argb: "000000" } },
-        left: { style: "medium", color: { argb: "000000" } },
-        bottom: { style: "medium", color: { argb: "000000" } },
-        right: { style: "medium", color: { argb: "000000" } },
-      };
-    });
-
-    branchSummarySheet.columns = [
-      { width: 40 },
-      { width: 20 },
-      { width: 20 },
-      { width: 20 },
-    ];
-
-    let branchTotalPresent = 0;
-    let branchTotalAbsent = 0;
-
-    branchWiseData.forEach((item, index) => {
-      branchTotalPresent += item.totalPresent;
-      branchTotalAbsent += item.totalAbsent;
-
-      const row = branchSummarySheet.addRow([
-        `${item.branch} (${item.batches})`,
-        item.totalStrength,
-        item.totalPresent,
-        item.totalAbsent
-      ]);
-      row.height = 22;
-
-      row.eachCell((cell, colNumber) => {
-        cell.font = { name: "Calibri", size: 11 };
-        cell.alignment = { vertical: "middle", horizontal: colNumber === 1 ? "left" : "center" };
-        cell.border = {
-          top: { style: "thin", color: { argb: "CCCCCC" } },
-          left: { style: "thin", color: { argb: "CCCCCC" } },
-          bottom: { style: "thin", color: { argb: "CCCCCC" } },
-          right: { style: "thin", color: { argb: "CCCCCC" } },
-        };
-
-        if (colNumber === 3) {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D4F3D0" } };
-          cell.font = { ...cell.font, color: { argb: "2E7D32" }, bold: true };
-        } else if (colNumber === 4) {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEBEE" } };
-          cell.font = { ...cell.font, color: { argb: "C62828" }, bold: true };
-        } else {
-          const bgColor = index % 2 === 0 ? "F8F9FA" : "FFFFFF";
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
-        }
-      });
-    });
-
-    // Add branch-wise total summary
-    branchSummarySheet.addRow(["", "", "", ""]);
-    const branchSummaryHeaderRow = branchSummarySheet.addRow(["BRANCH-WISE TOTAL SUMMARY", "", "", ""]);
-    branchSummarySheet.mergeCells(`A${branchSummaryHeaderRow.number}:D${branchSummaryHeaderRow.number}`);
-    branchSummaryHeaderRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "3498DB" } };
-    branchSummaryHeaderRow.getCell(1).font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
-    branchSummaryHeaderRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-
-    const branchTotalRow = branchSummarySheet.addRow([
-      "TOTAL",
-      branchTotalPresent + branchTotalAbsent,
-      branchTotalPresent,
-      branchTotalAbsent,
-    ]);
-
-    branchTotalRow.eachCell((cell, colNumber) => {
-      cell.font = { bold: true, size: 11, color: { argb: "FFFFFF" }, name: "Calibri" };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      const colors = ["34495e", "9B59B6", "27AE60", "E74C3C"];
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: colors[colNumber - 1] } };
-      cell.border = {
-        top: { style: "medium", color: { argb: "000000" } },
-        left: { style: "medium", color: { argb: "000000" } },
-        bottom: { style: "medium", color: { argb: "000000" } },
-        right: { style: "medium", color: { argb: "000000" } },
-      };
-    });
-
-    // Create branch-wise absentee sheets
-    const sortedBranches = Object.keys(branchWiseSummary).sort();
-
-    sortedBranches.forEach(branch => {
-      const branchData = branchWiseSummary[branch];
-      if (branchData.absenteesList.length > 0) {
-        // Sort absentees by roll number
-        const sortedAbsentees = branchData.absenteesList.sort((a, b) => a.rollno.localeCompare(b.rollno));
-        
-        // Create sheet with branch name
-        const sheetName = branch.replace(/[\\\/\?\*\[\]]/g, "").slice(0, 31);
-        const sheet = workbook.addWorksheet(sheetName);
-        
-        // Get unique batches for this branch
-        const branchBatches = [...new Set(sortedAbsentees.map(student => student.batch))].sort();
-        
-        styleHeaders(sheet, `V SEM ${branch} - Absentees List`);
-
-        const absenteeHeaderRow = sheet.addRow(["S.No", "Roll No", "Name", "Branch", "Batch"]);
-        absenteeHeaderRow.height = 25;
-        
-        absenteeHeaderRow.eachCell((cell, colNumber) => {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "34495e" } };
-          cell.font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
-          cell.alignment = { horizontal: "center", vertical: "middle" };
-          cell.border = {
-            top: { style: "medium", color: { argb: "000000" } },
-            left: { style: "medium", color: { argb: "000000" } },
-            bottom: { style: "medium", color: { argb: "000000" } },
-            right: { style: "medium", color: { argb: "000000" } },
-          };
-        });
-
-        sheet.columns = [
-          { width: 10 },
-          { width: 18 },
-          { width: 35 },
-          { width: 20 },
-          { width: 25 },
-        ];
-
-        sortedAbsentees.forEach((student, index) => {
-          const row = sheet.addRow([
-            index + 1,
-            student.rollno,
-            student.name,
-            student.branch,
-            student.batch,
-          ]);
-
-          row.height = 22;
-          row.eachCell((cell, colNumber) => {
-            cell.font = { name: "Calibri", size: 11 };
-            cell.alignment = { vertical: "middle", horizontal: colNumber === 3 ? "left" : "center" };
-            cell.border = {
-              top: { style: "thin", color: { argb: "CCCCCC" } },
-              left: { style: "thin", color: { argb: "CCCCCC" } },
-              bottom: { style: "thin", color: { argb: "CCCCCC" } },
-              right: { style: "thin", color: { argb: "CCCCCC" } },
-            };
-
-            const bgColor = (index % 2 === 0) ? "F8F9FA" : "FFFFFF";
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
-          });
-        });
-
-        // Add absentee count summary
-        const spacingRow = sheet.addRow(["", "", "", "", ""]);
-        spacingRow.height = 10;
-        
-        const summaryRow = sheet.addRow(["", "", "", "", `Total Absent: ${sortedAbsentees.length}`]);
-        summaryRow.height = 22;
-        
-        summaryRow.getCell(5).font = { 
-          bold: true, 
-          size: 11,
-          color: { argb: "FFFFFF" },
-          name: "Calibri"
-        };
-        summaryRow.getCell(5).alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
-        };
-        summaryRow.getCell(5).fill = { 
-          type: "pattern", 
-          pattern: "solid", 
-          fgColor: { argb: "E74C3C" } 
-        };
-        summaryRow.getCell(5).border = {
-          top: { style: "thin", color: { argb: "000000" } },
-          left: { style: "thin", color: { argb: "000000" } },
-          bottom: { style: "thin", color: { argb: "000000" } },
-          right: { style: "thin", color: { argb: "000000" } },
-        };
-      }
-    });
-
-    const fileName = `V-SEM: ${session}-${displayDate}_Attendance_Report.xlsx`;
-    const encodedFileName = encodeURIComponent(fileName);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`
-    );
+    const fileName = `Attendance_Report_${dayjs(fromISO).format("DD-MMM-YYYY")}_to_${dayjs(toISODate).format("DD-MMM-YYYY")}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    await workbook.xlsx.write(res);
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    
+    await wb.xlsx.write(res);
     res.end();
+    console.log(`✅ Successfully generated report: ${fileName}`);
 
   } catch (err) {
-    console.error("Error generating attendance report:", err);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("❌ Excel generation error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Failed to generate attendance report", error: err.message });
+    }
   }
 };
 
-async function AttendanceBatchReportPdf(req, res){
-  const { batch, date, session } = req.query;
+//--------- Attendace Monthly Excel Report Analysis Code End -------------------------------//
 
-  if (!batch || !date || !session) {
-    return res.status(400).json({
-      message: "batch (array), date, and session (FN/AN) are required",
-    });
-  }
 
-  const batches = Array.isArray(batch) ? batch : [batch];
-  const allSummaries = [];
-  const allAbsentees = [];
-  const branchWiseSummary = {}; // New object to track branch-wise data
-
+async function getDashboardData(req,res) {
+  
   try {
-    for (const b of batches) {
-      const collectionName = b
+    const today = new Date().toISOString().split('T')[0];
 
-      const Attendance = getAttendanceModel(collectionName);
-      const students = await Attendance.find();
+    // --- DYNAMICALLY GET COLLECTION NAMES ---
+    // 1. Get info for all collections in the database.
+    const collections = await mongoose.connection.db.listCollections().toArray();
 
-      const branchData = {};
+    // 2. Map to their names and filter the ones that start with 'attendance'
+    const batchCollectionNames = collections
+      .map(collection => collection.name)
+      .filter(name => name.startsWith('attendance'));
+    // --- END OF DYNAMIC LOGIC ---
 
-      for (const student of students) {
-        const branch = student.branch || "UNKNOWN";
-        const shortBatch = getShortBatchName(student.batch);
+    // If no matching collections are found, return an empty array.
+    if (batchCollectionNames.length === 0) {
+        return res.status(200).json({
+            success: true,
+            message: "No attendance collections found.",
+            data: []
+        });
+    }
 
-        if (!branchData[branch]) {
-          branchData[branch] = {
-            batch: shortBatch,
-            branch,
-            strength: 0,
-            presenties: 0,
-            absenties: 0,
-            absenteesList: []
-          };
+    const attendanceSummary = [];
+
+    // The rest of the logic remains the same
+    for (const collectionName of batchCollectionNames) {
+      const AttendanceModel = getAttendanceModel(collectionName);
+
+      const presentCount = await AttendanceModel.countDocuments({
+        dailyLogs: {
+          $elemMatch: {
+            date: today,
+            status: 'present'
+          }
         }
-
-        // Initialize branch-wise summary
-        if (!branchWiseSummary[branch]) {
-          branchWiseSummary[branch] = {
-            branch,
-            batches: new Set(),
-            totalStrength: 0,
-            totalPresent: 0,
-            totalAbsent: 0
-          };
-        }
-
-        const logsForDate = student.dailyLogs?.filter(
-          (log) => log.date === date
-        );
-
-        const wasPresent = logsForDate?.some(
-          (log) => log.status.toLowerCase() === "present"
-        );
-
-        branchData[branch].strength++;
-        branchWiseSummary[branch].totalStrength++;
-        branchWiseSummary[branch].batches.add(shortBatch);
-
-        if (wasPresent) {
-          branchData[branch].presenties++;
-          branchWiseSummary[branch].totalPresent++;
-        } else {
-          branchData[branch].absenties++;
-          branchWiseSummary[branch].totalAbsent++;
-          branchData[branch].absenteesList.push({
-            rollno: student.rollno,
-            name: student.name,
-            branch: student.branch || "UNKNOWN",
-            batch: shortBatch
-          });
-        }
-      }
-
-      allSummaries.push(...Object.values(branchData));
+      });
       
-      // Add absentees for this batch
-      Object.values(branchData).forEach(branchInfo => {
-        if (branchInfo.absenteesList.length > 0) {
-          allAbsentees.push({
-            batch: branchInfo.batch,
-            branch: branchInfo.branch,
-            absentees: branchInfo.absenteesList.sort((a, b) => a.rollno.localeCompare(b.rollno))
-          });
-        }
+      attendanceSummary.push({
+        batch: collectionName,
+        presentCount: presentCount,
+        date: today
       });
     }
 
-    // Convert branchWiseSummary to array and format batches
-    const branchWiseData = Object.values(branchWiseSummary).map(branch => ({
-      ...branch,
-      batches: Array.from(branch.batches).sort().join(', ')
-    })).sort((a, b) => a.branch.localeCompare(b.branch));
-
-    // Format date
-    const formatDateForDisplay = (dateString) => {
-      const dateObj = new Date(dateString);
-      if (isNaN(dateObj.getTime())) return dateString;
-      const day = String(dateObj.getDate()).padStart(2, "0");
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const year = dateObj.getFullYear();
-      return `${day}-${month}-${year}`;
-    };
-
-    const displayDate = formatDateForDisplay(date);
-
-    const doc = new PDFDocument({
-      size: "A4",
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    res.status(200).json({
+      success: true,
+      data: attendanceSummary
     });
 
-    const fileName = `VSEM-${session}-${displayDate}-AttendanceReport.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    const encodedFileName = encodeURIComponent(fileName);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`
-    );
-
-    doc.pipe(res);
-
-    // Helper function to add headers
-    const addHeaders = (doc, title) => {
-      let yPos = 50;
-      
-      const headerSections = [
-        { text: "Institute of Aeronautical Engineering", color: "#1f4e79", fontSize: 16 },
-        { text: `${session} Attendance Summary - ${displayDate}`, color: "#2e75b6", fontSize: 14 },
-        { text: "Career Development Center", color: "#3d85c6", fontSize: 12 },
-        { text: title, color: "#4a90e2", fontSize: 11 },
-      ];
-
-      headerSections.forEach(section => {
-        const headerHeight = section.fontSize + 8;
-        doc.rect(50, yPos, 495, headerHeight)
-           .fillAndStroke(section.color, '#000000')
-           .fillColor('#ffffff')
-           .fontSize(section.fontSize)
-           .font('Helvetica-Bold')
-           .text(section.text, 50, yPos + (headerHeight - section.fontSize) / 2, { 
-             width: 495, 
-             align: 'center' 
-           });
-        yPos += headerHeight;
-      });
-      
-      return yPos + 20;
-    };
-
-    // Generate Summary Report (First Sheet)
-    let currentY = addHeaders(doc, "B.Tech V Semester Attendance Summary");
-    
-    // Summary table
-    const summaryTableHeaders = ['BATCH', 'BRANCH', 'Total Strength', 'Present', 'Absent'];
-    const colWidths = [99, 99, 99, 99, 99]; // 495/5 = 99 each
-    let yPos = currentY;
-    
-    // Table header
-    let xPos = 50;
-    doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
-    doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-    
-    summaryTableHeaders.forEach((header, i) => {
-      doc.text(header, xPos + 5, yPos + 8, { width: colWidths[i] - 10, align: 'center' });
-      xPos += colWidths[i];
+  } catch (error) {
+    console.error('Error fetching attendance summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching attendance summary.'
     });
-    
-    yPos += 25;
-
-    // Sort summaries by batch and branch
-    allSummaries.sort((a, b) => {
-      if (a.batch === b.batch) {
-        return a.branch.localeCompare(b.branch);
-      }
-      return a.batch.localeCompare(b.batch);
-    });
-
-    let totalPresent = 0;
-    let totalAbsent = 0;
-
-    allSummaries.forEach((item, index) => {
-      totalPresent += item.presenties;
-      totalAbsent += item.absenties;
-
-      if (yPos + 20 > 750) {
-        doc.addPage();
-        yPos = addHeaders(doc, "B.Tech V Semester Attendance Summary");
-        // Re-add table header
-        xPos = 50;
-        doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
-        doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-        summaryTableHeaders.forEach((header, i) => {
-          doc.text(header, xPos + 5, yPos + 8, { width: colWidths[i] - 10, align: 'center' });
-          xPos += colWidths[i];
-        });
-        yPos += 25;
-      }
-
-      const fillColor = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
-      doc.rect(50, yPos, 495, 20).fillAndStroke(fillColor, '#cccccc');
-
-      const rowData = [item.batch, item.branch, item.strength.toString(), item.presenties.toString(), item.absenties.toString()];
-      
-      xPos = 50;
-      rowData.forEach((data, colIndex) => {
-        let textColor = '#000000';
-        let bgColor = fillColor;
-        
-        if (colIndex === 3) {
-          bgColor = '#d4f3d0';
-          textColor = '#2e7d32';
-          doc.rect(xPos, yPos, colWidths[colIndex], 20).fillAndStroke(bgColor, '#cccccc');
-        } else if (colIndex === 4) {
-          bgColor = '#ffebee';
-          textColor = '#c62828';
-          doc.rect(xPos, yPos, colWidths[colIndex], 20).fillAndStroke(bgColor, '#cccccc');
-        }
-        
-        doc.fillColor(textColor).fontSize(9).font(colIndex >= 3 ? 'Helvetica-Bold' : 'Helvetica');
-        const align = colIndex === 1 ? 'left' : 'center';
-        const padding = align === 'center' ? 0 : 5;
-        doc.text(data, xPos + padding, yPos + 6, { width: colWidths[colIndex] - (padding * 2), align });
-        xPos += colWidths[colIndex];
-      });
-      
-      yPos += 20;
-    });
-
-    // Add summary totals
-    yPos += 20;
-    doc.rect(50, yPos, 495, 30).fillAndStroke('#3498db', '#000000');
-    doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
-    doc.text('TOTAL SUMMARY', 50, yPos + 10, { width: 495, align: 'center' });
-    yPos += 30;
-
-    // Create total row with TOTAL spanning first two columns
-    const totalRowHeight = 25;
-    
-    // TOTAL cell spanning first two columns (BATCH + BRANCH)
-    const totalCellWidth = colWidths[0] + colWidths[1]; // 198
-    doc.rect(50, yPos, totalCellWidth, totalRowHeight).fillAndStroke('#34495e', '#000000');
-    doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
-    doc.text('TOTAL', 50, yPos + 8, { width: totalCellWidth, align: 'center' });
-    
-    // Remaining cells
-    let currentX = 50 + totalCellWidth;
-    const remainingData = [
-      (totalPresent + totalAbsent).toString(),
-      totalPresent.toString(),
-      totalAbsent.toString()
-    ];
-    const remainingColors = ['#9b59b6', '#27ae60', '#e74c3c'];
-    
-    remainingData.forEach((data, i) => {
-      doc.rect(currentX, yPos, colWidths[i + 2], totalRowHeight).fillAndStroke(remainingColors[i], '#000000');
-      doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
-      doc.text(data, currentX, yPos + 8, { width: colWidths[i + 2], align: 'center' });
-      currentX += colWidths[i + 2];
-    });
-
-    // Generate Branch-wise Summary (Second Sheet)
-    doc.addPage();
-    currentY = addHeaders(doc, "B.Tech V Semester Branch-wise Summary");
-    
-    // Branch-wise summary table
-    const branchTableHeaders = ['V SEM BRANCH (BATCHES)', 'Total Strength', 'Present', 'Absent'];
-    const branchColWidths = [247, 83, 83, 82]; // Adjusted widths for better fit
-    yPos = currentY;
-    
-    // Table header
-    xPos = 50;
-    doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
-    doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-    
-    branchTableHeaders.forEach((header, i) => {
-      doc.text(header, xPos + 5, yPos + 8, { width: branchColWidths[i] - 10, align: 'center' });
-      xPos += branchColWidths[i];
-    });
-    
-    yPos += 25;
-
-    let branchTotalPresent = 0;
-    let branchTotalAbsent = 0;
-
-    branchWiseData.forEach((item, index) => {
-      branchTotalPresent += item.totalPresent;
-      branchTotalAbsent += item.totalAbsent;
-
-      if (yPos + 20 > 750) {
-        doc.addPage();
-        yPos = addHeaders(doc, "B.Tech V Semester Branch-wise Summary");
-        // Re-add table header
-        xPos = 50;
-        doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
-        doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-        branchTableHeaders.forEach((header, i) => {
-          doc.text(header, xPos + 5, yPos + 8, { width: branchColWidths[i] - 10, align: 'center' });
-          xPos += branchColWidths[i];
-        });
-        yPos += 25;
-      }
-
-      const fillColor = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
-      doc.rect(50, yPos, 495, 20).fillAndStroke(fillColor, '#cccccc');
-
-      const rowData = [
-        `${item.branch} (${item.batches})`,
-        item.totalStrength.toString(),
-        item.totalPresent.toString(),
-        item.totalAbsent.toString()
-      ];
-      
-      xPos = 50;
-      rowData.forEach((data, colIndex) => {
-        let textColor = '#000000';
-        let bgColor = fillColor;
-        
-        if (colIndex === 2) {
-          bgColor = '#d4f3d0';
-          textColor = '#2e7d32';
-          doc.rect(xPos, yPos, branchColWidths[colIndex], 20).fillAndStroke(bgColor, '#cccccc');
-        } else if (colIndex === 3) {
-          bgColor = '#ffebee';
-          textColor = '#c62828';
-          doc.rect(xPos, yPos, branchColWidths[colIndex], 20).fillAndStroke(bgColor, '#cccccc');
-        }
-        
-        doc.fillColor(textColor).fontSize(9).font(colIndex >= 2 ? 'Helvetica-Bold' : 'Helvetica');
-        const align = colIndex === 0 ? 'left' : 'center';
-        const padding = align === 'center' ? 0 : 5;
-        doc.text(data, xPos + padding, yPos + 6, { width: branchColWidths[colIndex] - (padding * 2), align });
-        xPos += branchColWidths[colIndex];
-      });
-      
-      yPos += 20;
-    });
-
-    // Add branch-wise totals
-    yPos += 20;
-    doc.rect(50, yPos, 495, 30).fillAndStroke('#3498db', '#000000');
-    doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
-    doc.text('BRANCH-WISE TOTAL SUMMARY', 50, yPos + 10, { width: 495, align: 'center' });
-    yPos += 30;
-
-    // Create total row for branch-wise summary
-    doc.rect(50, yPos, branchColWidths[0], totalRowHeight).fillAndStroke('#34495e', '#000000');
-    doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
-    doc.text('TOTAL', 50, yPos + 8, { width: branchColWidths[0], align: 'center' });
-    
-    // Remaining cells for branch totals
-    currentX = 50 + branchColWidths[0];
-    const branchRemainingData = [
-      (branchTotalPresent + branchTotalAbsent).toString(),
-      branchTotalPresent.toString(),
-      branchTotalAbsent.toString()
-    ];
-    
-    branchRemainingData.forEach((data, i) => {
-      doc.rect(currentX, yPos, branchColWidths[i + 1], totalRowHeight).fillAndStroke(remainingColors[i], '#000000');
-      doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
-      doc.text(data, currentX, yPos + 8, { width: branchColWidths[i + 1], align: 'center' });
-      currentX += branchColWidths[i + 1];
-    });
-
-    // Generate Branch-wise Absentee Pages (Third sheet onwards) - Group by Branch
-    const branchWiseAbsentees = {};
-    
-    // Group absentees by branch
-    allAbsentees.forEach(({ batch, branch, absentees }) => {
-      if (!branchWiseAbsentees[branch]) {
-        branchWiseAbsentees[branch] = [];
-      }
-      branchWiseAbsentees[branch].push(...absentees);
-    });
-
-    // Sort branches alphabetically
-    const sortedBranches = Object.keys(branchWiseAbsentees).sort();
-
-    sortedBranches.forEach(branch => {
-      const branchAbsentees = branchWiseAbsentees[branch];
-      // Sort absentees by roll number
-      branchAbsentees.sort((a, b) => a.rollno.localeCompare(b.rollno));
-      
-      // Get unique batches for this branch
-      const branchBatches = [...new Set(branchAbsentees.map(student => student.batch))].sort();
-      
-      doc.addPage();
-      const title = `V SEM ${branch} - Absentees List`;
-      currentY = addHeaders(doc, title);
-      
-      // Absentee table
-      const absenteeHeaders = ['S.No', 'Roll No', 'Name', 'Branch', 'Batch'];
-      const absenteeColWidths = [40, 70, 180, 100, 105];
-      
-      yPos = currentY;
-      xPos = 50;
-      doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
-      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-      
-      absenteeHeaders.forEach((header, i) => {
-        doc.text(header, xPos + 5, yPos + 8, { width: absenteeColWidths[i] - 10, align: 'center' });
-        xPos += absenteeColWidths[i];
-      });
-      
-      yPos += 25;
-
-      branchAbsentees.forEach((student, index) => {
-        if (yPos + 25 > 750) {
-          doc.addPage();
-          yPos = addHeaders(doc, title);
-          // Re-add table header
-          xPos = 50;
-          doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
-          doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-          absenteeHeaders.forEach((header, i) => {
-            doc.text(header, xPos + 5, yPos + 8, { width: absenteeColWidths[i] - 10, align: 'center' });
-            xPos += absenteeColWidths[i];
-          });
-          yPos += 25;
-        }
-
-        const fillColor = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
-        doc.rect(50, yPos, 495, 25).fillAndStroke(fillColor, '#cccccc');
-
-        const rowData = [
-          (index + 1).toString(),
-          student.rollno,
-          student.name,
-          student.branch,
-          student.batch
-        ];
-        
-        xPos = 50;
-        rowData.forEach((data, colIndex) => {
-          doc.fillColor('#000000').fontSize(9).font('Helvetica');
-          const align = colIndex === 2 ? 'left' : 'center';
-          const padding = align === 'center' ? 0 : 5;
-          doc.text(data, xPos + padding, yPos + 8, { width: absenteeColWidths[colIndex] - (padding * 2), align });
-          xPos += absenteeColWidths[colIndex];
-        });
-        
-        yPos += 25;
-      });
-
-      // Add absentee count
-      yPos += 20;
-      doc.rect(50, yPos, 495, 25).fillAndStroke('#e74c3c', '#000000');
-      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-      doc.text(`Total Absent: ${branchAbsentees.length}`, 50, yPos + 8, { width: 495, align: 'center' });
-    });
-
-    doc.end();
-
-  } catch (err) {
-    console.error("Error generating PDF report:", err);
-    res.status(500).json({ message: "Internal server error" });
   }
 };
 
+module.exports = {
+  HandleBatchAttendanceReportPDF,
+  HandleBatchAttendanceReportExcel,
+  HandleSessionAttendanceReportPDF,
+  HandleSessionAttendanceReportExcel,
+  HandleMarkAttendance,
+  HandleMonthlyAttendanceReportExcel,
+  getDashboardData
 
-module.exports={
-    AttendanceSessionReportEx,
-    AttendanceSessionReportPdf,
-    AttendanceCompleteReportEx,
-    AttendanceCompleteReportPdf,
-    AttendanceBatchReportEx,
-    AttendanceBatchReportPdf,
 }

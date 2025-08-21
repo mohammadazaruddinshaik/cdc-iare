@@ -1,8 +1,8 @@
 const express=require('express');
-const { HandleChangePassword } = require('../services/UpdatePassword');
+const { getLeaderBoardData, HandleChangePassword } = require('../services/CommonRoutes');
 const router=express.Router();
 const mongoose = require("mongoose");
-const { getDashboardData, HandleGetAnnouncements, getLeaderBoardData, getLogData, getProfileData } = require('../controllers/Student');
+const { getDashboardData, HandleGetAnnouncements, getLogData, getProfileData } = require('../controllers/Student');
 
 
 router.patch('/UpdatePassword', HandleChangePassword);

@@ -17,6 +17,7 @@
     "bcryptjs": "^3.0.2",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^17.2.1",
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
@@ -32,6 +33,7 @@
     "puppeteer": "^24.16.2",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "qrcode": "^1.5.4",
     "tesseract.js": "^6.0.1",
     "xlsx": "^0.18.5"
   }
