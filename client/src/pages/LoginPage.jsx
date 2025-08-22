@@ -14,14 +14,14 @@ const LoginPage = () => {
     // 1. Initialize the navigate function from the useNavigate hook
     const navigate = useNavigate();
     
-    // This is a client-side role determination. 
-    // For better security, the role should ideally be sent from the server upon successful login.
-    const getRole = (uname) => {
-        if (uname.startsWith('2')) return 'student';
-        if (uname.toUpperCase().startsWith('IARE')) return 'faculty';
-        if (uname.toLowerCase().startsWith('cdc')) return 'admin';
-        return null; // Return null if no role matches
-    };
+    // // This is a client-side role determination. 
+    // // For better security, the role should ideally be sent from the server upon successful login.
+    // const getRole = (uname) => {
+    //     if (uname.startsWith('2')) return 'student';
+    //     if (uname.toUpperCase().startsWith('IARE')) return 'faculty';
+    //     if (uname.toLowerCase().startsWith('cdc')) return 'admin';
+    //     return null; // Return null if no role matches
+    // };
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -31,13 +31,6 @@ const LoginPage = () => {
             setError('Please enter both username and password.');
             return;
         }
-
-        const role = getRole(username);
-        if (!role) {
-            setError('Invalid username format. Could not determine user role.');
-            return;
-        }
-
         setIsLoading(true);
 
         try {
@@ -46,18 +39,14 @@ const LoginPage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password, role }),
+                body: JSON.stringify({ username, password}),
             });
             
             const data = await response.json();
-
+            const role = data.role;
             if (response.ok) {
-                // Store a token or user info. Storing a JWT from the server is more secure.
                 localStorage.setItem("userIdentifier", username.toUpperCase());
-                localStorage.setItem("userRole", role); // Store the role as well
-
-                // --- NAVIGATION LOGIC ---
-                // 2. Use the navigate function for routing instead of window.location.href
+                localStorage.setItem("userRole", role); 
                 switch (role) {
                     case 'admin':
                         navigate('/admin/dashboard');
