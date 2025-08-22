@@ -53,7 +53,7 @@ const LoginPage = () => {
 
             if (response.ok) {
                 // Store a token or user info. Storing a JWT from the server is more secure.
-                localStorage.setItem("userIdentifier", username);
+                localStorage.setItem("userIdentifier", username.toUpperCase());
                 localStorage.setItem("userRole", role); // Store the role as well
 
                 // --- NAVIGATION LOGIC ---
