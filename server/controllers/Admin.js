@@ -10,6 +10,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const Announcement = require("../models/Announcement");
 const mongoose = require('mongoose');
+const Coder = require('../models/coding');
 
 function getShortBatchName(fullBatchName) {
   const parts = fullBatchName.toUpperCase().split(" ");
@@ -149,324 +150,6 @@ const drawTable = (doc, data, { title, totalSummary, presentSummary, absentSumma
     doc.fillColor("#2E7D32").text(presentSummary, { align: "center" });
   }
 };
-
-async function HandleBatchAttendanceReportPDF(req, res) {
-  try {
-    const { batch, date } = req.query;
-    if (!batch || !date) {
-      return res.status(400).json({ message: "Missing batch or date parameter" });
-    }
-
-    const reportDate = date;
-    const displayDate = new Date(date).toLocaleDateString("en-GB").split("/").join("-");
-
-    const Attendance = getAttendanceModel(batch);
-    const attendanceRecords = await Attendance.find({});
-    const sampleStudent = await Student.findOne({ rollno: attendanceRecords[0]?.rollno });
-    const batchName = sampleStudent?.batch || "UNKNOWN BATCH";
-    const shortBatchName = getShortBatchName(batchName);
-
-    const students = await Student.find({ batch: batchName }).sort({ branch: 1, rollno: 1 });
-
-    // Compute presence for all students
-    const allStudentData = students.map((student) => {
-      const attendance = attendanceRecords.find((a) => a.rollno === student.rollno);
-      const isPresent = attendance?.dailyLogs?.some((log) => log.date === reportDate && log.status === "present") || false;
-      return { student, isPresent };
-    });
-
-    // Separate students into present and absent lists
-    const absentStudents = allStudentData.filter((entry) => !entry.isPresent);
-    const presentStudents = allStudentData.filter((entry) => entry.isPresent);
-
-    const doc = new PDFDocument({ size: "A4", margin: 30 });
-    const filename = `${shortBatchName}_${displayDate}.pdf`;
-
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.setHeader("Content-Type", "application/pdf");
-    doc.pipe(res);
-
-    // Main Document Header
-    doc.fontSize(16).font("Helvetica-Bold").text("Institute of Aeronautical Engineering", { align: "center" });
-    doc.fontSize(12).font("Helvetica").text("Career Development Center", { align: "center" });
-    doc.moveDown(0.5);
-    doc.fontSize(14).font("Helvetica-Bold").text(`PAT Attendance Summary`, { align: "center" });
-    doc.fontSize(10).font("Helvetica").text(`Date: ${displayDate}`, { align: "center" });
-    doc.moveDown(1);
-    doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
-    doc.moveDown(1);
-    doc.fontSize(11).font("Helvetica-Bold").text(`Batch: ${shortBatchName}`);
-    doc.moveDown(0.5);
-
-    // --- Section 1: Complete Report ---
-    const totalSummaryText = `Total Students: ${allStudentData.length}`;
-    const presentSummaryText = `Present: ${presentStudents.length}`;
-    const absentSummaryText = `Absent: ${absentStudents.length}`;
-    drawTable(doc, allStudentData, {
-      title: "Complete Report (Present & Absent)",
-      totalSummary: totalSummaryText,
-      presentSummary: presentSummaryText,
-      absentSummary: absentSummaryText
-    });
-
-    // --- Section 2: Absent Only List ---
-    if (absentStudents.length > 0) {
-      doc.addPage();
-      const absentSummary = `Total Absentees: ${absentStudents.length}`;
-      drawTable(doc, absentStudents, {
-        title: "Absent Only Report",
-        absentSummary: absentSummary
-      });
-    }
-
-    // --- Section 3: Present Only List ---
-    if (presentStudents.length > 0) {
-      doc.addPage();
-      const presentSummary = `Total Present: ${presentStudents.length}`;
-      drawTable(doc, presentStudents, {
-        title: "Present Only Report",
-        presentSummary: presentSummary
-      });
-    }
-
-    doc.end();
-  } catch (err) {
-    console.error("Error generating attendance PDF:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-async function HandleBatchAttendanceReportExcel(req, res) {
-  try {
-    const { batch, date } = req.query;
-    if (!batch || !date) {
-      return res.status(400).json({ message: "Missing batch or date parameter" });
-    }
-
-    const reportDate = date;
-    const displayDate = new Date(date).toLocaleDateString("en-GB").split("/").join("-");
-
-    const Attendance = getAttendanceModel(batch);
-    const attendanceRecords = await Attendance.find({});
-
-    // **FIXED: Correctly determine the full batch name from the requested batch**
-    let batchName = "UNKNOWN BATCH";
-    if (attendanceRecords.length > 0 && attendanceRecords[0].rollno) {
-      // Find a sample student from the attendance records to get the full batch name
-      const sampleStudent = await Student.findOne({ rollno: attendanceRecords[0].rollno });
-      if (sampleStudent) {
-        batchName = sampleStudent.batch;
-      }
-    } else {
-      // Fallback if no attendance records exist for that day yet
-      // We find a student whose batch name contains the requested batch identifier (e.g., "2021-2025")
-      const studentInBatch = await Student.findOne({ batch: new RegExp(batch, "i") });
-      if (studentInBatch) {
-        batchName = studentInBatch.batch;
-      } else {
-        return res.status(404).json({ message: `No students or attendance data could be linked to the batch identifier: ${batch}` });
-      }
-    }
-
-    const shortBatchName = getShortBatchName(batchName);
-    const students = await Student.find({ batch: batchName }).sort({ branch: 1, rollno: 1 });
-
-    const allStudentData = students.map((student) => {
-      const attendance = attendanceRecords.find((a) => a.rollno === student.rollno);
-      const isPresent = attendance?.dailyLogs?.some(
-        (log) => log.date === reportDate && log.status === "present"
-      ) || false;
-
-      return {
-        rollno: student.rollno,
-        name: student.name || "UNKNOWN NAME",
-        branch: student.branch || "UNKNOWN",
-        status: isPresent ? "Present" : "Absent",
-      };
-    });
-
-    const absentStudents = allStudentData.filter((s) => s.status === "Absent");
-    const presentStudents = allStudentData.filter((s) => s.status === "Present");
-
-    const workbook = new ExcelJS.Workbook();
-    const filename = `${shortBatchName}_${displayDate}.xlsx`;
-
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-
-    const createWorksheet = (sheetName, data, title, summary = {}) => {
-      const sheet = workbook.addWorksheet(sheetName);
-      const columns = [
-        { header: "S.No", key: "sno", width: 8 },
-        { header: "Roll No", key: "rollno", width: 18 },
-        { header: "Name", key: "name", width: 35 },
-        { header: "Branch", key: "branch", width: 15 },
-        { header: "Status", key: "status", width: 12 },
-      ];
-      sheet.columns = columns;
-      const numColumns = columns.length;
-      let currentRow = 1;
-
-      // Main Document Header
-      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
-      const mainHeader = sheet.getCell(currentRow, 1);
-      mainHeader.value = "Institute of Aeronautical Engineering";
-      mainHeader.font = { bold: true, size: 16 };
-      mainHeader.alignment = { horizontal: 'center' };
-      currentRow++;
-
-      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
-      const subHeader = sheet.getCell(currentRow, 1);
-      subHeader.value = "Career Development Center";
-      subHeader.font = { size: 12 };
-      subHeader.alignment = { horizontal: 'center' };
-      currentRow++;
-
-      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
-      const dateHeader = sheet.getCell(currentRow, 1);
-      dateHeader.value = `PAT Attendance Summary - Date: ${displayDate}`;
-      dateHeader.font = { bold: true, size: 14 };
-      dateHeader.alignment = { horizontal: 'center' };
-      currentRow += 2; // Add a space
-
-      // Section Title
-      sheet.mergeCells(currentRow, 1, currentRow, numColumns);
-      const sectionTitle = sheet.getCell(currentRow, 1);
-      sectionTitle.value = title;
-      sectionTitle.font = { bold: true, size: 14 };
-      sectionTitle.alignment = { horizontal: 'center' };
-      currentRow++;
-
-      // Summary Section
-      if (summary.total) {
-        sheet.mergeCells(currentRow, 1, currentRow, 2);
-        const totalCell = sheet.getCell(currentRow, 1);
-        totalCell.value = summary.total;
-        totalCell.font = { bold: true, size: 11 };
-        totalCell.alignment = { horizontal: 'left' };
-
-        sheet.mergeCells(currentRow, 3, currentRow, 3);
-        const presentCell = sheet.getCell(currentRow, 3);
-        presentCell.value = summary.present;
-        presentCell.font = { bold: true, size: 11, color: { argb: "FF2E7D32" } };
-        presentCell.alignment = { horizontal: 'center' };
-
-        sheet.mergeCells(currentRow, 4, currentRow, 5);
-        const absentCell = sheet.getCell(currentRow, 4);
-        absentCell.value = summary.absent;
-        absentCell.font = { bold: true, size: 11, color: { argb: "FFC62828" } };
-        absentCell.alignment = { horizontal: 'right' };
-      } else if (summary.single) {
-        sheet.mergeCells(currentRow, 1, currentRow, numColumns);
-        const singleSummaryCell = sheet.getCell(currentRow, 1);
-        singleSummaryCell.value = summary.single;
-        singleSummaryCell.font = { bold: true, size: 11 };
-        singleSummaryCell.alignment = { horizontal: 'center' };
-      }
-      currentRow += 2;
-
-      // Table Headers
-      const headerRow = sheet.getRow(currentRow);
-      headerRow.height = 20;
-      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
-
-      // **FIXED: Explicitly set the header cell values**
-      headerRow.values = columns.map(c => c.header);
-
-      headerRow.eachCell((cell) => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF34495E" } };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-      });
-
-      // Table Data
-      data.forEach((item, idx) => {
-        const row = sheet.addRow({
-          sno: idx + 1,
-          ...item
-        });
-
-        const rowBgColor = (idx % 2 === 0) ? "FFF5F5F5" : "FFFFFFFF";
-
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowBgColor } };
-          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-          cell.alignment = { vertical: 'middle', horizontal: sheet.getColumn(colNumber).key === 'name' ? 'left' : 'center' };
-          cell.font = { size: 10 };
-        });
-
-        const statusCell = row.getCell('status');
-        if (item.status === 'Present') {
-          statusCell.font = { bold: true, color: { argb: 'FF2E7D32' }, size: 10 };
-          statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F4EA' } };
-        } else if (item.status === 'Absent') {
-          statusCell.font = { bold: true, color: { argb: 'FFC62828' }, size: 10 };
-          statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
-        }
-      });
-    };
-
-    // --- Create all necessary worksheets ---
-
-    createWorksheet(
-      "Complete Report",
-      allStudentData,
-      "Complete Attendance Report", {
-      total: `Total Students: ${allStudentData.length}`,
-      present: `Present: ${presentStudents.length}`,
-      absent: `Absent: ${absentStudents.length}`
-    }
-    );
-
-    if (absentStudents.length > 0) {
-      createWorksheet(
-        "Absent Students",
-        absentStudents,
-        "Absent Only Report", {
-        single: `Total Absentees: ${absentStudents.length}`
-      }
-      );
-    }
-
-    if (presentStudents.length > 0) {
-      createWorksheet(
-        "Present Students",
-        presentStudents,
-        "Present Only Report", {
-        single: `Total Present: ${presentStudents.length}`
-      }
-      );
-    }
-
-    const groupedByBranch = allStudentData.reduce((acc, student) => {
-      acc[student.branch] = acc[student.branch] || [];
-      acc[student.branch].push(student);
-      return acc;
-    }, {});
-
-    for (const branch in groupedByBranch) {
-      const branchData = groupedByBranch[branch];
-      const branchPresent = branchData.filter(s => s.status === 'Present').length;
-      const branchAbsent = branchData.length - branchPresent;
-
-      createWorksheet(
-        `${branch} Report`,
-        branchData,
-        `${branch} Attendance Report`, {
-        total: `Total: ${branchData.length}`,
-        present: `Present: ${branchPresent}`,
-        absent: `Absent: ${branchAbsent}`
-      }
-      );
-    }
-
-    await workbook.xlsx.write(res);
-    res.end();
-
-  } catch (err) {
-    console.error("Error generating attendance Excel:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
 
 async function HandleSessionAttendanceReportExcel(req, res) {
   const { batch, date, format = "excel" } = req.query;
@@ -1405,27 +1088,27 @@ function summarizeStudent(doc, dates, allCourses) {
 }
 
 function findCommonHolidays(docs, dates, allCourses) {
-    const holidayDates = [];
-    const dateArray = Array.from(dates);
+  const holidayDates = [];
+  const dateArray = Array.from(dates);
 
-    for (const date of dateArray) {
-        let isCommonHoliday = true;
-        if (docs.length === 0) {
-            isCommonHoliday = false;
-        } else {
-            for (const doc of docs) {
-                const { calendarMap } = summarizeStudent(doc, dates, allCourses);
-                if (calendarMap[date] !== "H") {
-                    isCommonHoliday = false;
-                    break;
-                }
-            }
+  for (const date of dateArray) {
+    let isCommonHoliday = true;
+    if (docs.length === 0) {
+      isCommonHoliday = false;
+    } else {
+      for (const doc of docs) {
+        const { calendarMap } = summarizeStudent(doc, dates, allCourses);
+        if (calendarMap[date] !== "H") {
+          isCommonHoliday = false;
+          break;
         }
-        if (isCommonHoliday) {
-            holidayDates.push(date);
-        }
+      }
     }
-    return holidayDates;
+    if (isCommonHoliday) {
+      holidayDates.push(date);
+    }
+  }
+  return holidayDates;
 }
 
 async function listAttendanceCollections() {
@@ -1515,7 +1198,7 @@ async function buildSheetForCollection(workbook, collectionName, fromISO, toISO)
         else if (value === "H") {
           const currentDate = dateList[colNumber - baseColumns - courseColumns - 1];
           cell.style = styles.holidayCell;
-          cell.value = commonHolidays.includes(currentDate) ? "" : "HOLIDAY";
+          cell.value = commonHolidays.includes(currentDate) ? "" : "No Classes Sheduled";
         } else {
           cell.style = styles.dataCell;
           cell.alignment = { vertical: "middle", horizontal: "center" };
@@ -1547,7 +1230,7 @@ async function buildSheetForCollection(workbook, collectionName, fromISO, toISO)
 
 function createSummarySheet(workbook, fromISO, toISO) {
   const ws = workbook.addWorksheet("SUMMARY", { properties: { tabColor: { argb: COLORS.primary } } });
-  
+
   ws.mergeCells('A1:D1');
   ws.getCell('A1').value = `ATTENDANCE SUMMARY REPORT`;
   ws.getCell('A1').style = styles.titleStyle;
@@ -1623,13 +1306,13 @@ const HandleMonthlyAttendanceReportExcel = async (req, res) => {
       console.log(`Building sheet for: ${colName}`);
       await buildSheetForCollection(wb, colName, fromISO, toISODate);
     }
-    
+
     createSummarySheet(wb, fromISO, toISODate);
 
     const fileName = `Attendance_Report_${dayjs(fromISO).format("DD-MMM-YYYY")}_to_${dayjs(toISODate).format("DD-MMM-YYYY")}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    
+
     await wb.xlsx.write(res);
     res.end();
     console.log(`✅ Successfully generated report: ${fileName}`);
@@ -1644,34 +1327,37 @@ const HandleMonthlyAttendanceReportExcel = async (req, res) => {
 
 //--------- Attendace Monthly Excel Report Analysis Code End -------------------------------//
 
-
-async function getDashboardData(req,res) {
-  
+async function getDashboardData(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
     // --- DYNAMICALLY GET COLLECTION NAMES ---
-    // 1. Get info for all collections in the database.
     const collections = await mongoose.connection.db.listCollections().toArray();
 
-    // 2. Map to their names and filter the ones that start with 'attendance'
     const batchCollectionNames = collections
       .map(collection => collection.name)
       .filter(name => name.startsWith('attendance'));
-    // --- END OF DYNAMIC LOGIC ---
 
-    // If no matching collections are found, return an empty array.
+    // ✅ If no attendance collections
     if (batchCollectionNames.length === 0) {
-        return res.status(200).json({
-            success: true,
-            message: "No attendance collections found.",
-            data: []
-        });
+      // Still send student + faculty counts
+      const totalStudents = await Student.countDocuments();
+      const totalFaculty = await Faculty.countDocuments();
+
+      return res.status(200).json({
+        success: true,
+        message: "No attendance collections found.",
+        data: {
+          attendanceSummary: [],
+          totalStudents,
+          totalFaculty
+        }
+      });
     }
 
     const attendanceSummary = [];
 
-    // The rest of the logic remains the same
+    // ✅ Attendance summary per batch
     for (const collectionName of batchCollectionNames) {
       const AttendanceModel = getAttendanceModel(collectionName);
 
@@ -1683,35 +1369,503 @@ async function getDashboardData(req,res) {
           }
         }
       });
-      
+
       attendanceSummary.push({
         batch: collectionName,
-        presentCount: presentCount,
+        presentCount,
         date: today
       });
     }
 
+    // ✅ Separate counts from Student and Faculty models
+    const totalStudents = await Student.countDocuments();
+    const totalFaculty = await Faculty.countDocuments();
+
     res.status(200).json({
       success: true,
-      data: attendanceSummary
+      data: {
+        attendanceSummary,
+        totalStudents,
+        totalFaculty
+      }
     });
 
   } catch (error) {
-    console.error('Error fetching attendance summary:', error);
+    console.error('Error fetching dashboard data:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching attendance summary.'
+      message: 'Server error while fetching dashboard data.'
     });
   }
 };
 
+//-------------------------------   Manage Faculty Routes  Start    ----------------------------//
+
+async function addFaculty(req, res) {
+
+  const { name, facultyid, email, designation, subjects_assigned, batches_assigned } = req.body;
+
+  // Basic validation
+  if (!name || !facultyid || !email) {
+    return res.status(400).json({ message: 'Name, Faculty ID, and Email are required.' });
+  }
+
+  try {
+    // Check if faculty with the same ID or email already exists
+    const existingFaculty = await Faculty.findOne({ $or: [{ facultyid }, { email }] });
+    if (existingFaculty) {
+      return res.status(409).json({ message: 'Faculty with this ID or email already exists.' });
+    }
+
+    // Generate the default password as "facultyid@<last_two_digits_of_year>"
+    // For 2025, this will be "facultyid@25"
+    const yearLastTwoDigits = new Date().getFullYear().toString().slice(-2);
+    const password = `${facultyid}@${yearLastTwoDigits}`;
+
+    // Create a new faculty instance
+    const newFaculty = new Faculty({
+      name,
+      facultyid,
+      password, // The generated default password
+      email,
+      designation,
+      subjects_assigned,
+      batches_assigned,
+    });
+
+    // Save the new faculty to the database
+    const savedFaculty = await newFaculty.save();
+
+    res.status(201).json({ message: 'Faculty added successfully!', faculty: savedFaculty });
+  } catch (error) {
+    // Handle potential errors, like validation errors from the model
+    res.status(500).json({ message: 'Error adding faculty.', error: error.message });
+  }
+};
+
+async function deleteFaculty(req, res) {
+  // Get the facultyid from the request body
+  const { facultyid } = req.body;
+
+  if (!facultyid) {
+    return res.status(400).json({ message: 'Faculty ID is required to delete.' });
+  }
+
+  try {
+    // Find the faculty by their unique facultyid and remove them
+    const deletedFaculty = await Faculty.findOneAndDelete({ facultyid: facultyid });
+
+    if (!deletedFaculty) {
+      return res.status(404).json({ message: 'Faculty not found.' });
+    }
+
+    res.status(200).json({ message: `Faculty with ID ${facultyid} deleted successfully.` });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting faculty.', error: error.message });
+  }
+};
+
+async function updateFaculty(req, res) {
+  // The facultyid is used to find the document, the rest are the fields to update
+  const { facultyid, password, ...updateData } = req.body; // 🚫 Extract and ignore password
+
+  if (!facultyid) {
+    return res.status(400).json({ message: 'Faculty ID is required for updates.' });
+  }
+
+  try {
+    // Ensure password never gets updated through this endpoint
+    if (password) {
+      return res.status(403).json({ message: 'Password updates are not allowed through this Updation Use Reset Password.' });
+    }
+
+    const updatedFaculty = await Faculty.findOneAndUpdate(
+      { facultyid: facultyid },
+      { $set: updateData }, // Only update allowed fields
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedFaculty) {
+      return res.status(404).json({ message: 'Faculty not found.' });
+    }
+
+    res.status(200).json({ message: 'Faculty updated successfully!', faculty: updatedFaculty });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'An account with this email already exists.' });
+    }
+    res.status(500).json({ message: 'Error updating faculty.', error: error.message });
+  }
+}
+
+
+//-------------------------------   Manage Faculty Routes  End      ----------------------------//
+
+
+//-------------------------------   Manage Student Routes  Start    ----------------------------//
+
+async function getViewStudents(req, res) {
+  try {
+    // 1. Get all students
+    let students = await Student.find()
+      .select("rollno name batch branch -_id") // also fetch branch
+      .lean();
+
+    // 2. For each student, fetch attendance + handles
+    const AllStudents = await Promise.all(
+      students.map(async (student) => {
+        try {
+        
+
+          // --- Coder Handles ---
+          let coderData = await Coder.findOne({
+            rollno: new RegExp(`^${student.rollno}$`, "i"),
+          })
+            .select("handles -_id")
+            .lean();
+
+          // --- Merge all ---
+          return {
+            ...student,
+            ...(coderData || {})
+          };
+        } catch (err) {
+          console.error(`Error fetching data for ${student.rollno}:`, err);
+          return student; // fallback
+        }
+      })
+    );
+
+    res.json({ AllStudents });
+  } catch (err) {
+    console.error("Error fetching Students data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+async function addStudent(req, res) {
+  const { rollno, name, branch, batch } = req.body;
+
+  if (!rollno || !name || !branch || !batch) {
+    return res.status(400).json({ message: 'Roll No, Name, Branch, and Batch are required.' });
+  }
+
+  try {
+    const existingStudent = await Student.findOne({ rollno });
+    if (existingStudent) {
+      return res.status(409).json({ message: 'A student with this Roll No already exists.' });
+    }
+
+    const currentYear = new Date().getFullYear(); // e.g., 2025
+    const defaultPassword = `pat@${currentYear}`;
+    const email = `${rollno.toLowerCase()}@iare.ac.in`;
+
+    // --- Create documents for all three collections ---
+    const newStudent = new Student({ name, rollno, password: defaultPassword, branch, batch, email });
+    const newCoder = new Coder({ rollno, branch, batch });
+
+    // Get the dynamic attendance model for the student's batch
+    const Editbatch = `attendance_${batch.toLowerCase()}`
+    const Attendance = getAttendanceModel(Editbatch);
+    const newAttendanceRecord = new Attendance({ rollno, name, branch, batch });
+
+    // --- Save all documents ---
+    const savedStudent = await newStudent.save();
+    await newCoder.save();
+    await newAttendanceRecord.save();
+
+    res.status(201).json({ message: 'Student added successfully to all systems!', student: savedStudent });
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding student.', error: error.message });
+  }
+};
+
+async function deleteStudent(req, res) {
+  const { rollno } = req.body;
+
+  if (!rollno) {
+    return res.status(400).json({ message: 'Roll No is required.' });
+  }
+
+  try {
+    // 1. Find the student first to get their batch
+    const studentToDelete = await Student.findOne({ rollno });
+    if (!studentToDelete) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+
+    // 2. Get the dynamic attendance model using the student's batch
+    const Attendance = getAttendanceModel(studentToDelete.batch);
+
+    // 3. Delete the student from all three collections
+    await Student.deleteOne({ rollno });
+    await Coder.deleteOne({ rollno });
+    await Attendance.deleteOne({ rollno });
+
+    res.status(200).json({ message: `Student ${rollno} deleted successfully from all systems.` });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting student.', error: error.message });
+  }
+};
+
+async function updateStudent(req, res) {
+  // Explicitly remove password from updates
+  const { rollno, password, ...updateData } = req.body;
+
+  if (!rollno) {
+    return res.status(400).json({ message: 'Roll No is required for updates.' });
+  }
+
+  try {
+    // 1. Find the original student document
+    const originalStudent = await Student.findOne({ rollno });
+    if (!originalStudent) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+    const oldBatch = originalStudent.batch;
+    const newBatch = updateData.batch;
+
+    // 🚫 Block password update attempt
+    if (password) {
+      return res.status(403).json({ message: 'Password updates are not allowed through this Section.' });
+    }
+
+    // 2. Update the main Student document
+    const updatedStudent = await Student.findOneAndUpdate(
+      { rollno },
+      updateData,
+      { new: true }
+    );
+
+    // 3. Prepare and apply updates for Coder and Attendance models
+    const sharedUpdateData = {};
+    if (updateData.name) sharedUpdateData.name = updateData.name;
+    if (updateData.branch) sharedUpdateData.branch = updateData.branch;
+    if (updateData.batch) sharedUpdateData.batch = updateData.batch;
+    if (updateData.handles) {
+      const handleUpdates = {};
+      for (const [platform, username] of Object.entries(updateData.handles)) {
+        handleUpdates[`handles.${platform}`] = username;
+      }
+      await Coder.updateOne({ rollno }, { $set: handleUpdates });
+    }
+    await Coder.updateOne(
+      { rollno },
+      { $set: { branch: updatedStudent.branch, batch: updatedStudent.batch } }
+    );
+
+
+    // 4. Attendance updates
+    if (newBatch && newBatch !== oldBatch) {
+      const OldAttendanceModel = getAttendanceModel(`attendance_${oldBatch.toLowerCase()}`);
+      const NewAttendanceModel = getAttendanceModel(`attendance_${newBatch.toLowerCase()}`);
+
+      const attendanceRecord = await OldAttendanceModel.findOne({ rollno }).lean();
+      console.log("Attendance record before delete:", attendanceRecord);
+
+      if (attendanceRecord) {
+        await OldAttendanceModel.deleteOne({ rollno }); // safer, explicit delete
+        delete attendanceRecord._id;
+        attendanceRecord.batch = newBatch;
+        if (updateData.name) attendanceRecord.name = updateData.name;
+        if (updateData.branch) attendanceRecord.branch = updateData.branch;
+
+        await NewAttendanceModel.create(attendanceRecord);
+        console.log("Moved student to new batch collection:", newBatch);
+      } else {
+        console.log("No attendance record found for rollno", rollno, "in", oldBatch);
+      }
+
+    }
+
+    res.status(200).json({
+      message: 'Student updated successfully across all systems!',
+      student: updatedStudent
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error updating student.',
+      error: error.message
+    });
+  }
+}
+
+
+//-------------------------------   Manage Student Routes  End      ----------------------------//
+
+
+//-------------------------------   Manage Attendance Routes  Start -----------------------------//
+
+async function getStudentsForAttendanceUpdation(req, res) {
+  try {
+    const { batch, date, course, status } = req.query;
+
+    // ✅ Validation
+    if (!batch || !date || !course || !status) {
+      return res
+        .status(400)
+        .json({ message: "Missing batch, date, course, or status" });
+    }
+
+    // ✅ Ensure valid status
+    if (!["present", "absent"].includes(status.toLowerCase())) {
+      return res
+        .status(400)
+        .json({ message: "Invalid status. Must be 'present' or 'absent'." });
+    }
+
+    // ✅ Get Attendance Model
+    let Attendance;
+    try {
+      Attendance = getAttendanceModel(batch);
+    } catch (err) {
+      return res
+        .status(404)
+        .json({ message: `Batch collection not found: ${batch}` });
+    }
+
+    // ✅ Query students by status
+    const students = await Attendance.find(
+      {
+        dailyLogs: {
+          $elemMatch: {
+            date: String(date),
+            course: course.trim(),
+            status: status.toLowerCase(),
+          },
+        },
+      },
+      { rollno: 1, _id: 0 }
+    );
+
+    const rollnos = students.map((s) => s.rollno);
+
+    res.status(200).json({
+      batch,
+      date,
+      course,
+      status: status.toLowerCase(),
+      students: rollnos
+    });
+  } catch (err) {
+    console.error("Error fetching students by status:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+async function HandleUpdateAttendance(req, res) {
+  try {
+    const { course, presenties, batch, date, status } = req.body;
+
+    // ✅ Validation
+    if (!course || !Array.isArray(presenties) || !batch || !date || !status) {
+      return res.status(400).json({ message: "Missing course, presenties, batch, date, or status" });
+    }
+
+    if (!["present", "absent"].includes(status.toLowerCase())) {
+      return res.status(400).json({ message: "Invalid status. Must be 'present' or 'absent'." });
+    }
+
+    const Attendance = getAttendanceModel(batch);
+    const targetDate = date;
+    const courseKey = course.trim();
+    const newStatus = status.toLowerCase();
+
+    const bulkOps = [];
+
+    // ✅ Find logs for these rollnos on the given date + course
+    const studentsWithLogs = await Attendance.find({
+      rollno: { $in: presenties },
+      dailyLogs: {
+        $elemMatch: {
+          date: targetDate,
+          course: courseKey
+        }
+      }
+    });
+
+    console.log(`📝 Found ${studentsWithLogs.length} students with logs for ${targetDate}`);
+
+    for (const student of studentsWithLogs) {
+      const logIndex = student.dailyLogs.findIndex(
+        (log) => log.date === targetDate && log.course === courseKey
+      );
+
+      if (logIndex !== -1) {
+        const currentStatus = student.dailyLogs[logIndex].status;
+
+        if (currentStatus !== newStatus) {
+          const updateObj = {
+            $set: {
+              [`dailyLogs.${logIndex}.status`]: newStatus,
+              lastUpdated: new Date()
+            }
+          };
+
+          // ✅ Adjust counts accordingly
+          if (newStatus === "present" && currentStatus === "absent") {
+            updateObj.$inc = {
+              "overallAttendance.presentDays": 1,
+              [`courseAttendance.${courseKey}.presentDays`]: 1
+            };
+          } else if (newStatus === "absent" && currentStatus === "present") {
+            updateObj.$inc = {
+              "overallAttendance.presentDays": -1,
+              [`courseAttendance.${courseKey}.presentDays`]: -1
+            };
+          }
+
+          bulkOps.push({
+            updateOne: {
+              filter: {
+                rollno: student.rollno,
+                [`dailyLogs.${logIndex}.date`]: targetDate,
+                [`dailyLogs.${logIndex}.course`]: courseKey
+              },
+              update: updateObj
+            }
+          });
+        }
+      }
+    }
+
+    if (bulkOps.length === 0) {
+      return res.status(404).json({
+        message: `No logs needed updating for ${status}`,
+        updatedCount: 0
+      });
+    }
+
+    const result = await Attendance.bulkWrite(bulkOps, { ordered: false });
+    console.log(`📊 Bulk operation result:`, result);
+
+    res.status(200).json({
+      message: `Bulk mark ${status} operation completed`,
+      updatedCount: result.modifiedCount,
+    });
+
+  } catch (err) {
+    console.error("❌ Error in HandleUpdateAttendance:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//-------------------------------   Manage Attendance Routes  Start -----------------------------//
+
 module.exports = {
-  HandleBatchAttendanceReportPDF,
-  HandleBatchAttendanceReportExcel,
   HandleSessionAttendanceReportPDF,
   HandleSessionAttendanceReportExcel,
   HandleMarkAttendance,
   HandleMonthlyAttendanceReportExcel,
-  getDashboardData
+  getDashboardData,
+  addFaculty,
+  deleteFaculty,
+  updateFaculty,
+  addStudent,
+  deleteStudent,
+  updateStudent,
+  HandleUpdateAttendance,
+  getStudentsForAttendanceUpdation,
+  getViewStudents
 
 }

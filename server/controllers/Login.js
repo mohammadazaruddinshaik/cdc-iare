@@ -6,13 +6,19 @@ const bcrypt = require("bcrypt");
 
 async function HandleLogin(req, res) {
     try {
-        const { username, password, role } = req.body;
+        const { username, password } = req.body;
 
         // Validate input
-        if (!username || !password || !role) {
+        if (!username || !password) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
+        const role = (username) => {
+        if (uname.startsWith('2')) return 'student';
+        if (uname.toUpperCase().startsWith('IARE')) return 'faculty';
+        if (uname.toLowerCase().startsWith('cdc')) return 'admin';
+        return null; // Return null if no role matches
+    };
         // Pick the correct model & identifier field
         let Model, identifierKey;
         if (role === "student") {
@@ -37,7 +43,7 @@ async function HandleLogin(req, res) {
             return res.status(401).json({ error: "User not found" });
         }
         // console.log(user.password);
-        console.log(await bcrypt.hash(password,10));
+        // console.log(await bcrypt.hash(password,10));
         // ✅ Compare entered password with hashed password in DB
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {

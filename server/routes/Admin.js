@@ -2,16 +2,29 @@ const express=require('express');
 const router=express.Router();
 const ExcelJS = require('exceljs');
 const {HandleSessionAttendanceReportPDF, 
-      HandleBatchAttendanceReportPDF, 
-      HandleBatchAttendanceReportExcel, 
       HandleSessionAttendanceReportExcel, 
       HandleMarkAttendance, 
       HandleMonthlyAttendanceReportExcel,
-      getDashboardData
-    
-    } = require('../controllers/Admin');
+      getDashboardData,
+      addFaculty,
+      deleteFaculty,
+      updateFaculty,
+      addStudent,
+      deleteStudent,
+      updateStudent,
+      HandleUpdateAttendance, 
+      getViewStudents,
+      getStudentsForAttendanceUpdation} = require('../controllers/Admin');
+
 const getAttendanceModel=require('../services/GetAttendanceModel');
-const { HandleChangePassword } = require('../services/CommonRoutes');
+
+const { HandleChangePassword,
+        getViewStudentData, 
+        getLeaderBoardData, 
+        HandleResetPassword, 
+        HandleBatchAttendanceReportPDF, 
+        HandleBatchAttendanceReportExcel } = require('../services/CommonRoutes');
+const { route } = require('./Admin');
 
 
 
@@ -30,5 +43,43 @@ router.get('/attendance-monthly-excel', HandleMonthlyAttendanceReportExcel)
 router.patch('/UpdatePassword', HandleChangePassword);
 
 router.get('/getDashboardData',getDashboardData);
+
+router.get('/getLeaderboardData', getLeaderBoardData);
+
+router.get('/getViewStudentData', getViewStudentData);
+
+router.get('/ResetPassword', HandleResetPassword);
+
+//-------------------------------   Manage Faculty Routes  Start    ----------------------------//
+
+router.post('/addFaculty', addFaculty);
+
+router.post('/deleteFaculty', deleteFaculty);
+
+router.patch('/updateFaculty', updateFaculty);
+
+//-------------------------------   Manage Faculty Routes  End      ----------------------------//
+
+
+//-------------------------------   Manage Student Routes  Start    ----------------------------//
+
+router.get('/getViewStudents',getViewStudents);
+
+router.post('/addStudent', addStudent);
+
+router.post('/deleteStudent', deleteStudent);
+
+router.patch('/updateStudent', updateStudent);
+
+//-------------------------------   Manage Student Routes  End      ----------------------------//
+
+
+//-------------------------------   Manage Attendance Routes  Start -----------------------------//
+
+router.get('/getAbsenties', getStudentsForAttendanceUpdation);
+
+router.patch('/updateAttendance', HandleUpdateAttendance);
+
+//-------------------------------   Manage Attendance Routes  Start -----------------------------//
 
 module.exports=router;

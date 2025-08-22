@@ -3,11 +3,10 @@ const { HandelPostAnnouncements,
         HandleMarkAttendance, 
         getDashboardData, 
         getProfileData, 
-        getStudentData, 
-        HandleAttendanceReportPDF,
-        HandleAttendanceReportExcel
-    } = require('../controllers/Faculty');
-const { getLeaderBoardData, HandleResetPassword, HandleChangePassword, getViewStudentData } = require('../services/CommonRoutes');
+        getStudentData } = require('../controllers/Faculty');
+
+const { getLeaderBoardData, HandleResetPassword, HandleChangePassword, getViewStudentData, HandleBatchAttendanceReportExcel, HandleBatchAttendanceReportPDF } = require('../services/CommonRoutes');
+
 const router = express.Router();
 
 router.get('/getDashboardData/:facultyid', getDashboardData);
@@ -28,9 +27,9 @@ router.post("/announcements", HandelPostAnnouncements);
 
 router.post('/Mark-Attendance', HandleMarkAttendance);
 
-router.get("/batch-report-excel/",HandleAttendanceReportExcel);
+router.get("/batch-report-excel/",HandleBatchAttendanceReportExcel);
 
-router.get("/batch-report-pdf", HandleAttendanceReportPDF);
+router.get("/batch-report-pdf", HandleBatchAttendanceReportPDF);
 
 
 module.exports = router;
