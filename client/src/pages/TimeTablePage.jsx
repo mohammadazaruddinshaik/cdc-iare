@@ -27,7 +27,7 @@ const batchWiseTimetable = {
       Friday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
       Saturday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ]
     },
-    "SKILLNEXT-1": {
+    "SKILLNEXT BATCH-1": {
       Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5204" } ],
       Tuesday: [ { time: "9:30AM - 12:15PM", subject: "DBMS", room: "5204" } ],
       Wednesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5204" } ],
@@ -35,7 +35,7 @@ const batchWiseTimetable = {
       Friday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5204" } ],
       Saturday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5204" } ]
     },
-    "SKILLNEXT-2": {
+    "SKILLNEXT BATCH-2": {
       Monday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ],
       Tuesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
       Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
@@ -43,7 +43,7 @@ const batchWiseTimetable = {
       Friday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104" } ],
       Saturday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5104" } ]
     },
-    "SKILLNEXT-3": {
+    "SKILLNEXT BATCH-3": {
       Monday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5102" } ],
       Tuesday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5102" } ],
       Wednesday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5102" } ],

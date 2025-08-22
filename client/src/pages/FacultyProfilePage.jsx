@@ -41,7 +41,7 @@ const FacultyProfilePage = () => {
                         email: data.faculty.email,
                         subjects: data.faculty.subjects_assigned || [],
                         batches: data.faculty.batches_assigned || [],
-                        profilePhoto: `https://placehold.co/256x256/818cf8/ffffff?text=${data.faculty.name.charAt(0)}`,
+                        profilePhoto: `https://www.iare.ac.in/sites/default/files/${facultyId}_0.png`,
                     });
                 } else {
                     throw new Error("Faculty data not found in the response.");
