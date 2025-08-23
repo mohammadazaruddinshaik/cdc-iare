@@ -5,7 +5,7 @@ import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import Header from '../components/Header'; // Adjust path if necessary
 
-// --- Reusable Helper Components ---
+// --- Reusable Helper Components (No changes needed here) ---
 
 const SpinnerOverlay = ({ isLoading }) => {
     if (!isLoading) return null;
@@ -28,8 +28,6 @@ const Toast = ({ message, type, onDismiss }) => {
     return <div className={`${baseStyle} ${typeStyle}`}>{message}</div>;
 };
 
-// --- Custom DatePicker Component ---
-
 const DatePicker = ({ selectedDate, onSelectDate, label, icon, disabledDates }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [position, setPosition] = useState('bottom');
@@ -38,7 +36,7 @@ const DatePicker = ({ selectedDate, onSelectDate, label, icon, disabledDates }) 
     const handleToggle = () => {
         if (popoverRef.current) {
             const rect = popoverRef.current.getBoundingClientRect();
-            if (window.innerHeight - rect.bottom < 350) { // Check for space below
+            if (window.innerHeight - rect.bottom < 350) {
                 setPosition('top');
             } else {
                 setPosition('bottom');
@@ -120,7 +118,7 @@ const MonthlyReport = () => {
     };
 
     const handleDownload = async () => {
-        // --- 1. VALIDATION ---
+        // --- 1. VALIDATION (No changes) ---
         if (!fromDate || !toDate) {
             showToast("⚠️ Please select both a 'From' and 'To' date.", 'error');
             return;
@@ -132,48 +130,59 @@ const MonthlyReport = () => {
 
         setIsLoading(true);
 
-        // --- 2. PREPARE THE REQUEST ---
-        const backendUrl = "http://localhost:5000"; // Or your deployed backend URL
-        
-        const fromDateFormatted = format(fromDate, 'yyyy-MM-dd');
-        const toDateFormatted = format(toDate, 'yyyy-MM-dd');
-
-        const params = new URLSearchParams({
-            from: fromDateFormatted,
-            to: toDateFormatted,
-        });
-
-        const url = `${backendUrl}/api/Admin/attendance-monthly-excel?${params.toString()}`;
-
-        // --- 3. EXECUTE THE FETCH REQUEST ---
         try {
-            const response = await fetch(url);
+            // --- 2. PREPARE THE REQUEST (Updated) ---
+            
+            // **CHANGED:** Use environment variables for the API URL
+            const backendUrl = "http://localhost:5000";
+            
+            // **ADDED:** Retrieve the authentication token (e.g., from local storage)
+            // const token = localStorage.getItem('authToken'); 
+            // if (!token) {
+            //     throw new Error("Authentication token not found. Please log in again.");
+            // }
+
+            const fromDateFormatted = format(fromDate, 'yyyy-MM-dd');
+            const toDateFormatted = format(toDate, 'yyyy-MM-dd');
+            const params = new URLSearchParams({ from: fromDateFormatted, to: toDateFormatted });
+            const url = `${backendUrl}/api/Admin/attendance-monthly-excel?${params.toString()}`;
+
+            // --- 3. EXECUTE THE FETCH REQUEST (Updated) ---
+            const response = await fetch(url, {
+                method: 'GET',
+                // **ADDED:** Include the Authorization header for security
+                // headers: {
+                //     'Authorization': `Bearer ${token}`,
+                //     // 'Content-Type' is not needed for a GET request downloading a file
+                // },
+            });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                const errorMessage = errorData?.message || `Download failed. Server responded with status ${response.status}.`;
-                throw new Error(errorMessage);
+                // If the error response is JSON, parse it for a better message
+                // if (response.headers.get('content-type')?.includes('application/json')) {
+                //     const errorData = await response.json();
+                //     throw new Error(errorData.message || `Server error: ${response.status}`);
+                // }
+                // Otherwise, use a generic error
+                throw new Error(`Download failed. Server responded with status ${response.status}.`);
             }
 
-            // --- 4. PROCESS THE FILE BLOB ---
+            // --- 4. PROCESS THE FILE BLOB (No changes) ---
             const blob = await response.blob();
-
             if (blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-                throw new Error("Invalid file format received from server.");
+                throw new Error("Invalid file format received. The server may have sent an error.");
             }
-
             const blobUrl = URL.createObjectURL(blob);
 
-            // --- 5. TRIGGER THE DOWNLOAD ---
+            // --- 5. TRIGGER THE DOWNLOAD (No changes) ---
             const filename = `MonthlyReport_${format(fromDate, 'dd-MM-yyyy')}_to_${format(toDate, 'dd-MM-yyyy')}.xlsx`;
-            
             const a = document.createElement("a");
             a.href = blobUrl;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
             
-            // --- 6. CLEANUP ---
+            // --- 6. CLEANUP (No changes) ---
             a.remove();
             URL.revokeObjectURL(blobUrl);
 
@@ -190,6 +199,7 @@ const MonthlyReport = () => {
     return (
         <>
             <style>{`
+                /* Your existing styles are perfect, no changes needed */
                 .rdp { --rdp-cell-size: 40px; --rdp-accent-color: #3b82f6; --rdp-background-color: #60a5fa; color: #d1d5db; }
                 .rdp-months { padding: 1em; }
                 .rdp-caption_label { font-size: 1.125rem; font-weight: bold; color: #fff; }

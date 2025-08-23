@@ -40,20 +40,97 @@ const SessionBarChart = ({ data, barColor }) => {
 };
 
 
-// --- Timetable and Subject Data (Used for mapping API data to sessions) ---
 const batchWiseTimetable = {
-    "SKILLUP BATCH-1": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "AWS", room: "5102" }] },
-    "SKILLUP BATCH-2": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "JFS", room: "5106" }] },
-    "SKILLUP BATCH-3": { "Friday": [{ time: "09:30AM - 12:15PM", subject: "CP", room: "5104" }] },
-    "SKILLNEXT BATCH-1": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "CP", room: "5204" }] },
-    "SKILLNEXT BATCH-2": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "DBMS", room: "5104" }] },
-    "SKILLNEXT BATCH-3": { "Friday": [{ time: "09:30AM - 12:15PM", subject: "JFS", room: "5102" }] },
-    "SKILLBRIDGE BATCH-1": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "JFS", room: "5101" }] },
-    "SKILLBRIDGE BATCH-2": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "CP", room: "5005" }] },
-    "SKILLBRIDGE BATCH-3": { "Friday": [{ time: "01:15PM - 03:50PM", subject: "DBMS", room: "5201" }] },
-    "SKILLBRIDGE BATCH-4": { "Friday": [{ time: "09:30AM - 12:15PM", subject: "CP", room: "5101" }] },
-    "SKILLBRIDGE BATCH-5": { "Friday": [{ time: "09:30AM - 12:15PM", subject: "DBMS", room: "5106" }] }
+  "SKILLUP BATCH-1": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5102", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5102", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102", type: "Lecture" }]
+  },
+  "SKILLUP BATCH-2": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "AWS", room: "5106", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5106", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5106", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5106", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5106", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }]
+  },
+  "SKILLUP BATCH-3": {
+    Monday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104", type: "Lecture" }],
+    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5104", type: "Lecture" }],
+    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5104", type: "Lecture" }],
+    Thursday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }],
+    Friday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }],
+    Saturday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }]
+  },
+  "SKILLNEXT BATCH-1": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5204", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5204", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5204", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5204", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5204", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5204", type: "Lecture" }]
+  },
+  "SKILLNEXT BATCH-2": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5104", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5104", type: "Lecture" }]
+  },
+  "SKILLNEXT BATCH-3": {
+    Monday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102", type: "Lecture" }],
+    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102", type: "Lecture" }],
+    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5102", type: "Lecture" }],
+    Thursday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }],
+    Friday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102", type: "Lecture" }],
+    Saturday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }]
+  },
+  "SKILLBRIDGE BATCH-1": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5101", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5101", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5101", type: "Lecture" }]
+  },
+  "SKILLBRIDGE BATCH-2": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5005", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5005", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5005", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5005", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5005", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5005", type: "Lecture" }]
+  },
+  "SKILLBRIDGE BATCH-3": {
+    Monday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5201", type: "Lecture" }],
+    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5201", type: "Lecture" }],
+    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5201", type: "Lecture" }],
+    Thursday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5201", type: "Lecture" }],
+    Friday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5201", type: "Lecture" }],
+    Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5201", type: "Lecture" }]
+  },
+  "SKILLBRIDGE BATCH-4": {
+    Monday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5101", type: "Lecture" }],
+    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }],
+    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }],
+    Thursday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5101", type: "Lecture" }],
+    Friday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }],
+    Saturday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5101", type: "Lecture" }]
+  },
+  "SKILLBRIDGE BATCH-5": {
+    Monday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }],
+    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }],
+    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5106", type: "Lecture" }],
+    Thursday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5106", type: "Lecture" }],
+    Friday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5106", type: "Lecture" }],
+    Saturday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5106", type: "Lecture" }]
+  }
 };
+
 
 
 // --- Section Header Component (No changes needed) ---
