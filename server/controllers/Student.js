@@ -60,7 +60,7 @@ async function getDashboardData(req, res) {
     console.error("Error fetching dashboard data:", err);
     res.status(500).json({ error: "Server error" });
   }
-}
+};
 
 async function getLogData(req, res) {
   try {
@@ -96,7 +96,7 @@ async function getLogData(req, res) {
     console.error("Error fetching Log data:", err);
     res.status(500).json({ error: "Server error" });
   }
-}
+};
 
 async function getProfileData(req, res) {
   try {
@@ -116,7 +116,7 @@ async function getProfileData(req, res) {
     console.error("Error fetching Student data:", err);
     res.status(500).json({ error: "Server error" });
   }
-}
+};
 
 async function updateAllStudentScores() {
   const students = await Coder.find();
@@ -177,7 +177,7 @@ async function updateAllStudentScores() {
       console.error(`❌ Failed to update ${student.rollno}:`, err.message);
     }
   }
-}
+};
 
 async function HandleGetAnnouncements(req, res) {
   

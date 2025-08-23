@@ -13,7 +13,8 @@ const {HandleSessionAttendanceReportPDF,
       updateStudent,
       HandleUpdateAttendance, 
       getViewStudents,
-      getStudentsForAttendanceUpdation} = require('../controllers/Admin');
+      getStudentsForAttendanceUpdation,
+      getViewFaculty} = require('../controllers/Admin');
 
 const getAttendanceModel=require('../services/GetAttendanceModel');
 
@@ -24,7 +25,7 @@ const { HandleChangePassword,
         HandleBatchAttendanceReportPDF, 
         HandleBatchAttendanceReportExcel, 
         HandleMarkAttendance} = require('../services/CommonRoutes');
-const { route } = require('./Admin');
+
 
 
 
@@ -48,13 +49,15 @@ router.get('/getLeaderboardData', getLeaderBoardData);
 
 router.get('/getViewStudentData', getViewStudentData);
 
-router.get('/ResetPassword', HandleResetPassword);
+router.patch('/ResetPassword', HandleResetPassword);
 
 //-------------------------------   Manage Faculty Routes  Start    ----------------------------//
 
+router.get('/getViewFaculty',getViewFaculty)
+
 router.post('/addFaculty', addFaculty);
 
-router.post('/deleteFaculty', deleteFaculty);
+router.delete('/deleteFaculty', deleteFaculty);
 
 router.patch('/updateFaculty', updateFaculty);
 
@@ -67,7 +70,7 @@ router.get('/getViewStudents',getViewStudents);
 
 router.post('/addStudent', addStudent);
 
-router.post('/deleteStudent', deleteStudent);
+router.delete('/deleteStudent', deleteStudent);
 
 router.patch('/updateStudent', updateStudent);
 
