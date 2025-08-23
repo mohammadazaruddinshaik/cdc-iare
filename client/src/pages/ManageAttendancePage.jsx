@@ -391,6 +391,7 @@ const UpdateAttendanceForm = ({ animate }) => {
             setStudentList(prev => prev.filter(roll => !selection.includes(roll)));
             setSelection([]);
         } catch (err) {
+            
             setMessage({ type: 'error', text: "Error updating attendance." });
             console.error(err);
         } finally {

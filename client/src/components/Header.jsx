@@ -172,4 +172,5 @@ const Header = ({ animate }) => {
   );
 };
 
+
 export default Header;

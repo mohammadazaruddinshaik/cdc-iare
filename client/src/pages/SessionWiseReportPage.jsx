@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, FileSpreadsheet, Download, Calendar, Clock, CheckSquare, Eye, X } from 'lucide-react';
-
-// You may need to adjust this path based on your project structure.
 import Header from '../components/Header';
-
 // --- Reusable Helper Components ---
 
 const SpinnerOverlay = ({ isLoading }) => {
@@ -120,8 +117,8 @@ const SessionReport = () => {
         .map(value => batchesData.find(b => b.value === value)?.label)
         .filter(Boolean);
 
-
-    const backendUrl = "https://iareattendancemgmt.onrender.com";
+    // --- MODIFIED: Set the correct base URL ---
+    const backendUrl = "http://localhost:5000";
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type, visible: true });
@@ -133,8 +130,6 @@ const SessionReport = () => {
     };
 
     const handleDownload = async (format) => {
-        // Validation logic...
-        // (This function remains the same as the previous version)
         if (!date || !session) {
             showToast("⚠️ Please select a date and session.", 'error');
             return;
@@ -151,9 +146,11 @@ const SessionReport = () => {
         params.append("session", session);
 
         const isPdf = format === 'pdf';
+        
+        // --- MODIFIED: Updated endpoint logic to match the required routes ---
         const endpoint = isPdf
-            ? `/api/admin/attendance-batch-report-pdf`
-            : `/api/admin/attendance-batch-report`;
+            ? `/api/Admin/attendance-Session-report-pdf`
+            : `/api/Admin/attendance-Session-report-excel`;
         
         const fileExtension = isPdf ? 'pdf' : 'xlsx';
         const url = `${backendUrl}${endpoint}?${params.toString()}`;
@@ -207,22 +204,20 @@ const SessionReport = () => {
                 </div>
 
                 <main className="flex justify-center items-center pt-10 pb-20 px-4">
-                    <div className={`bg-white/5 backdrop-blur-xl rounded-2xl p-8 sm:p-10 max-w-3xl w-full shadow-2xl border border-white/10 transition-all duration-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-                        {/* (Header remains the same) */}
-                        <div className="text-center mb-8">
-                            <div className="mx-auto h-16 w-16 bg-blue-500/10 rounded-full flex items-center justify-center border-2 border-blue-400/30">
-                                <Download className="h-8 w-8 text-blue-300" />
+                    <div className={`bg-white/5 backdrop-blur-xl rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-white/10 transition-all duration-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                        <div className="text-center mb-6">
+                            <div className="mx-auto h-14 w-14 bg-blue-500/10 rounded-full flex items-center justify-center border-2 border-blue-400/30">
+                                <Download className="h-7 w-7 text-blue-300" />
                             </div>
-                            <h1 className="mt-4 text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
+                            <h1 className="mt-3 text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
                                 Session Wise Report
                             </h1>
-                            <p className="mt-2 text-md text-gray-400">
-                                Reports are generated automatically based on the daily schedule.
+                            <p className="mt-1 text-sm text-gray-400">
+                                Reports are generated based on the daily schedule.
                             </p>
                         </div>
                         
-                        <div className="space-y-8">
-                            {/* (Date and Session inputs remain the same) */}
+                        <div className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label htmlFor="date" className="flex items-center gap-2 text-md font-semibold text-gray-300">
@@ -237,46 +232,40 @@ const SessionReport = () => {
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label htmlFor="session" className="flex items-center gap-2 text-md font-semibold text-gray-300">
+                                    <label className="flex items-center gap-2 text-md font-semibold text-gray-300">
                                         <Clock size={18}/> 2. Select Session
                                     </label>
-                                    <select
-                                        id="session"
-                                        value={session}
-                                        onChange={(e) => setSession(e.target.value)}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none"
-                                    >
-                                        <option value="" disabled className="bg-[#0A1B3A]">-- Choose a session --</option>
-                                        <option value="FN" className="bg-[#0A1B3A] font-medium">Forenoon (FN)</option>
-                                        <option value="AN" className="bg-[#0A1B3A] font-medium">Afternoon (AN)</option>
-                                    </select>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => setSession('FN')} className={`p-3 rounded-lg text-sm font-semibold transition-all ${session === 'FN' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>Forenoon (FN)</button>
+                                        <button onClick={() => setSession('AN')} className={`p-3 rounded-lg text-sm font-semibold transition-all ${session === 'AN' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>Afternoon (AN)</button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* --- UPDATED: BATCHES FEEDBACK WITH PREVIEW --- */}
-                            <div className="bg-black/20 p-4 rounded-xl border border-white/10 text-center flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="flex-1 text-center sm:text-left">
-                                    <h3 className="font-semibold text-lg text-white flex items-center gap-2">
-                                        <CheckSquare size={20} className="text-green-400"/> Auto-Selected Batches
+                            {/* --- BATCHES FEEDBACK WITH PREVIEW --- */}
+                            <div className="bg-black/20 p-4 rounded-xl border border-white/10 flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-md text-white flex items-center gap-2">
+                                        <CheckSquare size={18} className="text-green-400"/> Auto-Selected Batches
                                     </h3>
-                                    <p className="text-sm text-gray-400 mt-1">
-                                        Batches are selected based on the schedule for the chosen date & session.
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Based on the schedule for the chosen date & session.
                                     </p>
                                 </div>
-                                <div className="flex-shrink-0 flex flex-col items-center">
-                                    <p className="text-3xl font-bold text-blue-300">{selectedBatches.length}</p>
+                                <div className="text-center">
+                                    <p className="text-2xl font-bold text-blue-300">{selectedBatches.length}</p>
                                     <button 
                                         onClick={() => setIsPreviewVisible(true)}
                                         disabled={selectedBatches.length === 0}
-                                        className="mt-1 text-xs flex items-center gap-1 text-blue-300 hover:text-blue-200 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+                                        className="text-xs flex items-center gap-1 text-blue-300 hover:text-blue-200 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        <Eye size={14}/> View Batches
+                                        <Eye size={14}/> View
                                     </button>
                                 </div>
                             </div>
 
-                            {/* (Download section remains the same) */}
-                            <div className="space-y-3 pt-6 border-t border-white/10">
+                            {/* --- Download section --- */}
+                            <div className="space-y-3 pt-4 border-t border-white/10">
                                 <label className="block text-md font-semibold text-gray-300 text-center">
                                     3. Download Report
                                 </label>
