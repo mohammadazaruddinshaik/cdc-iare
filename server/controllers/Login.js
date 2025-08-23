@@ -13,12 +13,14 @@ async function HandleLogin(req, res) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
-        const role = (username) => {
-        if (uname.startsWith('2')) return 'student';
-        if (uname.toUpperCase().startsWith('IARE')) return 'faculty';
-        if (uname.toLowerCase().startsWith('cdc')) return 'admin';
+        const getRole = (username) => {
+        if (username.startsWith('2')) return 'student';
+        if (username.toUpperCase().startsWith('IARE')) return 'faculty';
+        if (username.toLowerCase().startsWith('cdc')) return 'admin';
         return null; // Return null if no role matches
     };
+        const role=getRole(username);
+        // console.log(role);
         // Pick the correct model & identifier field
         let Model, identifierKey;
         if (role === "student") {

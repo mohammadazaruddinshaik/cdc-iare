@@ -1,11 +1,16 @@
 const express = require('express');
-const { HandelPostAnnouncements, 
-        HandleMarkAttendance, 
+const { HandelPostAnnouncements,  
         getDashboardData, 
         getProfileData, 
         getStudentData } = require('../controllers/Faculty');
 
-const { getLeaderBoardData, HandleResetPassword, HandleChangePassword, getViewStudentData, HandleBatchAttendanceReportExcel, HandleBatchAttendanceReportPDF } = require('../services/CommonRoutes');
+const { getLeaderBoardData, 
+        HandleResetPassword, 
+        HandleChangePassword, 
+        getViewStudentData, 
+        HandleBatchAttendanceReportExcel, 
+        HandleBatchAttendanceReportPDF, 
+        HandleMarkAttendance} = require('../services/CommonRoutes');
 
 const router = express.Router();
 
