@@ -1577,6 +1577,18 @@ async function getDashboardData(req, res) {
 
 //-------------------------------   Manage Faculty Routes  Start    ----------------------------//
 
+async function getViewFaculty(req, res){
+      try {
+        const faculty=Faculty.find({}).select('name facultyid designation subjects_assigned batches_assigned -_id');
+        if(!faculty){
+          res.status(404).json({'msg':'faculty not found'})
+        }
+        res.status(200).json(faculty);
+      } catch (error) {
+        res.status(500).join({'msg':error});
+      }
+}
+
 async function addFaculty(req, res) {
 
   const { name, facultyid, email, designation, subjects_assigned, batches_assigned } = req.body;
@@ -2057,5 +2069,6 @@ module.exports = {
   updateStudent,
   HandleUpdateAttendance,
   getStudentsForAttendanceUpdation,
-  getViewStudents
+  getViewStudents,
+  getViewFaculty
 }

@@ -13,7 +13,8 @@ const {HandleSessionAttendanceReportPDF,
       updateStudent,
       HandleUpdateAttendance, 
       getViewStudents,
-      getStudentsForAttendanceUpdation} = require('../controllers/Admin');
+      getStudentsForAttendanceUpdation,
+      getViewFaculty} = require('../controllers/Admin');
 
 const getAttendanceModel=require('../services/GetAttendanceModel');
 
@@ -51,6 +52,8 @@ router.get('/getViewStudentData', getViewStudentData);
 router.get('/ResetPassword', HandleResetPassword);
 
 //-------------------------------   Manage Faculty Routes  Start    ----------------------------//
+
+router.get('/getViewFaculty',getViewFaculty)
 
 router.post('/addFaculty', addFaculty);
 
