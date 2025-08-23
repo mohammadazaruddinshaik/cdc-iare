@@ -11,6 +11,7 @@ const fs = require('fs');
 const Announcement = require("../models/Announcement");
 const mongoose = require('mongoose');
 const Coder = require('../models/coding');
+const bcrypt = require("bcryptjs");
 
 function getShortBatchName(fullBatchName) {
   const parts = fullBatchName.toUpperCase().split(" ");
@@ -1577,17 +1578,21 @@ async function getDashboardData(req, res) {
 
 //-------------------------------   Manage Faculty Routes  Start    ----------------------------//
 
-async function getViewFaculty(req, res){
-      try {
-        const faculty=Faculty.find({}).select('name facultyid designation subjects_assigned batches_assigned -_id');
-        if(!faculty){
-          res.status(404).json({'msg':'faculty not found'})
-        }
-        res.status(200).json(faculty);
-      } catch (error) {
-        res.status(500).join({'msg':error});
-      }
-}
+async function getViewFaculty(req, res) {
+  try {
+    const faculty = await Faculty.find({})
+      .select('name facultyid designation subjects_assigned batches_assigned -_id');
+
+    if (faculty.length === 0) {
+      return res.status(404).json({ msg: 'No faculty found' });
+    }
+
+    res.status(200).json(faculty);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
 
 async function addFaculty(req, res) {
 
@@ -1732,9 +1737,9 @@ async function getViewStudents(req, res) {
 };
 
 async function addStudent(req, res) {
-  const { rollno, name, branch, batch } = req.body;
+  const { rollno, name, branch, batch, handles } = req.body;
 
-  if (!rollno || !name || !branch || !batch) {
+  if (!rollno || !name || !branch || !batch || !handles) {
     return res.status(400).json({ message: 'Roll No, Name, Branch, and Batch are required.' });
   }
 
@@ -1746,14 +1751,26 @@ async function addStudent(req, res) {
 
     const currentYear = new Date().getFullYear(); // e.g., 2025
     const defaultPassword = `pat@${currentYear}`;
+    const hashedNewPassword = await bcrypt.hash(defaultPassword, 10);
     const email = `${rollno.toLowerCase()}@iare.ac.in`;
+    const batchFormatted = batch
+      .replace(/BATCH/gi, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
 
+    
+      const handleUpdates = {};
+      for (const [platform, username] of Object.entries(handles)) {
+        handleUpdates[`handles.${platform}`] = username;
+      }
     // --- Create documents for all three collections ---
-    const newStudent = new Student({ name, rollno, password: defaultPassword, branch, batch, email });
-    const newCoder = new Coder({ rollno, branch, batch });
+    const newStudent = new Student({ name, rollno, password: hashedNewPassword, branch, batch, email });
+    const newCoder = new Coder({ rollno, branch, batch, handleUpdates});
 
     // Get the dynamic attendance model for the student's batch
-    const Editbatch = `attendance_${batch.toLowerCase()}`
+    const Editbatch = `attendance_${batchFormatted}`
     const Attendance = getAttendanceModel(Editbatch);
     const newAttendanceRecord = new Attendance({ rollno, name, branch, batch });
 

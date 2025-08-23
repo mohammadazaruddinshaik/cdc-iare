@@ -49,7 +49,7 @@ function setupCronJobs() {
 
   // 🕝 2:30 AM IST → Update Student Scores
   cron.schedule(
-    "30 2 * * *",
+    "48 22 * * *",
     async () => {
       console.log("🚀 Running scheduled student score update at 2:30 AM IST...");
       try {

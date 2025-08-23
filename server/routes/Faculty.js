@@ -26,7 +26,7 @@ router.get('/getProfileData/:facultyid',getProfileData);
 
 router.patch('/UpdatePassword', HandleChangePassword);
 
-router.post('/ResetPassword', HandleResetPassword);
+router.patch('/ResetPassword', HandleResetPassword);
 
 router.post("/announcements", HandelPostAnnouncements);
 
