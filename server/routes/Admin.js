@@ -2,8 +2,7 @@ const express=require('express');
 const router=express.Router();
 const ExcelJS = require('exceljs');
 const {HandleSessionAttendanceReportPDF, 
-      HandleSessionAttendanceReportExcel, 
-      HandleMarkAttendance, 
+      HandleSessionAttendanceReportExcel,  
       HandleMonthlyAttendanceReportExcel,
       getDashboardData,
       addFaculty,
@@ -23,14 +22,15 @@ const { HandleChangePassword,
         getLeaderBoardData, 
         HandleResetPassword, 
         HandleBatchAttendanceReportPDF, 
-        HandleBatchAttendanceReportExcel } = require('../services/CommonRoutes');
+        HandleBatchAttendanceReportExcel, 
+        HandleMarkAttendance} = require('../services/CommonRoutes');
 const { route } = require('./Admin');
 
 
 
-router.get("/attendance-batch-report-excel", HandleBatchAttendanceReportPDF);
+router.get("/attendance-batch-report-excel", HandleBatchAttendanceReportExcel);
 
-router.get("/attendance-batch-report-pdf", HandleBatchAttendanceReportExcel);
+router.get("/attendance-batch-report-pdf", HandleBatchAttendanceReportPDF);
 
 router.get("/attendance-Session-report-excel", HandleSessionAttendanceReportExcel);
 
