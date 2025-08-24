@@ -13,10 +13,17 @@ const { updateAllStudentScores } = require("./controllers/Student");
 const { generateAndStoreQrCodes, updateQrData } = require("./services/QrCodeGeneration");
 
 const app = express();
+const cookieParser = require("cookie-parser");
 
 // Middlewares
-app.use(cors());
-app.use(express.json());
+app.use(cookieParser());
+app.use(express.json()); // ✅ only once
+app.use(cors({
+  origin: ["http://localhost:5173", "http://127.0.0.1:3000"], // your frontend(s)
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 // Database connection
 connectDB();

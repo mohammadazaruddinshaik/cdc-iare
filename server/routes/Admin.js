@@ -1,5 +1,4 @@
 const express=require('express');
-const router=express.Router();
 const ExcelJS = require('exceljs');
 const {HandleSessionAttendanceReportPDF, 
       HandleSessionAttendanceReportExcel,  
@@ -29,6 +28,11 @@ const { HandleChangePassword,
         getStudentsByBatch,
         HandleSessionPostAttendance} = require('../services/CommonRoutes');
 
+const { verifyAccess, authorize } = require("../middlewares/Auth");
+const router=express.Router();
+
+// Protect all routes in this file (Admin only)
+router.use(verifyAccess, authorize("admin"));
 
 
 
