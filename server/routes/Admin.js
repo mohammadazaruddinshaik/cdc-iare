@@ -32,7 +32,7 @@ const { verifyAccess, authorize } = require("../middlewares/Auth");
 const router=express.Router();
 
 // Protect all routes in this file (Admin only)
-router.use(verifyAccess, authorize("admin"));
+// router.use(verifyAccess, authorize("admin"));
 
 
 

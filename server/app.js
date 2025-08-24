@@ -10,7 +10,7 @@ const FacultyRouter = require("./routes/Faculty");
 const AdminRouter = require("./routes/Admin");
 
 const { updateAllStudentScores } = require("./controllers/Student");
-const { generateAndStoreQrCodes, updateQrData } = require("./services/QrCodeGeneration");
+const  generateAndStoreQrCodes = require("./services/QrCodeGeneration");
 
 const app = express();
 const cookieParser = require("cookie-parser");
@@ -40,12 +40,11 @@ app.use("/api/Admin", AdminRouter);
 function setupCronJobs() {
   // 🕐 1:00 AM IST → Generate QR Codes + QR Data
   cron.schedule(
-    "52 21 * * *",
+    "31 22 * * *",
     async () => {
       console.log("🚀 Running scheduled QR updates at 1:00 AM IST...");
       try {
         await generateAndStoreQrCodes();
-        await updateQrData();
         console.log("✅ QR code and QR data update completed.");
       } catch (err) {
         console.error("❌ Error running scheduled QR updates:", err);
@@ -56,7 +55,7 @@ function setupCronJobs() {
 
   // 🕝 2:30 AM IST → Update Student Scores
   cron.schedule(
-    "48 22 * * *",
+    "31 23 * * *",
     async () => {
       console.log("🚀 Running scheduled student score update at 2:30 AM IST...");
       try {

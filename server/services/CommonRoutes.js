@@ -803,11 +803,15 @@ async function HandleSessionPostAttendance(req, res) {
     const { course, students, batch, date, status } = req.body;
 
     if (!course || !Array.isArray(students) || !batch || !date || !status) {
-      return res.status(400).json({ message: "Missing course, students, batch, date, or status" });
+      return res
+        .status(400)
+        .json({ message: "Missing course, students, batch, date, or status" });
     }
 
     if (!["present", "absent"].includes(status.toLowerCase())) {
-      return res.status(400).json({ message: "Invalid status. Must be 'present' or 'absent'." });
+      return res
+        .status(400)
+        .json({ message: "Invalid status. Must be 'present' or 'absent'." });
     }
 
     const targetDate = new Date(date).toISOString().split("T")[0];
@@ -833,53 +837,53 @@ async function HandleSessionPostAttendance(req, res) {
 
     // 🔍 Get all students in batch
     const allStudents = await Attendance.find({}, { rollno: 1, _id: 0 });
-    const allRollnos = allStudents.map(s => s.rollno);
+    const allRollnos = allStudents.map((s) => s.rollno);
 
     const inputSet = new Set(students);
 
-    let presentStudents, absentStudents;
-
-    if (status.toLowerCase() === "present") {
-      // Input = present students
-      presentStudents = [...inputSet];
-      absentStudents = allRollnos.filter(r => !inputSet.has(r));
-    } else {
-      // Input = absent students
-      absentStudents = [...inputSet];
-      presentStudents = allRollnos.filter(r => !inputSet.has(r));
-    }
-
     // ✅ Prepare bulk operations
     const bulkOps = [];
+    let presentCount = 0;
+    let absentCount = 0;
 
-    presentStudents.forEach(rollno => {
-      bulkOps.push({
-        updateOne: {
-          filter: { rollno },
-          update: {
-            $push: {
-              dailyLogs: { date: targetDate, course: courseKey, status: "present" }
-            },
-            $set: { lastUpdated: new Date() },
-            $inc: {
-              "overallAttendance.presentDays": 1,
-              [`courseAttendance.${courseKey}.presentDays`]: 1
-            }
+    allRollnos.forEach((rollno) => {
+      let isPresent;
+
+      if (status.toLowerCase() === "present") {
+        // Input list = present
+        isPresent = inputSet.has(rollno);
+      } else {
+        // Input list = absent
+        isPresent = !inputSet.has(rollno);
+      }
+
+      if (isPresent) presentCount++;
+      else absentCount++;
+
+      const update = {
+        $push: {
+          dailyLogs: {
+            date: targetDate,
+            course: courseKey,
+            status: isPresent ? "present" : "absent"
           }
+        },
+        $set: { lastUpdated: new Date() },
+        $inc: {
+          "overallAttendance.totalDays": 1,
+          [`courseAttendance.${courseKey}.totalDays`]: 1
         }
-      });
-    });
+      };
 
-    absentStudents.forEach(rollno => {
+      if (isPresent) {
+        update.$inc["overallAttendance.presentDays"] = 1;
+        update.$inc[`courseAttendance.${courseKey}.presentDays`] = 1;
+      }
+
       bulkOps.push({
         updateOne: {
           filter: { rollno },
-          update: {
-            $push: {
-              dailyLogs: { date: targetDate, course: courseKey, status: "absent" }
-            },
-            $set: { lastUpdated: new Date() }
-          }
+          update
         }
       });
     });
@@ -888,16 +892,16 @@ async function HandleSessionPostAttendance(req, res) {
 
     res.status(200).json({
       message: `Attendance posted for ${courseKey} on ${targetDate}`,
-      presentCount: presentStudents.length,
-      absentCount: absentStudents.length,
+      presentCount,
+      absentCount,
       updatedCount: result.modifiedCount
     });
-
   } catch (err) {
     console.error("❌ Error in HandleSessionPostAttendance:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 async function getStudentsByBatch(req, res) {
   try {
