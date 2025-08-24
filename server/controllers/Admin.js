@@ -1500,6 +1500,8 @@ const HandleMonthlyAttendanceReportExcel = async (req, res) => {
 
 //--------- Attendace Monthly Excel Report Analysis Code End -------------------------------//
 
+
+
 async function getDashboardData(req, res) {
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -1575,13 +1577,35 @@ async function getDashboardData(req, res) {
   }
 };
 
+async function getProfileData(req, res) {
+  try {
+    const { adminId } = req.params;
+    if (!adminId) {
+      return res.status(400).json({ error: "adminId is required" });
+    }
+
+    const Admin = await Faculty.findOne({
+      adminId: new RegExp(`^${adminId}$`, "i")
+    }).select("name adminId email -_id");
+    if (!Admin) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    res.json({ Admin });
+
+  } catch (err) {
+    console.error("Error fetching Admin data:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 
 //-------------------------------   Manage Faculty Routes  Start    ----------------------------//
 
 async function getViewFaculty(req, res) {
   try {
     const faculty = await Faculty.find({})
-      .select('name facultyid designation subjects_assigned batches_assigned -_id');
+      .select('name facultyid designation subjects_assigned batches_assigned email -_id');
 
     if (faculty.length === 0) {
       return res.status(404).json({ msg: 'No faculty found' });
@@ -1761,13 +1785,9 @@ async function addStudent(req, res) {
       .toLowerCase();
 
     
-      const handleUpdates = {};
-      for (const [platform, username] of Object.entries(handles)) {
-        handleUpdates[`handles.${platform}`] = username;
-      }
     // --- Create documents for all three collections ---
     const newStudent = new Student({ name, rollno, password: hashedNewPassword, branch, batch, email });
-    const newCoder = new Coder({ rollno, branch, batch, handleUpdates});
+    const newCoder = new Coder({ rollno, branch, batch, handles});
 
     // Get the dynamic attendance model for the student's batch
     const Editbatch = `attendance_${batchFormatted}`
@@ -2071,6 +2091,9 @@ async function HandleUpdateAttendance(req, res) {
   }
 };
 
+
+
+
 //-------------------------------   Manage Attendance Routes  Start -----------------------------//
 
 module.exports = {
@@ -2078,6 +2101,7 @@ module.exports = {
   HandleSessionAttendanceReportExcel,
   HandleMonthlyAttendanceReportExcel,
   getDashboardData,
+  getProfileData,
   addFaculty,
   deleteFaculty,
   updateFaculty,
