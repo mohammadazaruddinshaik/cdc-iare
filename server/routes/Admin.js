@@ -14,7 +14,8 @@ const {HandleSessionAttendanceReportPDF,
       HandleUpdateAttendance, 
       getViewStudents,
       getStudentsForAttendanceUpdation,
-      getViewFaculty} = require('../controllers/Admin');
+      getViewFaculty,
+      getProfileData} = require('../controllers/Admin');
 
 const getAttendanceModel=require('../services/GetAttendanceModel');
 
@@ -24,7 +25,9 @@ const { HandleChangePassword,
         HandleResetPassword, 
         HandleBatchAttendanceReportPDF, 
         HandleBatchAttendanceReportExcel, 
-        HandleMarkAttendance} = require('../services/CommonRoutes');
+        HandleMarkAttendance,
+        getStudentsByBatch,
+        HandleSessionPostAttendance} = require('../services/CommonRoutes');
 
 
 
@@ -44,6 +47,8 @@ router.get('/attendance-monthly-excel', HandleMonthlyAttendanceReportExcel)
 router.patch('/UpdatePassword', HandleChangePassword);
 
 router.get('/getDashboardData',getDashboardData);
+
+router.get('/getProfileData', getProfileData);
 
 router.get('/getLeaderboardData', getLeaderBoardData);
 
@@ -78,6 +83,10 @@ router.patch('/updateStudent', updateStudent);
 
 
 //-------------------------------   Manage Attendance Routes  Start -----------------------------//
+
+router.get('/getStudentsByBatch/:batch',getStudentsByBatch);
+
+router.post('/Mark-Session',HandleSessionPostAttendance);
 
 router.get('/getAbsenties', getStudentsForAttendanceUpdation);
 

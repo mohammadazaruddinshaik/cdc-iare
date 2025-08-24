@@ -789,7 +789,116 @@ async function HandleMarkAttendance(req, res) {
       return res.status(500).json({ message: "Internal server error" });
     }
   }
+};
+
+async function HandleSessionPostAttendance(req, res) {
+  try {
+    const { course, students, batch, date, status } = req.body;
+
+    // ✅ Validation
+    if (!course || !Array.isArray(students) || !batch || !date || !status) {
+      return res.status(400).json({ message: "Missing course, students, batch, date, or status" });
+    }
+
+    if (!["present", "absent"].includes(status.toLowerCase())) {
+      return res.status(400).json({ message: "Invalid status. Must be 'present' or 'absent'." });
+    }
+
+    const Attendance = getAttendanceModel(batch);
+    const targetDate = new Date(date).toISOString().split("T")[0];
+    const courseKey = course.trim();
+    const newStatus = status.toLowerCase();
+
+    // 🔍 Check if this course+date is already posted
+    const alreadyMarked = await Attendance.findOne({
+      dailyLogs: {
+        $elemMatch: { date: targetDate, course: courseKey }
+      }
+    });
+
+    if (alreadyMarked) {
+      return res.status(400).json({
+        message: `Attendance already posted for this batch: ${courseKey} on ${targetDate}`
+      });
+    }
+
+    // ✅ Prepare bulk insert ops
+    const bulkOps = students.map(rollno => ({
+      updateOne: {
+        filter: { rollno },
+        update: {
+          $push: {
+            dailyLogs: {
+              date: targetDate,
+              course: courseKey,
+              status: newStatus
+            }
+          },
+          $set: { lastUpdated: new Date() },
+          $inc: newStatus === "present"
+            ? {
+                "overallAttendance.presentDays": 1,
+                [`courseAttendance.${courseKey}.presentDays`]: 1
+              }
+            : {}
+        }
+      }
+    }));
+
+    const result = await Attendance.bulkWrite(bulkOps, { ordered: false });
+
+    res.status(200).json({
+      message: `Attendance marked successfully for ${courseKey} on ${targetDate}`,
+      insertedCount: result.modifiedCount
+    });
+
+  } catch (err) {
+    console.error("❌ Error in HandleSessionPostAttendance:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
+
+
+async function getStudentsByBatch(req, res) {
+  try {
+    const { batch } = req.params;
+
+    // ✅ Validation
+    if (!batch) {
+      return res.status(400).json({ message: "Missing batch parameter" });
+    }
+
+    // ✅ Get Attendance Model
+    let Attendance;
+    try {
+      Attendance = getAttendanceModel(batch);
+    } catch (err) {
+      return res
+        .status(404)
+        .json({ message: `Batch collection not found: ${batch}` });
+    }
+
+    // ✅ Fetch students in that batch
+    const students = await Attendance.find({}, { rollno: 1, _id: 0 });
+
+    if (!students || students.length === 0) {
+      return res
+        .status(404)
+        .json({ message: `No students found for batch '${batch}'` });
+    }
+
+    const rollnos = students.map((s) => s.rollno);
+
+    res.status(200).json({
+      batch,
+      total: rollnos.length,
+      students: rollnos
+    });
+  } catch (err) {
+    console.error("❌ Error fetching students by batch:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 module.exports={
     getLeaderBoardData,
@@ -798,5 +907,7 @@ module.exports={
     getViewStudentData,
     HandleBatchAttendanceReportPDF,
     HandleBatchAttendanceReportExcel,
-    HandleMarkAttendance
+    HandleMarkAttendance,
+    HandleSessionPostAttendance,
+    getStudentsByBatch
 }

@@ -10,7 +10,9 @@ const { getLeaderBoardData,
         getViewStudentData, 
         HandleBatchAttendanceReportExcel, 
         HandleBatchAttendanceReportPDF, 
-        HandleMarkAttendance} = require('../services/CommonRoutes');
+        HandleMarkAttendance,
+        getStudentsByBatch,
+        HandleSessionPostAttendance} = require('../services/CommonRoutes');
 
 const router = express.Router();
 
@@ -31,6 +33,10 @@ router.patch('/ResetPassword', HandleResetPassword);
 router.post("/announcements", HandelPostAnnouncements);
 
 router.post('/Mark-Attendance', HandleMarkAttendance);
+
+router.get('/getStudentsByBatch',getStudentsByBatch);
+
+router.post('/Mark-Session',HandleSessionPostAttendance);
 
 router.get("/batch-report-excel/",HandleBatchAttendanceReportExcel);
 
