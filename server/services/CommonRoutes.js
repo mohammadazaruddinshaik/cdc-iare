@@ -146,7 +146,7 @@ function getShortBatchName(fullBatchName) {
       .pop() || "";
 
   return `V-${code}-${number}`;
-}
+};
 
 async function getLeaderBoardData(req, res) {
   try {
@@ -177,7 +177,7 @@ async function getLeaderBoardData(req, res) {
     console.error("Error fetching leaderboard data:", err);
     res.status(500).json({ error: "Server error" });
   }
-}
+};
 
 async function HandleChangePassword(req, res) {
     try {
@@ -211,7 +211,7 @@ async function HandleChangePassword(req, res) {
         console.error("Password change error:", err);
         res.status(500).json({ error: "Server error" });
     }
-}
+};
 
 async function HandleResetPassword(req, res) {
   try {
@@ -276,7 +276,7 @@ async function HandleResetPassword(req, res) {
     console.error("Password reset error:", err);
     res.status(500).json({ error: "Server error" });
   }
-}
+};
 
 async function getViewStudentData(req, res) {
   try {
@@ -333,7 +333,7 @@ async function getViewStudentData(req, res) {
     console.error("Error fetching Students data:", err);
     res.status(500).json({ error: "Server error" });
   }
-}
+};
 
 async function HandleBatchAttendanceReportPDF(req, res) {
   try {
@@ -419,7 +419,7 @@ async function HandleBatchAttendanceReportPDF(req, res) {
     console.error("Error generating attendance PDF:", err);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 async function HandleBatchAttendanceReportExcel(req, res) {
   try {
@@ -651,7 +651,7 @@ async function HandleBatchAttendanceReportExcel(req, res) {
     console.error("Error generating attendance Excel:", err);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 async function HandleMarkAttendance(req, res) {
   try {
@@ -662,7 +662,14 @@ async function HandleMarkAttendance(req, res) {
       return res.status(400).json({ message: "Missing or invalid input data" });
     }
 
-    const Attendance = getAttendanceModel(collectionName);
+    const batchFormatted = collectionName
+      .replace(/BATCH/gi, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
+
+    const Attendance = getAttendanceModel(batchFormatted);
     const now = new Date();
 
     // Normalize date
@@ -795,7 +802,6 @@ async function HandleSessionPostAttendance(req, res) {
   try {
     const { course, students, batch, date, status } = req.body;
 
-    // ✅ Validation
     if (!course || !Array.isArray(students) || !batch || !date || !status) {
       return res.status(400).json({ message: "Missing course, students, batch, date, or status" });
     }
@@ -804,60 +810,94 @@ async function HandleSessionPostAttendance(req, res) {
       return res.status(400).json({ message: "Invalid status. Must be 'present' or 'absent'." });
     }
 
-    const Attendance = getAttendanceModel(batch);
     const targetDate = new Date(date).toISOString().split("T")[0];
     const courseKey = course.trim();
-    const newStatus = status.toLowerCase();
+    const batchFormatted = batch
+      .replace(/BATCH/gi, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
 
-    // 🔍 Check if this course+date is already posted
+    const Attendance = getAttendanceModel(batchFormatted);
+
+    // 🔍 Check if already marked
     const alreadyMarked = await Attendance.findOne({
-      dailyLogs: {
-        $elemMatch: { date: targetDate, course: courseKey }
-      }
+      dailyLogs: { $elemMatch: { date: targetDate, course: courseKey } }
     });
-
     if (alreadyMarked) {
       return res.status(400).json({
         message: `Attendance already posted for this batch: ${courseKey} on ${targetDate}`
       });
     }
 
-    // ✅ Prepare bulk insert ops
-    const bulkOps = students.map(rollno => ({
-      updateOne: {
-        filter: { rollno },
-        update: {
-          $push: {
-            dailyLogs: {
-              date: targetDate,
-              course: courseKey,
-              status: newStatus
+    // 🔍 Get all students in batch
+    const allStudents = await Attendance.find({}, { rollno: 1, _id: 0 });
+    const allRollnos = allStudents.map(s => s.rollno);
+
+    const inputSet = new Set(students);
+
+    let presentStudents, absentStudents;
+
+    if (status.toLowerCase() === "present") {
+      // Input = present students
+      presentStudents = [...inputSet];
+      absentStudents = allRollnos.filter(r => !inputSet.has(r));
+    } else {
+      // Input = absent students
+      absentStudents = [...inputSet];
+      presentStudents = allRollnos.filter(r => !inputSet.has(r));
+    }
+
+    // ✅ Prepare bulk operations
+    const bulkOps = [];
+
+    presentStudents.forEach(rollno => {
+      bulkOps.push({
+        updateOne: {
+          filter: { rollno },
+          update: {
+            $push: {
+              dailyLogs: { date: targetDate, course: courseKey, status: "present" }
+            },
+            $set: { lastUpdated: new Date() },
+            $inc: {
+              "overallAttendance.presentDays": 1,
+              [`courseAttendance.${courseKey}.presentDays`]: 1
             }
-          },
-          $set: { lastUpdated: new Date() },
-          $inc: newStatus === "present"
-            ? {
-                "overallAttendance.presentDays": 1,
-                [`courseAttendance.${courseKey}.presentDays`]: 1
-              }
-            : {}
+          }
         }
-      }
-    }));
+      });
+    });
+
+    absentStudents.forEach(rollno => {
+      bulkOps.push({
+        updateOne: {
+          filter: { rollno },
+          update: {
+            $push: {
+              dailyLogs: { date: targetDate, course: courseKey, status: "absent" }
+            },
+            $set: { lastUpdated: new Date() }
+          }
+        }
+      });
+    });
 
     const result = await Attendance.bulkWrite(bulkOps, { ordered: false });
 
     res.status(200).json({
-      message: `Attendance marked successfully for ${courseKey} on ${targetDate}`,
-      insertedCount: result.modifiedCount
+      message: `Attendance posted for ${courseKey} on ${targetDate}`,
+      presentCount: presentStudents.length,
+      absentCount: absentStudents.length,
+      updatedCount: result.modifiedCount
     });
 
   } catch (err) {
     console.error("❌ Error in HandleSessionPostAttendance:", err);
     res.status(500).json({ message: "Internal server error" });
   }
-}
-
+};
 
 async function getStudentsByBatch(req, res) {
   try {
