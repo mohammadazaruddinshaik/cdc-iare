@@ -5,7 +5,7 @@ import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import Header from '../components/Header'; // Adjust path if necessary
 
-// --- Reusable Helper Components (No changes needed here) ---
+// --- Reusable Helper Components ---
 
 const SpinnerOverlay = ({ isLoading }) => {
     if (!isLoading) return null;
@@ -118,7 +118,6 @@ const MonthlyReport = () => {
     };
 
     const handleDownload = async () => {
-        // --- 1. VALIDATION (No changes) ---
         if (!fromDate || !toDate) {
             showToast("⚠️ Please select both a 'From' and 'To' date.", 'error');
             return;
@@ -131,50 +130,23 @@ const MonthlyReport = () => {
         setIsLoading(true);
 
         try {
-            // --- 2. PREPARE THE REQUEST (Updated) ---
-            
-            // **CHANGED:** Use environment variables for the API URL
             const backendUrl = "http://localhost:5000";
-            
-            // **ADDED:** Retrieve the authentication token (e.g., from local storage)
-            // const token = localStorage.getItem('authToken'); 
-            // if (!token) {
-            //     throw new Error("Authentication token not found. Please log in again.");
-            // }
-
             const fromDateFormatted = format(fromDate, 'yyyy-MM-dd');
             const toDateFormatted = format(toDate, 'yyyy-MM-dd');
             const params = new URLSearchParams({ from: fromDateFormatted, to: toDateFormatted });
             const url = `${backendUrl}/api/Admin/attendance-monthly-excel?${params.toString()}`;
 
-            // --- 3. EXECUTE THE FETCH REQUEST (Updated) ---
-            const response = await fetch(url, {
-                method: 'GET',
-                // **ADDED:** Include the Authorization header for security
-                // headers: {
-                //     'Authorization': `Bearer ${token}`,
-                //     // 'Content-Type' is not needed for a GET request downloading a file
-                // },
-            });
+            const response = await fetch(url, { method: 'GET' });
 
             if (!response.ok) {
-                // If the error response is JSON, parse it for a better message
-                // if (response.headers.get('content-type')?.includes('application/json')) {
-                //     const errorData = await response.json();
-                //     throw new Error(errorData.message || `Server error: ${response.status}`);
-                // }
-                // Otherwise, use a generic error
                 throw new Error(`Download failed. Server responded with status ${response.status}.`);
             }
 
-            // --- 4. PROCESS THE FILE BLOB (No changes) ---
             const blob = await response.blob();
             if (blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
                 throw new Error("Invalid file format received. The server may have sent an error.");
             }
             const blobUrl = URL.createObjectURL(blob);
-
-            // --- 5. TRIGGER THE DOWNLOAD (No changes) ---
             const filename = `MonthlyReport_${format(fromDate, 'dd-MM-yyyy')}_to_${format(toDate, 'dd-MM-yyyy')}.xlsx`;
             const a = document.createElement("a");
             a.href = blobUrl;
@@ -182,7 +154,6 @@ const MonthlyReport = () => {
             document.body.appendChild(a);
             a.click();
             
-            // --- 6. CLEANUP (No changes) ---
             a.remove();
             URL.revokeObjectURL(blobUrl);
 
@@ -219,12 +190,13 @@ const MonthlyReport = () => {
                 </div>
 
                 <main className="flex justify-center items-center pt-10 pb-20 px-4">
-                    <div className={`bg-white/5 backdrop-blur-xl rounded-2xl p-8 sm:p-10 max-w-3xl w-full shadow-2xl border border-white/10 transition-all duration-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                    {/* CHANGED: Container size is now fixed and centered */}
+                    <div className={`bg-white/5 backdrop-blur-xl rounded-2xl p-6 sm:p-8 w-[600px] h-[550px] flex flex-col justify-center shadow-2xl border border-white/10 transition-all duration-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                         <div className="text-center mb-8">
-                            <div className="mx-auto h-16 w-16 bg-blue-500/10 rounded-full flex items-center justify-center border-2 border-blue-400/30">
-                                <Download className="h-8 w-8 text-blue-300" />
+                            <div className="mx-auto h-14 w-14 bg-blue-500/10 rounded-full flex items-center justify-center border-2 border-blue-400/30">
+                                <Download className="h-7 w-7 text-blue-300" />
                             </div>
-                            <h1 className="mt-4 text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
+                            <h1 className="mt-4 text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
                                 Monthly Report
                             </h1>
                             <p className="mt-2 text-md text-gray-400">

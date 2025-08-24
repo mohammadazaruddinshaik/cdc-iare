@@ -323,7 +323,6 @@ const FacultyDashboard = () => {
                         <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">LC:</span> {coder.scores.leetcode}</div>
                         <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">GFG:</span> {coder.scores.gfg}</div>
                         <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">CC:</span> {coder.scores.codechef}</div>
-                        <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">HR:</span> {coder.scores.hackerank}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg mt-2 self-start">

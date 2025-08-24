@@ -27,6 +27,7 @@ import UpdateStudentPage from './pages/UpdateStudentPage';
 import PostAttendance from './pages/PostAttendancePage';
 import ViewAttendance from './pages/ViewAttendancePage'; // Import the new page
 import ViewAttendanceReports from './pages/ViewAttendanceReports';
+import FacultyAttendancePage from './pages/FacultyAttendancePage';
 
 // Admin-specific Pages 
 import AdminTimetablePage from './pages/AdminTimeTablePage';
@@ -57,9 +58,11 @@ function App() {
 
         {/* Faculty-specific action routes */}
         <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
+        <Route path="/faculty/select-attendance" element={<ViewAttendanceReports/>}></Route>
         <Route path="/post-attendance" element={<PostAttendance />} />
         <Route path="/faculty/students" element={<ViewAttendance />} /> {/* Add the new route */}
         <Route path="/faculty/reports" element={<ViewAttendanceReports/>}></Route>
+
         
         <Route path="/admin/timetable" element={<AdminTimetablePage/>}></Route>
         <Route path="/admin/profile" element={<AdminProfilePage/>}></Route>

@@ -12,28 +12,28 @@ async function HandleLogin(req, res) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Identify role by username prefix
-    const getRole = (u) => {
-      if (u.startsWith("2")) return "student";                 // rollno
-      if (u.toUpperCase().startsWith("IARE")) return "faculty"; // facultyid
-      if (u.toLowerCase().startsWith("cdc")) return "admin";    // adminId
-      return null;
-    };
-    const role = getRole(username);
-    if (!role) return res.status(400).json({ error: "Invalid role" });
-
-    // Select model & identifier field
-    let Model, identifierKey;
-    if (role === "student") {
-      Model = Student;
-      identifierKey = "rollno";
-    } else if (role === "faculty") {
-      Model = Faculty;
-      identifierKey = "facultyid";
-    } else {
-      Model = Admin;
-      identifierKey = "adminId";
-    }
+        const getRole = (username) => {
+        if (username.startsWith('2')) return 'student';
+        if (username.toUpperCase().startsWith('IARE')) return 'faculty';
+        if (username.toLowerCase().startsWith('cdc')) return 'admin';
+        return null; // Return null if no role matches
+        };
+        
+        const role = getRole(username);
+        // Pick the correct model & identifier field
+        let Model, identifierKey;
+        if (role === "student") {
+            Model = Student;
+            identifierKey = "rollno";
+        } else if (role === "faculty") {
+            Model = Faculty;
+            identifierKey = "facultyid";
+        } else if (role === "admin") {
+            Model = Admin;
+            identifierKey = "adminId";
+        } else {
+            return res.status(400).json({ error: "Invalid role" });
+        }
 
     // Case-insensitive search
     const query = {};
