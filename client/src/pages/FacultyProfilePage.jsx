@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Link, useLocation, useNavigate } from 'react-r
 import { User, Mail, Book, Briefcase, Loader2, Lock, X, Eye, EyeOff } from 'lucide-react';
 import Header from '../components/Header'; // Assuming Header is in a separate file
 
-// --- Sub-Components (Unchanged) ---
+// --- Sub-Components ---
 const InfoPill = ({ icon, text }) => (
     <div className="flex items-center gap-2 bg-indigo-500/10 text-indigo-300 font-medium py-2 px-4 rounded-full border border-indigo-500/30">
         {icon}
@@ -62,7 +62,7 @@ const ChangePasswordModal = ({ isOpen, onClose, facultyId }) => {
             setErrors(validationErrors);
             return;
         }
-        
+
         setIsLoading(true);
         try {
             const response = await fetch('http://localhost:5000/api/Faculty/UpdatePassword', {
@@ -94,7 +94,7 @@ const ChangePasswordModal = ({ isOpen, onClose, facultyId }) => {
             }
         }
     };
-    
+
     const handleChange = (field) => (e) => {
         setPasswords(prev => ({ ...prev, [field]: e.target.value }));
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
@@ -139,7 +139,8 @@ const FacultyProfilePage = () => {
     }, []);
     
     useEffect(() => {
-        const ProfileData = async () => {
+        // Renamed function to match the call below
+        const fetchProfileData = async () => {
             try {
                 setLoading(true);
                 const facultyId = localStorage.getItem('userIdentifier');
@@ -168,6 +169,7 @@ const FacultyProfilePage = () => {
                 setLoading(false);
             }
         };
+        // Corrected function call
         fetchProfileData();
     }, []);
 
@@ -207,7 +209,7 @@ const FacultyProfilePage = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <h3 className="text-lg font-semibold text-white border-b-2 border-indigo-500/50 pb-2 mb-4">Subjects Assigned</h3>
@@ -224,9 +226,8 @@ const FacultyProfilePage = () => {
                             </div>
                             
                             <div className="mt-10 pt-6 border-t border-white/10 flex justify-end">
-                                {/* CHANGED: Button style is now minimal and outlined */}
-                                <button 
-                                    onClick={handleOpenModal} 
+                                <button
+                                    onClick={handleOpenModal}
                                     className="flex items-center gap-2 border border-slate-600 text-slate-300 font-bold py-2 px-5 rounded-xl transition-all duration-300 transform hover:scale-105 hover:bg-slate-700 hover:text-white hover:border-slate-500"
                                 >
                                     <Lock size={18} />

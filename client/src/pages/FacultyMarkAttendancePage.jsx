@@ -24,7 +24,6 @@ const Header = ({ animate }) => {
                 setUserData({ primary: 'Faculty', secondary: 'User' });
             }
         } catch (error) {
-            console.error("Failed to get user data from localStorage:", error);
             setUserData({ primary: 'Error', secondary: 'Data Error' });
         }
     }, [userRole]);

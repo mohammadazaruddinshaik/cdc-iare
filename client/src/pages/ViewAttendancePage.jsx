@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Search, ListOrdered, ChevronLeft, ChevronRight, Filter, Calendar, BookOpen, Loader2, ClipboardList } from 'lucide-react';
-import Header from '../components/Header'; 
+import Header from '../components/Header';
 
 const GlassSkeletonLoader = () => (
     <div className="animate-pulse w-full max-w-7xl mx-auto">
@@ -101,7 +101,7 @@ const CalendarModal = ({ dailyLogs, position }) => {
     };
 
     return (
-        <div 
+        <div
             className="fixed z-50 bg-black/40 backdrop-blur-xl text-white p-3 rounded-2xl shadow-2xl border border-white/20 transition-opacity duration-300 w-72"
             style={{ top: position.y, left: position.x }}
         >
@@ -140,23 +140,36 @@ const ViewAttendance = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    // Effect to scroll to top when page changes
+    // REMOVED THE AUTO-SCROLLING EFFECT
+    /*
     useEffect(() => {
         if (!loading && listContainerRef.current) {
             listContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, [currentPage, loading]);
+    */
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('http://localhost:5000/api/Faculty/getViewStudentData', {method: "GET", credentials: "include"});
+                const userRole = localStorage.getItem("userRole");
+                let apiUrl;
+                
+                // Conditional API endpoint based on user role
+                if (userRole === 'admin') {
+                    apiUrl = 'http://localhost:5000/api/Admin/getViewStudentData';
+                } else if (userRole === 'faculty') {
+                    apiUrl = 'http://localhost:5000/api/Faculty/getViewStudentData';
+                } else {
+                    throw new Error("User role not found. Please log in again.");
+                }
+
+                const response = await fetch(apiUrl, { method: "GET", credentials: "include" });
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log(data.AllStudents)
                 setAllStudents(data.AllStudents || []);
             } catch (err) {
                 setError(err.message);
@@ -204,7 +217,7 @@ const ViewAttendance = () => {
         if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
 
         const modalWidth = 288;
-        const modalHeight = 250; 
+        const modalHeight = 250;
         let x = e.clientX + 20;
         let y = e.clientY - (modalHeight / 2);
 
@@ -306,11 +319,11 @@ const ViewAttendance = () => {
                                             const sno = (currentPage - 1) * itemsPerPage + index + 1;
                                             const overallPerc = getPercentage(student.overallAttendance.presentDays, student.overallAttendance.totalDays);
                                             return (
-                                                <div key={student.rollno} 
-                                                     className="border-b border-white/5 transition-all duration-300 hover:bg-white/10"
-                                                     style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.05}s forwards`, opacity: 0 }}
-                                                     onMouseEnter={(e) => handleMouseEnter(e, student)}
-                                                     onMouseLeave={handleMouseLeave}
+                                                <div key={student.rollno}
+                                                    className="border-b border-white/5 transition-all duration-300 hover:bg-white/10"
+                                                    style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.05}s forwards`, opacity: 0 }}
+                                                    onMouseEnter={(e) => handleMouseEnter(e, student)}
+                                                    onMouseLeave={handleMouseLeave}
                                                 >
                                                     {/* --- MOBILE VIEW --- */}
                                                     <div className="md:hidden p-3 w-full">
@@ -357,20 +370,20 @@ const ViewAttendance = () => {
                 </div>
             </main>
              <style>{`
-                  @keyframes fadeInUp {
-                      from { opacity: 0; transform: translateY(20px); }
-                      to { opacity: 1; transform: translateY(0); }
-                  }
-                  .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-                  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                  .custom-scrollbar::-webkit-scrollbar-thumb {
-                      background-color: rgba(255, 255, 255, 0.2);
-                      border-radius: 10px;
-                      border: 2px solid transparent;
-                      background-clip: content-box;
-                  }
-                  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
-                `}</style>
+                 @keyframes fadeInUp {
+                     from { opacity: 0; transform: translateY(20px); }
+                     to { opacity: 1; transform: translateY(0); }
+                 }
+                 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                 .custom-scrollbar::-webkit-scrollbar-thumb {
+                     background-color: rgba(255, 255, 255, 0.2);
+                     border-radius: 10px;
+                     border: 2px solid transparent;
+                     background-clip: content-box;
+                 }
+                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+                 `}</style>
         </div>
     );
 };

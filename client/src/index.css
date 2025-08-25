@@ -20,7 +20,7 @@ html{
 /* For 14-inch screens (1440px and up), scale to 75% */
 @media (min-width: 1440px) {
   html {
-    font-size: 14px; /* 16px * 0.75 */
+    font-size: 14.5px; /* 16px * 0.75 */
   }
 }
 

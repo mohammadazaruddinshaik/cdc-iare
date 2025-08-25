@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 // --- GLOBAL CONFIGURATION ---
-const BACKEND_URL = "http://localhost:5000"; 
+const BACKEND_URL = "http://localhost:5000";
 const getFormattedDate = () => new Date().toISOString().split('T')[0];
 const COURSES = ["CP", "JFS", "DBMS", "AWS"];
 
@@ -158,7 +158,7 @@ const PostAttendancePage = () => {
     const validStudents = useRef(new Set());
     const scannedData = useRef(new Map());
     const isStoppingScanner = useRef(false);
-    
+
     useEffect(() => {
         const userRole = localStorage.getItem("userRole") || 'faculty';
         setConfig(ROLE_CONFIG[userRole] || ROLE_CONFIG.faculty);
@@ -166,7 +166,7 @@ const PostAttendancePage = () => {
 
     useEffect(() => {
         if (view === 'analytics' && document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {});
+            document.exitFullscreen().catch(() => { });
         }
     }, [view]);
 
@@ -180,8 +180,6 @@ const PostAttendancePage = () => {
                         await scannerRef.current.stop();
                     }
                 } catch (err) {
-                    // This error is logged but doesn't stop the app. It's a known issue
-                    // with the library when components re-render quickly.
                     console.log("Scanner stop error (ignorable):", err.message);
                 } finally {
                     isStoppingScanner.current = false;
@@ -226,8 +224,19 @@ const PostAttendancePage = () => {
         setView('loading');
         try {
             const collectionName = config.formatCollection(selectedBatch);
-            const url = `${BACKEND_URL}/api/Admin/getStudentsByBatch/${collectionName}`;
-            const data = await fetchApi(url, {method : "GET",credentials: "include"});
+            
+            // Conditional API path based on user role
+            const userRole = localStorage.getItem("userRole") || 'faculty';
+            let apiUrl;
+
+            if (userRole === 'admin') {
+                apiUrl = `${BACKEND_URL}/api/Admin/getStudentsByBatch/${collectionName}`;
+            } else { // 'faculty' role
+                apiUrl = `${BACKEND_URL}/api/Faculty/getStudentsByBatch/${collectionName}`;
+            }
+
+            const data = await fetchApi(apiUrl, { method: "GET", credentials: "include" });
+
             if (!data || !Array.isArray(data.students)) {
                 throw new Error("Data format from server is invalid.");
             }
@@ -272,7 +281,7 @@ const PostAttendancePage = () => {
             try {
                 const parsed = JSON.parse(decodedText);
                 hashValue = parsed.hash || "";
-            } catch {}
+            } catch { }
             scannedData.current.set(rollno, hashValue);
             setScanCount(scannedData.current.size);
             const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${rollno}/${rollno}.jpg`;
@@ -316,7 +325,7 @@ const PostAttendancePage = () => {
         }
     };
 
-    const handleEnterFullScreen = () => { document.documentElement.requestFullscreen().catch(() => {}); setView('selection'); };
+    const handleEnterFullScreen = () => { document.documentElement.requestFullscreen().catch(() => { }); setView('selection'); };
     const handleConfirmExit = () => {
         if (document.fullscreenElement) document.exitFullscreen();
         navigate(config.dashboardPath);
@@ -332,7 +341,7 @@ const PostAttendancePage = () => {
             </button>
         </div>
     );
-    
+
     const renderLoadingView = () => (
         <div className="flex flex-col items-center justify-center text-white text-center animate-fade-in">
             <Loader2 className="w-16 h-16 animate-spin mb-4" />
@@ -352,21 +361,21 @@ const PostAttendancePage = () => {
                 <form onSubmit={handleStartScanning} className="space-y-6 text-left mt-8">
                     <div className="relative">
                         <label className="text-sm font-semibold text-gray-600 mb-2 block">Batch</label>
-                        <Group className="absolute left-4 top-11 text-gray-400" size={20}/>
+                        <Group className="absolute left-4 top-11 text-gray-400" size={20} />
                         <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)} required className="pl-12 pr-10 appearance-none w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-base text-gray-700 focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
                             <option value="" disabled>Choose a batch...</option>
                             {config.batches.map(batch => <option key={batch.value} value={batch.value}>{batch.label}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-4 top-11 text-gray-400 pointer-events-none"/>
+                        <ChevronDown className="absolute right-4 top-11 text-gray-400 pointer-events-none" />
                     </div>
                     <div className="relative">
                         <label className="text-sm font-semibold text-gray-600 mb-2 block">Course / Session</label>
-                        <BookOpen className="absolute left-4 top-11 text-gray-400" size={20}/>
+                        <BookOpen className="absolute left-4 top-11 text-gray-400" size={20} />
                         <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} required className="pl-12 pr-10 appearance-none w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-base text-gray-700 focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
                             <option value="" disabled>Choose a course...</option>
                             {COURSES.map(course => <option key={course} value={course}>{course}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-4 top-11 text-gray-400 pointer-events-none"/>
+                        <ChevronDown className="absolute right-4 top-11 text-gray-400 pointer-events-none" />
                     </div>
                     <button type="submit" className="w-full bg-gradient-to-br from-blue-500 to-blue-600 text-white py-4 mt-4 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-blue-700 transition transform hover:scale-105 shadow-lg flex items-center justify-center gap-3">
                         <ScanLine size={24} /> Begin Scanning
@@ -398,7 +407,7 @@ const PostAttendancePage = () => {
                     )}
                 </div>
                 <div className="w-full bg-black/30 backdrop-blur-xl rounded-2xl p-3 shadow-lg border border-white/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2"><UserCheck size={24}/><p className="font-semibold text-lg">Scanned</p></div>
+                    <div className="flex items-center gap-2"><UserCheck size={24} /><p className="font-semibold text-lg">Scanned</p></div>
                     <p className="font-bold text-4xl tracking-tighter">{scanCount}</p>
                 </div>
                 <button onClick={() => setIsVerificationModalOpen(true)} className="w-full bg-gradient-to-br from-blue-500 to-blue-600 text-white py-3 mt-1 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-blue-700 transition transform hover:scale-105 flex items-center justify-center gap-3">
@@ -417,7 +426,7 @@ const PostAttendancePage = () => {
         return (
             <div className="w-11/12 max-w-2xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-gray-800 animate-fade-in">
                 <div className="text-center">
-                    <CheckCircle2 size={48} className="mx-auto text-green-500 mb-2"/>
+                    <CheckCircle2 size={48} className="mx-auto text-green-500 mb-2" />
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Attendance Summary</h1>
                     <div className="mt-2 text-sm text-gray-500 bg-gray-50 rounded-lg py-2 px-4 inline-block">
                         <span className="font-semibold text-gray-700">{batchLabel}</span>
@@ -425,15 +434,15 @@ const PostAttendancePage = () => {
                         <span className="font-semibold text-gray-700">{selectedCourse}</span>
                     </div>
                 </div>
-                
+
                 <div className="my-8">
                     <AttendanceDonutChart present={reportData.presentiesCount || 0} total={reportData.totalMarked || 0} />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                    <div className="bg-blue-50 p-4 rounded-xl text-center"><Users className="mx-auto text-blue-500 mb-1" size={24}/><p className="text-3xl font-bold">{reportData.totalMarked || 0}</p><p className="text-gray-500 font-semibold text-sm">Total Students</p></div>
-                    <div className="bg-green-50 p-4 rounded-xl text-center"><UserCheck className="mx-auto text-green-500 mb-1" size={24}/><p className="text-3xl font-bold">{reportData.presentiesCount || 0}</p><p className="text-gray-500 font-semibold text-sm">Present</p></div>
-                    <div className="bg-red-50 p-4 rounded-xl text-center"><UserX className="mx-auto text-red-500 mb-1" size={24}/><p className="text-3xl font-bold">{reportData.absenteesCount || 0}</p><p className="text-gray-500 font-semibold text-sm">Absent</p></div>
+                    <div className="bg-blue-50 p-4 rounded-xl text-center"><Users className="mx-auto text-blue-500 mb-1" size={24} /><p className="text-3xl font-bold">{reportData.totalMarked || 0}</p><p className="text-gray-500 font-semibold text-sm">Total Students</p></div>
+                    <div className="bg-green-50 p-4 rounded-xl text-center"><UserCheck className="mx-auto text-green-500 mb-1" size={24} /><p className="text-3xl font-bold">{reportData.presentiesCount || 0}</p><p className="text-gray-500 font-semibold text-sm">Present</p></div>
+                    <div className="bg-red-50 p-4 rounded-xl text-center"><UserX className="mx-auto text-red-500 mb-1" size={24} /><p className="text-3xl font-bold">{reportData.absenteesCount || 0}</p><p className="text-gray-500 font-semibold text-sm">Absent</p></div>
                 </div>
 
                 {Array.isArray(reportData.mismatchedStudents) && reportData.mismatchedStudents.length > 0 && (
@@ -449,7 +458,7 @@ const PostAttendancePage = () => {
                     </div>
                 )}
                 <button onClick={() => navigate(config.dashboardPath)} className="w-full bg-gray-700 text-white py-3 mt-8 rounded-xl font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center gap-3">
-                    <LogOut size={24}/> Finish & Exit
+                    <LogOut size={24} /> Finish & Exit
                 </button>
             </div>
         );
@@ -458,10 +467,10 @@ const PostAttendancePage = () => {
     const renderVerificationModal = () => (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-sm text-center text-gray-800 animate-fade-in">
-                <Lock size={40} className="mx-auto text-blue-500 mb-4"/>
+                <Lock size={40} className="mx-auto text-blue-500 mb-4" />
                 <h3 className="font-bold text-2xl mb-2">{config.verificationTitle}</h3>
                 <p className="text-gray-500 mb-6">Enter your ID to finalize the report.</p>
-                <input type="password" value={idInput} onChange={(e) => setIdInput(e.target.value)} placeholder={config.idPlaceholder} className="w-full p-3 border-2 border-gray-200 rounded-lg mb-6 text-center text-lg"/>
+                <input type="password" value={idInput} onChange={(e) => setIdInput(e.target.value)} placeholder={config.idPlaceholder} className="w-full p-3 border-2 border-gray-200 rounded-lg mb-6 text-center text-lg" />
                 <div className="flex gap-4">
                     <button onClick={() => setIsVerificationModalOpen(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300" disabled={isSubmitting}>Cancel</button>
                     <button onClick={handleProcessReport} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center" disabled={!idInput || isSubmitting}>
@@ -471,7 +480,7 @@ const PostAttendancePage = () => {
             </div>
         </div>
     );
-    
+
     const renderView = () => {
         switch (view) {
             case 'splash': return renderSplashView();
@@ -506,10 +515,10 @@ const PostAttendancePage = () => {
             <div className="relative z-10 w-full h-full flex items-center justify-center">
                 {renderView()}
             </div>
-            <UserMessageModal 
-                message={userMessage.text} 
-                type={userMessage.type} 
-                onClose={() => setUserMessage({ text: null, type: 'info' })} 
+            <UserMessageModal
+                message={userMessage.text}
+                type={userMessage.type}
+                onClose={() => setUserMessage({ text: null, type: 'info' })}
             />
             {isVerificationModalOpen && renderVerificationModal()}
             <ExitConfirmationModal isOpen={isExitModalOpen} onClose={() => setIsExitModalOpen(false)} onConfirm={handleConfirmExit} />
