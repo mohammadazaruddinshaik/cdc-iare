@@ -18,13 +18,13 @@ const cookieParser = require("cookie-parser");
 // Middlewares
 app.use(cookieParser());
 app.use(express.json()); // ✅ only once
-// app.use(cors({
-//   origin: ["http://localhost:5173", "http://127.0.0.1:3000"], // your frontend(s)
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-// }));
-app.use(cors())
+app.use(cors({
+  origin: ["http://localhost:5173", "http://127.0.0.1:3000"], // your frontend(s)
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+// app.use(cors())
 
 // Database connection
 connectDB();

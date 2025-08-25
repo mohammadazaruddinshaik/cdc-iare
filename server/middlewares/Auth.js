@@ -6,7 +6,7 @@ function verifyAccess(req, res, next) {
   let token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
   // If no header token, try cookies
-  if (!token && req.cookies && req.cookies.accessToken) {
+  if (!token && req.cookies && req.cookies.webToken) {
     token = req.cookies.webToken;
   }
 
