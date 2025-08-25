@@ -19,7 +19,7 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(express.json()); // ✅ only once
 app.use(cors({
-  origin: ["http://localhost:5173", "http://127.0.0.1:3000"], // your frontend(s)
+  origin: ["http://localhost:5173", "http://127.0.0.1:3000","https://cdc-portal-sigma.vercel.app/"], // your frontend(s)
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
