@@ -180,7 +180,6 @@ const FacultyDashboard = () => {
         }, 800);
 
       } catch (err) {
-        console.error("API Error:", err);
         setError(err.message || "An unknown error occurred.");
         setLoading(false);
         setAnimate(true); // Animate the error message in
@@ -263,7 +262,7 @@ const FacultyDashboard = () => {
               {displayedSchedule.length > 0 ? (
                 <div className="flex flex-col md:flex-row gap-6">
                   {displayedSchedule.map((classInfo, idx) => (
-                    <div key={idx} className="flex-1 bg-white/5 backdrop-blur-xl rounded-xl p-5 shadow-2xl border border-white/10 cursor-pointer transform transition-all duration-300 hover:shadow-lg hover:bg-black/30 hover:-translate-y-1" onClick={() => handleSessionClick(classInfo.batch, classInfo.subject, classInfo.time)}>
+                    <div key={idx} className="flex-1 bg-white/5 backdrop-blur-xl rounded-xl p-5 shadow-2xl border border-white/10 cursor-pointer transform transition-all duration-300 hover:shadow-lg hover:bg-black/30 hover:-translate-y-1" onClick={ () => navigate(`/timetable`)}>
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <p className="font-medium text-base mb-1.5 text-white">{classInfo.subject} ({classInfo.batch})</p>
