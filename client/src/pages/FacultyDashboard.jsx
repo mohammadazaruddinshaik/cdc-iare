@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 import { 
   Trophy, 
@@ -11,10 +11,14 @@ import {
   ClipboardCheck,
   UserCog,
   BookOpen,
-  Download
+  Download,
+  User,
+  LogOut,
+  Menu,
+  X 
 } from 'lucide-react';
-
 import Header from '../components/Header';
+
 
 const batchWiseTimetable = {
   "SKILLUP BATCH-1": {
@@ -277,7 +281,7 @@ const FacultyDashboard = () => {
             <div className={`transform transition-all duration-1000 delay-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <h2 className="text-xl font-bold text-white mb-4">Quick Options</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                <div onClick={() => navigate('/post-attendance')} className="bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50 rounded-2xl p-5 text-gray-800 shadow-lg transition-all hover:-translate-y-1 hover:scale-105 flex flex-col border border-white/20 relative cursor-pointer overflow-hidden group">
+                <div onClick={() => navigate('/faculty/action')} className="bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50 rounded-2xl p-5 text-gray-800 shadow-lg transition-all hover:-translate-y-1 hover:scale-105 flex flex-col border border-white/20 relative cursor-pointer overflow-hidden group">
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="font-bold text-sm leading-tight pr-2">Post Attendance</h3>
                     <div className="w-9 h-9 bg-white/30 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-sm transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0"><ClipboardCheck className="w-5 h-5 text-blue-600" /></div>
@@ -323,7 +327,6 @@ const FacultyDashboard = () => {
                         <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">LC:</span> {coder.scores.leetcode}</div>
                         <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">GFG:</span> {coder.scores.gfg}</div>
                         <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">CC:</span> {coder.scores.codechef}</div>
-                        <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md"><span className="font-semibold">HR:</span> {coder.scores.hackerank}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg mt-2 self-start">

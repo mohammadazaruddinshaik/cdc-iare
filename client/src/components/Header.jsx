@@ -25,7 +25,7 @@ const Header = ({ animate }) => {
     try {
       const identifier = localStorage.getItem("userIdentifier");
       if (userRole === 'faculty') {
-        const name = localStorage.getItem("userName") || "Faculty Name";
+        const name = localStorage.getItem("userName") || "Faculty";
         setUserData({ primary: name, secondary: identifier || 'N/A' });
       } else if (userRole === 'student') {
         const batch = localStorage.getItem("batch");
@@ -171,5 +171,6 @@ const Header = ({ animate }) => {
     </header>
   );
 };
+
 
 export default Header;

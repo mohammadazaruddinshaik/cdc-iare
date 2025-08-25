@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Code, Cloud, Database } from 'lucide-react';
 import Header from '../components/Header';
 
+// --- Data Structures ---
 const batchWiseTimetable = {
     "SKILLUP BATCH-1": {
       Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ],
@@ -93,7 +94,6 @@ const batchWiseTimetable = {
     }
 };
 
-// --- Subject Details Mapping ---
 const subjectDetails = {
   'CP': { title: 'Competitive Programming', icon: <Code className="w-5 h-5 text-white" /> },
   'JFS': { title: 'Java Full Stack', icon: <Code className="w-5 h-5 text-white" /> },
@@ -109,7 +109,7 @@ const TimetablePage = () => {
   const [error, setError] = useState(null);
 
   const [studentBatch, setStudentBatch] = useState('');
-  const [facultyBatches, setFacultyBatches] = useState([]); // Array of faculty batches to show in dropdown
+  const [facultyBatches, setFacultyBatches] = useState([]);
   const [facultySelectedBatch, setFacultySelectedBatch] = useState('');
 
   const [weeklySchedule, setWeeklySchedule] = useState([]);
@@ -125,7 +125,6 @@ const TimetablePage = () => {
                 setStudentBatch(batch);
             }
         } else if (userRole === 'faculty') {
-            // Correctly parse the JSON string from localStorage
             const batchString = localStorage.getItem("facultybatches");
             let batchesArray = [];
             
@@ -152,20 +151,14 @@ const TimetablePage = () => {
   }, [userRole]);
 
   useEffect(() => {
-    let batch;
-    if (userRole === 'student') batch = studentBatch;
-    else if (userRole === 'faculty') batch = facultySelectedBatch;
-    else batch = null;
+    let batch = userRole === 'student' ? studentBatch : facultySelectedBatch;
 
-    if (!batch) {
+    if (!batch || !batchWiseTimetable[batch]) {
       setWeeklySchedule([]);
       return;
     }
+
     const batchTimetable = batchWiseTimetable[batch];
-    if (!batchTimetable) {
-      setWeeklySchedule([]);
-      return;
-    }
     const schedule = daysOfWeek.map(day => {
       const dailyClasses = batchTimetable[day] || [];
       const formatted = dailyClasses.map(classInfo => {
@@ -209,8 +202,8 @@ const TimetablePage = () => {
         <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-4"></div>
       </div>
       <main className="px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div className="max-w-7xl mx-auto"> {/* Increased max-width for better spacing */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-7 h-7 text-blue-400" />
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -218,21 +211,19 @@ const TimetablePage = () => {
               </h1>
             </div>
 
-            {/* Student batch */}
             {userRole === 'student' && studentBatch && (
-              <div className="bg-white/10 backdrop-blur-xl rounded-lg px-3 py-1.5 border border-white/20 text-xs">
+              <div className="bg-white/10 backdrop-blur-xl rounded-lg px-3 py-1.5 border border-white/20 text-sm">
                 Batch: <span className="font-bold">{studentBatch}</span>
               </div>
             )}
 
-            {/* Faculty batch dropdown */}
             {userRole === 'faculty' && facultyBatches.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-200">Select Batch:</span>
+                <span className="text-sm text-gray-200">Select Batch:</span>
                 <select
                   value={facultySelectedBatch}
                   onChange={e => setFacultySelectedBatch(e.target.value)}
-                  className="px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-xs focus:outline-none cursor-pointer"
+                  className="px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-sm focus:outline-none cursor-pointer"
                 >
                   {facultyBatches.map(batch => (
                     <option key={batch} value={batch} className="bg-[#071225] text-white">
@@ -244,7 +235,9 @@ const TimetablePage = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* --- RESPONSIVE GRID FIX --- */}
+          {/* Changed 'xl:grid-cols-3' to 'lg:grid-cols-3' to show 3 columns on screens > 1024px wide. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {weeklySchedule.map((dayData, dayIndex) => (
               <div
                 key={dayData.day}

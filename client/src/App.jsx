@@ -27,14 +27,17 @@ import UpdateStudentPage from './pages/UpdateStudentPage';
 import PostAttendance from './pages/PostAttendancePage';
 import ViewAttendance from './pages/ViewAttendancePage'; // Import the new page
 import ViewAttendanceReports from './pages/ViewAttendanceReports';
-
+import FacultyActionPage from './pages/FacultyActionPage';
 // Admin-specific Pages 
 import AdminTimetablePage from './pages/AdminTimeTablePage';
 import ManageFacultyPage from './pages/ManageFacultyPage';
 import SessionWiseReportPage from './pages/SessionWiseReportPage';
 import BatchWiseReport from './pages/BatchWiseReportPage';
 import ManageAttendancePage from './pages/ManageAttendancePage';
-
+import ManageStudentPage from './pages/ManageStudentPage';
+import AdminProfilePage from './pages/AdminProfilePage';
+import MonthlyReport from './pages/MonthlyReportPage';
+import FacultyMarkAttendancePage from './pages/FacultyMarkAttendancePage';
 function App() {
   return (
     <Router>
@@ -54,16 +57,22 @@ function App() {
 
         {/* Faculty-specific action routes */}
         <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
+        <Route path="/faculty/action" element={< FacultyActionPage/>} />
         <Route path="/post-attendance" element={<PostAttendance />} />
+        <Route path="/faculty/mark-attendance" element={<FacultyMarkAttendancePage />}/>
         <Route path="/faculty/students" element={<ViewAttendance />} /> {/* Add the new route */}
         <Route path="/faculty/reports" element={<ViewAttendanceReports/>}></Route>
+
         
         <Route path="/admin/timetable" element={<AdminTimetablePage/>}></Route>
+        <Route path="/admin/profile" element={<AdminProfilePage/>}></Route>
         <Route path="/admin/attendance" element={<ViewAttendance />} /> {/* Add the new route */}
+        <Route path="/admin/manage-students" element={<ManageStudentPage />} /> {/* Add the new route */}
         <Route path="/admin/manage-faculty" element={<ManageFacultyPage />} /> {/* Add the new route */}
         <Route path="/admin/manage-attendance" element={<ManageAttendancePage />} /> {/* Add the new route */}
         <Route path="/session-report" element={<SessionWiseReportPage/>}></Route>
         <Route path="/batch-report" element={<BatchWiseReport />}></Route>
+        <Route path="/monthly-report" element={<MonthlyReport />}></Route>
 
         {/* Shared application routes */}
         <Route path="/leaderboard" element={<LeaderboardPage />} />

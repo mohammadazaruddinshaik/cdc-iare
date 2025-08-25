@@ -156,6 +156,7 @@ const ViewAttendance = () => {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 const data = await response.json();
+                console.log(data.AllStudents)
                 setAllStudents(data.AllStudents || []);
             } catch (err) {
                 setError(err.message);
