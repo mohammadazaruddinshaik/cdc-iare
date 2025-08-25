@@ -152,7 +152,7 @@ const drawTable = (doc, data, { title, totalSummary, presentSummary, absentSumma
   }
 };
 
-async function HandleSessionAttendanceReportExcel(req, res){
+async function HandleSessionAttendanceReportExcel(req, res) {
   const { batch, date, session, format = "excel" } = req.query;
 
   if (!batch || !date || !session || format !== "excel") {
@@ -236,7 +236,7 @@ async function HandleSessionAttendanceReportExcel(req, res){
       }
 
       allSummaries.push(...Object.values(branchData));
-      
+
       // Add absentees for this batch
       Object.values(branchData).forEach(branchInfo => {
         if (branchInfo.absenteesList.length > 0) {
@@ -282,24 +282,24 @@ async function HandleSessionAttendanceReportExcel(req, res){
       headerRows.forEach(([text, bgColor, fontSize, textColor], i) => {
         const row = sheet.addRow([text, "", "", "", "", ""]);
         sheet.mergeCells(`A${i + 1}:F${i + 1}`);
-        
-        row.getCell(1).font = { 
-          bold: true, 
+
+        row.getCell(1).font = {
+          bold: true,
           size: fontSize,
           color: { argb: textColor },
           name: "Calibri"
         };
-        row.getCell(1).alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
+        row.getCell(1).alignment = {
+          horizontal: "center",
+          vertical: "middle"
         };
         row.height = fontSize + 8;
-        
+
         row.eachCell(cell => {
-          cell.fill = { 
-            type: "pattern", 
-            pattern: "solid", 
-            fgColor: { argb: bgColor } 
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: bgColor }
           };
           cell.border = {
             top: { style: "medium", color: { argb: "000000" } },
@@ -525,19 +525,19 @@ async function HandleSessionAttendanceReportExcel(req, res){
       if (branchData.absenteesList.length > 0) {
         // Sort absentees by roll number
         const sortedAbsentees = branchData.absenteesList.sort((a, b) => a.rollno.localeCompare(b.rollno));
-        
+
         // Create sheet with branch name
         const sheetName = branch.replace(/[\\\/\?\*\[\]]/g, "").slice(0, 31);
         const sheet = workbook.addWorksheet(sheetName);
-        
+
         // Get unique batches for this branch
         const branchBatches = [...new Set(sortedAbsentees.map(student => student.batch))].sort();
-        
+
         styleHeaders(sheet, `V SEM ${branch} - Absentees List`);
 
         const absenteeHeaderRow = sheet.addRow(["S.No", "Roll No", "Name", "Branch", "Batch"]);
         absenteeHeaderRow.height = 25;
-        
+
         absenteeHeaderRow.eachCell((cell, colNumber) => {
           cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "34495e" } };
           cell.font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
@@ -586,24 +586,24 @@ async function HandleSessionAttendanceReportExcel(req, res){
         // Add absentee count summary
         const spacingRow = sheet.addRow(["", "", "", "", ""]);
         spacingRow.height = 10;
-        
+
         const summaryRow = sheet.addRow(["", "", "", "", `Total Absent: ${sortedAbsentees.length}`]);
         summaryRow.height = 22;
-        
-        summaryRow.getCell(5).font = { 
-          bold: true, 
+
+        summaryRow.getCell(5).font = {
+          bold: true,
           size: 11,
           color: { argb: "FFFFFF" },
           name: "Calibri"
         };
-        summaryRow.getCell(5).alignment = { 
-          horizontal: "center", 
-          vertical: "middle" 
+        summaryRow.getCell(5).alignment = {
+          horizontal: "center",
+          vertical: "middle"
         };
-        summaryRow.getCell(5).fill = { 
-          type: "pattern", 
-          pattern: "solid", 
-          fgColor: { argb: "E74C3C" } 
+        summaryRow.getCell(5).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "E74C3C" }
         };
         summaryRow.getCell(5).border = {
           top: { style: "thin", color: { argb: "000000" } },
@@ -707,7 +707,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       }
 
       allSummaries.push(...Object.values(branchData));
-      
+
       // Add absentees for this batch
       Object.values(branchData).forEach(branchInfo => {
         if (branchInfo.absenteesList.length > 0) {
@@ -756,7 +756,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
     // Helper function to add headers
     const addHeaders = (doc, title) => {
       let yPos = 50;
-      
+
       const headerSections = [
         { text: "Institute of Aeronautical Engineering", color: "#1f4e79", fontSize: 16 },
         { text: `${session} Attendance Summary - ${displayDate}`, color: "#2e75b6", fontSize: 14 },
@@ -767,38 +767,38 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       headerSections.forEach(section => {
         const headerHeight = section.fontSize + 8;
         doc.rect(50, yPos, 495, headerHeight)
-           .fillAndStroke(section.color, '#000000')
-           .fillColor('#ffffff')
-           .fontSize(section.fontSize)
-           .font('Helvetica-Bold')
-           .text(section.text, 50, yPos + (headerHeight - section.fontSize) / 2, { 
-             width: 495, 
-             align: 'center' 
-           });
+          .fillAndStroke(section.color, '#000000')
+          .fillColor('#ffffff')
+          .fontSize(section.fontSize)
+          .font('Helvetica-Bold')
+          .text(section.text, 50, yPos + (headerHeight - section.fontSize) / 2, {
+            width: 495,
+            align: 'center'
+          });
         yPos += headerHeight;
       });
-      
+
       return yPos + 20;
     };
 
     // Generate Summary Report (First Sheet)
     let currentY = addHeaders(doc, "B.Tech V Semester Attendance Summary");
-    
+
     // Summary table
     const summaryTableHeaders = ['BATCH', 'BRANCH', 'Total Strength', 'Present', 'Absent'];
     const colWidths = [99, 99, 99, 99, 99]; // 495/5 = 99 each
     let yPos = currentY;
-    
+
     // Table header
     let xPos = 50;
     doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
     doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-    
+
     summaryTableHeaders.forEach((header, i) => {
       doc.text(header, xPos + 5, yPos + 8, { width: colWidths[i] - 10, align: 'center' });
       xPos += colWidths[i];
     });
-    
+
     yPos += 25;
 
     // Sort summaries by batch and branch
@@ -834,12 +834,12 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       doc.rect(50, yPos, 495, 20).fillAndStroke(fillColor, '#cccccc');
 
       const rowData = [item.batch, item.branch, item.strength.toString(), item.presenties.toString(), item.absenties.toString()];
-      
+
       xPos = 50;
       rowData.forEach((data, colIndex) => {
         let textColor = '#000000';
         let bgColor = fillColor;
-        
+
         if (colIndex === 3) {
           bgColor = '#d4f3d0';
           textColor = '#2e7d32';
@@ -849,14 +849,14 @@ async function HandleSessionAttendanceReportPDF(req, res) {
           textColor = '#c62828';
           doc.rect(xPos, yPos, colWidths[colIndex], 20).fillAndStroke(bgColor, '#cccccc');
         }
-        
+
         doc.fillColor(textColor).fontSize(9).font(colIndex >= 3 ? 'Helvetica-Bold' : 'Helvetica');
         const align = colIndex === 1 ? 'left' : 'center';
         const padding = align === 'center' ? 0 : 5;
         doc.text(data, xPos + padding, yPos + 6, { width: colWidths[colIndex] - (padding * 2), align });
         xPos += colWidths[colIndex];
       });
-      
+
       yPos += 20;
     });
 
@@ -869,13 +869,13 @@ async function HandleSessionAttendanceReportPDF(req, res) {
 
     // Create total row with TOTAL spanning first two columns
     const totalRowHeight = 25;
-    
+
     // TOTAL cell spanning first two columns (BATCH + BRANCH)
     const totalCellWidth = colWidths[0] + colWidths[1]; // 198
     doc.rect(50, yPos, totalCellWidth, totalRowHeight).fillAndStroke('#34495e', '#000000');
     doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
     doc.text('TOTAL', 50, yPos + 8, { width: totalCellWidth, align: 'center' });
-    
+
     // Remaining cells
     let currentX = 50 + totalCellWidth;
     const remainingData = [
@@ -884,7 +884,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       totalAbsent.toString()
     ];
     const remainingColors = ['#9b59b6', '#27ae60', '#e74c3c'];
-    
+
     remainingData.forEach((data, i) => {
       doc.rect(currentX, yPos, colWidths[i + 2], totalRowHeight).fillAndStroke(remainingColors[i], '#000000');
       doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
@@ -895,22 +895,22 @@ async function HandleSessionAttendanceReportPDF(req, res) {
     // Generate Branch-wise Summary (Second Sheet)
     doc.addPage();
     currentY = addHeaders(doc, "B.Tech V Semester Branch-wise Summary");
-    
+
     // Branch-wise summary table
     const branchTableHeaders = ['V SEM BRANCH (BATCHES)', 'Total Strength', 'Present', 'Absent'];
     const branchColWidths = [247, 83, 83, 82]; // Adjusted widths for better fit
     yPos = currentY;
-    
+
     // Table header
     xPos = 50;
     doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
     doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-    
+
     branchTableHeaders.forEach((header, i) => {
       doc.text(header, xPos + 5, yPos + 8, { width: branchColWidths[i] - 10, align: 'center' });
       xPos += branchColWidths[i];
     });
-    
+
     yPos += 25;
 
     let branchTotalPresent = 0;
@@ -943,12 +943,12 @@ async function HandleSessionAttendanceReportPDF(req, res) {
         item.totalPresent.toString(),
         item.totalAbsent.toString()
       ];
-      
+
       xPos = 50;
       rowData.forEach((data, colIndex) => {
         let textColor = '#000000';
         let bgColor = fillColor;
-        
+
         if (colIndex === 2) {
           bgColor = '#d4f3d0';
           textColor = '#2e7d32';
@@ -958,14 +958,14 @@ async function HandleSessionAttendanceReportPDF(req, res) {
           textColor = '#c62828';
           doc.rect(xPos, yPos, branchColWidths[colIndex], 20).fillAndStroke(bgColor, '#cccccc');
         }
-        
+
         doc.fillColor(textColor).fontSize(9).font(colIndex >= 2 ? 'Helvetica-Bold' : 'Helvetica');
         const align = colIndex === 0 ? 'left' : 'center';
         const padding = align === 'center' ? 0 : 5;
         doc.text(data, xPos + padding, yPos + 6, { width: branchColWidths[colIndex] - (padding * 2), align });
         xPos += branchColWidths[colIndex];
       });
-      
+
       yPos += 20;
     });
 
@@ -980,7 +980,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
     doc.rect(50, yPos, branchColWidths[0], totalRowHeight).fillAndStroke('#34495e', '#000000');
     doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
     doc.text('TOTAL', 50, yPos + 8, { width: branchColWidths[0], align: 'center' });
-    
+
     // Remaining cells for branch totals
     currentX = 50 + branchColWidths[0];
     const branchRemainingData = [
@@ -988,7 +988,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       branchTotalPresent.toString(),
       branchTotalAbsent.toString()
     ];
-    
+
     branchRemainingData.forEach((data, i) => {
       doc.rect(currentX, yPos, branchColWidths[i + 1], totalRowHeight).fillAndStroke(remainingColors[i], '#000000');
       doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
@@ -998,7 +998,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
 
     // Generate Branch-wise Absentee Pages (Third sheet onwards) - Group by Branch
     const branchWiseAbsentees = {};
-    
+
     // Group absentees by branch
     allAbsentees.forEach(({ batch, branch, absentees }) => {
       if (!branchWiseAbsentees[branch]) {
@@ -1014,28 +1014,28 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       const branchAbsentees = branchWiseAbsentees[branch];
       // Sort absentees by roll number
       branchAbsentees.sort((a, b) => a.rollno.localeCompare(b.rollno));
-      
+
       // Get unique batches for this branch
       const branchBatches = [...new Set(branchAbsentees.map(student => student.batch))].sort();
-      
+
       doc.addPage();
       const title = `V SEM ${branch} - Absentees List`;
       currentY = addHeaders(doc, title);
-      
+
       // Absentee table
       const absenteeHeaders = ['S.No', 'Roll No', 'Name', 'Branch', 'Batch'];
       const absenteeColWidths = [40, 70, 180, 100, 105];
-      
+
       yPos = currentY;
       xPos = 50;
       doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
       doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-      
+
       absenteeHeaders.forEach((header, i) => {
         doc.text(header, xPos + 5, yPos + 8, { width: absenteeColWidths[i] - 10, align: 'center' });
         xPos += absenteeColWidths[i];
       });
-      
+
       yPos += 25;
 
       branchAbsentees.forEach((student, index) => {
@@ -1063,7 +1063,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
           student.branch,
           student.batch
         ];
-        
+
         xPos = 50;
         rowData.forEach((data, colIndex) => {
           doc.fillColor('#000000').fontSize(9).font('Helvetica');
@@ -1072,7 +1072,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
           doc.text(data, xPos + padding, yPos + 8, { width: absenteeColWidths[colIndex] - (padding * 2), align });
           xPos += absenteeColWidths[colIndex];
         });
-        
+
         yPos += 25;
       });
 
@@ -1584,14 +1584,14 @@ async function getProfileData(req, res) {
       return res.status(400).json({ error: "adminId is required" });
     }
 
-    const Admin = await Faculty.findOne({
+    const admin = await Admin.findOne({
       adminId: new RegExp(`^${adminId}$`, "i")
     }).select("name adminId email -_id");
-    if (!Admin) {
+    if (!admin) {
       return res.status(404).json({ error: "Admin not found" });
     }
 
-    res.json({ Admin });
+    res.json({ admin });
 
   } catch (err) {
     console.error("Error fetching Admin data:", err);
@@ -1732,7 +1732,7 @@ async function getViewStudents(req, res) {
     const AllStudents = await Promise.all(
       students.map(async (student) => {
         try {
-        
+
 
           // --- Coder Handles ---
           let coderData = await Coder.findOne({
@@ -1784,10 +1784,10 @@ async function addStudent(req, res) {
       .replace(/^-|-$/g, "")
       .toLowerCase();
 
-    
+
     // --- Create documents for all three collections ---
     const newStudent = new Student({ name, rollno, password: hashedNewPassword, branch, batch, email });
-    const newCoder = new Coder({ rollno, branch, batch, handles});
+    const newCoder = new Coder({ rollno, branch, batch, handles });
 
     // Get the dynamic attendance model for the student's batch
     const Editbatch = `attendance_${batchFormatted}`
@@ -1819,8 +1819,15 @@ async function deleteStudent(req, res) {
       return res.status(404).json({ message: 'Student not found.' });
     }
 
+    const batchFormatted = "attendance_" + studentToDelete.batch
+      .replace(/BATCH/gi, "")      // remove "BATCH" word
+      .replace(/\s+/g, "-")        // replace spaces with "-"
+      .replace(/-+/g, "-")         // collapse multiple "-"
+      .replace(/^-|-$/g, "")       // trim leading/trailing "-"
+      .toLowerCase();
+
     // 2. Get the dynamic attendance model using the student's batch
-    const Attendance = getAttendanceModel(studentToDelete.batch);
+    const Attendance = getAttendanceModel(batchFormatted);
 
     // 3. Delete the student from all three collections
     await Student.deleteOne({ rollno });

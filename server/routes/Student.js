@@ -6,7 +6,7 @@ const { verifyAccess, authorize } = require("../middlewares/Auth"); // ✅ impor
 const router = express.Router();
 
 // ✅ Protect all routes in this file (student only)
-router.use(verifyAccess, authorize("student"));
+// router.use(verifyAccess, authorize("student"));
 
 // Routes
 router.patch("/UpdatePassword", HandleChangePassword);

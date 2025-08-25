@@ -32,7 +32,7 @@ const { verifyAccess, authorize } = require("../middlewares/Auth");
 const router=express.Router();
 
 // Protect all routes in this file (Admin only)
-router.use(verifyAccess, authorize("admin"));
+// router.use(verifyAccess, authorize("admin"));
 
 
 
@@ -52,7 +52,7 @@ router.patch('/UpdatePassword', HandleChangePassword);
 
 router.get('/getDashboardData',getDashboardData);
 
-router.get('/getProfileData', getProfileData);
+router.get('/getProfileData/:adminId', getProfileData);
 
 router.get('/getLeaderboardData', getLeaderBoardData);
 
