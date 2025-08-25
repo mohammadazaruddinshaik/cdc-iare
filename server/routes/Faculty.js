@@ -39,7 +39,7 @@ router.post("/announcements", HandelPostAnnouncements);
 
 router.post('/Mark-Attendance', HandleMarkAttendance);
 
-router.get('/getStudentsByBatch',getStudentsByBatch);
+router.get('/getStudentsByBatch/:batch',getStudentsByBatch);
 
 router.post('/Mark-Session',HandleSessionPostAttendance);
 

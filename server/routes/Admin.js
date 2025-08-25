@@ -14,7 +14,8 @@ const {HandleSessionAttendanceReportPDF,
       getViewStudents,
       getStudentsForAttendanceUpdation,
       getViewFaculty,
-      getProfileData} = require('../controllers/Admin');
+      getProfileData,
+      deleteAttendanceLog} = require('../controllers/Admin');
 
 const getAttendanceModel=require('../services/GetAttendanceModel');
 
@@ -95,6 +96,8 @@ router.post('/Mark-Session',HandleSessionPostAttendance);
 router.get('/getAbsenties', getStudentsForAttendanceUpdation);
 
 router.patch('/updateAttendance', HandleUpdateAttendance);
+
+router.delete('/deleterecord',deleteAttendanceLog)
 
 //-------------------------------   Manage Attendance Routes  Start -----------------------------//
 

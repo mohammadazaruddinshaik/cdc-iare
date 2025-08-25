@@ -2099,6 +2099,86 @@ async function HandleUpdateAttendance(req, res) {
 };
 
 
+async function deleteAttendanceLog(req, res) {
+  try {
+    const { batch, date, course } = req.body;
+
+    if (!batch || !date || !course) {
+      return res.status(400).json({ message: "batch, date, and course are required" });
+    }
+
+    const batchFormatted = "attendance_" + batch
+      .replace(/BATCH/gi, "")      // remove "BATCH" word
+      .replace(/\s+/g, "-")        // replace spaces with "-"
+      .replace(/-+/g, "-")         // collapse multiple "-"
+      .replace(/^-|-$/g, "")       // trim leading/trailing "-"
+      .toLowerCase();
+
+    // ✅ Get correct model for this batch
+    const Attendance = getAttendanceModel(batchFormatted);
+
+    // fetch all students in this batch
+    const students = await Attendance.find({});
+
+    if (!students || students.length === 0) {
+      return res.status(404).json({ message: "No students found in this batch" });
+    }
+
+    let updatedCount = 0;
+
+    for (let student of students) {
+      // find log index
+      const logIndex = student.dailyLogs.findIndex(
+        (log) => log.date === date && log.course === course
+      );
+
+      if (logIndex !== -1) {
+        const removedLog = student.dailyLogs[logIndex];
+        student.dailyLogs.splice(logIndex, 1); // remove log
+
+        // decrement overallAttendance
+        student.overallAttendance.totalDays = Math.max(0, student.overallAttendance.totalDays - 1);
+
+        // decrement courseAttendance
+        const courseData = student.courseAttendance.get(course) || {
+          totalDays: 0,
+          presentDays: 0,
+        };
+
+        student.courseAttendance.set(course, {
+          totalDays: Math.max(0, courseData.totalDays - 1),
+          presentDays: Math.max(
+            0,
+            courseData.presentDays - (removedLog.status === "present" ? 1 : 0)
+          ),
+        });
+
+        // decrement presentDays if student was marked present
+        if (removedLog.status === "present") {
+          student.overallAttendance.presentDays = Math.max(
+            0,
+            student.overallAttendance.presentDays - 1
+          );
+        }
+
+        student.lastUpdated = Date.now();
+        await student.save();
+        updatedCount++;
+      }
+    }
+
+    if (updatedCount === 0) {
+      return res.status(404).json({ message: "No record on that day" });
+    }
+
+    return res.status(200).json({
+      message: `Deleted ${updatedCount} log(s) for batch ${batch} on ${date} (${course})`,
+    });
+  } catch (error) {
+    console.error("Error deleting attendance log:", error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
 
 
 //-------------------------------   Manage Attendance Routes  Start -----------------------------//
@@ -2118,5 +2198,6 @@ module.exports = {
   HandleUpdateAttendance,
   getStudentsForAttendanceUpdation,
   getViewStudents,
-  getViewFaculty
+  getViewFaculty,
+  deleteAttendanceLog
 }
