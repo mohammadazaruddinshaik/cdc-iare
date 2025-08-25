@@ -75,11 +75,12 @@ async function HandleLogin(req, res) {
 
     // Send as HTTP-only cookie
     res.cookie("webToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // ✅ only true in prod
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: cookieMaxAge,
-    });
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: cookieMaxAge,
+});
+
 
     return res.json({
       message: "Login successful",

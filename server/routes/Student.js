@@ -6,10 +6,10 @@ const { verifyAccess, authorize } = require("../middlewares/Auth"); // ✅ impor
 const router = express.Router();
 
 // ✅ Protect all routes in this file (student only)
-router.post("/getDashboardData", getDashboardData);
 router.use(verifyAccess, authorize("student"));
 
 // Routes
+router.post("/getDashboardData", getDashboardData);
 router.patch("/UpdatePassword", HandleChangePassword);
 router.get("/getLeaderBoardData/:rollno", getLeaderBoardData);
 router.get("/getLogData/:rollno", getLogData);
