@@ -45,7 +45,7 @@ app.use("/api/Admin", AdminRouter);
 function setupCronJobs() {
   // 🕐 1:00 AM IST → Generate QR Codes + QR Data
   cron.schedule(
-    "38 00 * * *",
+    "0 8,12 * * *",
     async () => {
       console.log("🚀 Running scheduled QR updates at 1:00 AM IST...");
       try {
