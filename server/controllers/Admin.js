@@ -2107,7 +2107,7 @@ async function deleteAttendanceLog(req, res) {
       return res.status(400).json({ message: "batch, date, and course are required" });
     }
 
-    const batchFormatted = "attendance_" + batch
+    const batchFormatted = batch
       .replace(/BATCH/gi, "")      // remove "BATCH" word
       .replace(/\s+/g, "-")        // replace spaces with "-"
       .replace(/-+/g, "-")         // collapse multiple "-"
