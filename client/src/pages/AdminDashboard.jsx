@@ -163,7 +163,12 @@ const AdminDashboardPage = () => {
 
         const fetchAdminData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/Admin/getDashboardData');
+                const response = await fetch('http://localhost:5000/api/Admin/getDashboardData', 
+                    {
+                        method : "GET",
+                        credentials: "include"
+                    }
+                );
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }

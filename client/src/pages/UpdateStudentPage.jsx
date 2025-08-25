@@ -67,7 +67,7 @@ const UpdateStudentPage = () => {
         setUpdateMessage({ type: '', text: '' });
         setStudentData(null);
         try {
-            const response = await fetch(`http://localhost:5000/api/Faculty/getStudentData/${searchRollNo.trim()}`);
+            const response = await fetch(`http://localhost:5000/api/Faculty/getStudentData/${searchRollNo.trim()}`, {method : "GET", credentials: "include"});
             const data = await processResponse(response);
             setStudentData({
                 ...data,
@@ -92,7 +92,8 @@ const UpdateStudentPage = () => {
                 body: JSON.stringify({
                     role: "faculty",
                     username: studentData.rollno,
-                })
+                }),
+                credentials: "include"
             });
             const result = await processResponse(response);
             setUpdateMessage({ type: 'success', text: result.message || 'Password reset successfully!' });

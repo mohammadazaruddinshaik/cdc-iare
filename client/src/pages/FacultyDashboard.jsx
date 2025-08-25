@@ -153,7 +153,10 @@ const FacultyDashboard = () => {
           throw new Error("Faculty ID not found. Please log in again.");
         }
         
-        const response = await fetch(`http://localhost:5000/api/Faculty/getDashboardData/${userIdentifier}`);
+        const response = await fetch(`http://localhost:5000/api/Faculty/getDashboardData/${userIdentifier}`, {
+          method : "GET",
+          credentials: "include"
+        });
         
         if (!response.ok) {
             let errorMessage = `HTTP error! Status: ${response.status}`;

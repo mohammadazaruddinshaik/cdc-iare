@@ -227,7 +227,7 @@ const PostAttendancePage = () => {
         try {
             const collectionName = config.formatCollection(selectedBatch);
             const url = `${BACKEND_URL}/api/Admin/getStudentsByBatch/${collectionName}`;
-            const data = await fetchApi(url);
+            const data = await fetchApi(url, {method : "GET",credentials: "include"});
             if (!data || !Array.isArray(data.students)) {
                 throw new Error("Data format from server is invalid.");
             }
@@ -304,6 +304,7 @@ const PostAttendancePage = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
+                credentials: "include"
             });
             setReportData({ ...result });
             setIsVerificationModalOpen(false);

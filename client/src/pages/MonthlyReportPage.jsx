@@ -121,7 +121,7 @@ const MonthlyReport = () => {
             const params = new URLSearchParams({ from: fromDateFormatted, to: toDateFormatted });
             const url = `${backendUrl}/api/Admin/attendance-monthly-excel?${params.toString()}`;
 
-            const response = await fetch(url, { method: 'GET' });
+            const response = await fetch(url, { method: 'GET' , credentials: "include"});
 
             if (!response.ok) {
                 throw new Error(`Download failed. Server responded with status ${response.status}.`);

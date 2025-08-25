@@ -146,7 +146,7 @@ const MarkAttendanceForm = ({ animate }) => {
         setLastSubmission(null);
 
         try {
-            const res = await fetch(`${backendUrl}/api/Admin/getStudentsByBatch/${formData.batch}`);
+            const res = await fetch(`${backendUrl}/api/Admin/getStudentsByBatch/${formData.batch}`, {method: "GET", credentials: "include"});
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
@@ -209,6 +209,7 @@ const MarkAttendanceForm = ({ animate }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
+                credentials: "include",
             });
 
             if (!response.ok) {
@@ -376,7 +377,7 @@ const UpdateAttendanceForm = ({ animate }) => {
                 return;
             }
 
-            const res = await fetch(`${backendUrl}/api/Admin/getAbsenties?batch=${batch}&date=${date}&course=${course}&status=${fetchMode}`);
+            const res = await fetch(`${backendUrl}/api/Admin/getAbsenties?batch=${batch}&date=${date}&course=${course}&status=${fetchMode}`,{method : "GET", credentials: "include"});
 
             if (res.status === 404) {
                 const readableDate = new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -455,6 +456,7 @@ const UpdateAttendanceForm = ({ animate }) => {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
+                credentials: "include"
             });
 
             if (!res.ok) {
@@ -612,6 +614,7 @@ const DeleteRecordsForm = ({ animate }) => {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
+                credentials: "include"
             });
             if (!res.ok) {
                 const errorData = await res.json();

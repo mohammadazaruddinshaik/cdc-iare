@@ -151,7 +151,7 @@ const ViewAttendance = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('http://localhost:5000/api/Faculty/getViewStudentData');
+                const response = await fetch('http://localhost:5000/api/Faculty/getViewStudentData', {method: "GET", credentials: "include"});
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }

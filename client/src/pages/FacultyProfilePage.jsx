@@ -74,6 +74,7 @@ const ChangePasswordModal = ({ isOpen, onClose, facultyId }) => {
                     oldPassword: passwords.oldPassword,
                     newPassword: passwords.newPassword,
                 }),
+                credentials: "include"
             });
             const result = await response.json();
             if (response.ok) {
@@ -138,13 +139,13 @@ const FacultyProfilePage = () => {
     }, []);
     
     useEffect(() => {
-        const fetchProfileData = async () => {
+        const ProfileData = async () => {
             try {
                 setLoading(true);
                 const facultyId = localStorage.getItem('userIdentifier');
                 if (!facultyId) throw new Error("Faculty ID not found.");
                 
-                const response = await fetch(`http://localhost:5000/api/Faculty/getProfileData/${facultyId}`);
+                const response = await fetch(`http://localhost:5000/api/Faculty/getProfileData/${facultyId}`, {method :"GET", credentials: "include"});
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const data = await response.json();

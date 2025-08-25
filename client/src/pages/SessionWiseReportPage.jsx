@@ -156,7 +156,7 @@ const SessionReport = () => {
         const url = `${backendUrl}${endpoint}?${params.toString()}`;
 
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {method: "GET", credentials: "include"});
             if (!response.ok) {
                 throw new Error("Download failed. No records found for the selection.");
             }

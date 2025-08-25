@@ -235,7 +235,7 @@ const MarkAttendanceForm = ({ animate }) => {
 
         try {
             // NOTE: Using Faculty endpoint
-            const res = await fetch(`${backendUrl}/api/Faculty/getStudentsByBatch/${formData.batch}`);
+            const res = await fetch(`${backendUrl}/api/Faculty/getStudentsByBatch/${formData.batch}`, {method: "GET", credentials: "include"});
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
@@ -294,6 +294,7 @@ const MarkAttendanceForm = ({ animate }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
+                credentials: "include"
             });
 
             if (!response.ok) {

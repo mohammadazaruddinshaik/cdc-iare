@@ -280,7 +280,7 @@ const ManageFacultyPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/getViewFaculty`);
+            const response = await fetch(`${API_BASE_URL}/getViewFaculty`, {method : "GET",credentials: "include"});
             if (!response.ok) throw new Error("Network response was not ok.");
             const data = await response.json();
             setFacultyList(Array.isArray(data) ? data : []); 
@@ -312,7 +312,7 @@ const ManageFacultyPage = () => {
     };
     const handleAddFaculty = async (facultyData) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/addFaculty`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData) });
+            const response = await fetch(`${API_BASE_URL}/addFaculty`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData), credentials: "include"});
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.message || 'Failed to add faculty.'); }
             showToast('success', 'Faculty added successfully!');
             fetchFaculty();
@@ -321,7 +321,7 @@ const ManageFacultyPage = () => {
     };
     const handleUpdateFaculty = async (facultyData) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/updateFaculty`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData) });
+            const response = await fetch(`${API_BASE_URL}/updateFaculty`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData), credentials: "include"});
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.message || 'Failed to update faculty.'); }
             showToast('success', 'Faculty updated successfully!');
             fetchFaculty();
@@ -331,7 +331,7 @@ const ManageFacultyPage = () => {
     const handleDeleteConfirm = async () => {
         if (!facultyToDelete) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/deleteFaculty`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ facultyid: facultyToDelete.facultyid }) });
+            const response = await fetch(`${API_BASE_URL}/deleteFaculty`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ facultyid: facultyToDelete.facultyid }),credentials: "include"});
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.message || 'Failed to delete faculty.'); }
             showToast('success', `Faculty ${facultyToDelete.name} has been deleted.`);
             fetchFaculty();
