@@ -1,65 +1,135 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Shield, Lock, X, Eye, EyeOff, Camera, Edit, Loader2 } from 'lucide-react';
-import Header from '../components/Header';
+import { 
+    UserCircle, 
+    AtSign, 
+    Lock, 
+    X, 
+    Eye, 
+    EyeOff, 
+    Camera, 
+    Edit, 
+    Loader2,
+    Fingerprint,
+    AlertTriangle,
+    CheckCircle
+} from 'lucide-react';
+import Header from '../components/Header'; // Assuming your Header component is in this path
+
+const backendUrl = "http://localhost:5000";
 
 // --- Main Admin Profile Page Component ---
 const AdminProfilePage = () => {
-    const [user, setUser] = useState({
-        details: {
-            name: "Dr. B Padmaja",
-            id: "ADMIN001",
-            email: "admin1@iare.ac.in",
-        },
-        profilePhoto: `https://ui-avatars.com/api/?name=Dr+B+Padmaja&background=818cf8&color=fff&size=256`,
-    });
-
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
     const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
     const [isUpdateProfileModalOpen, setIsUpdateProfileModalOpen] = useState(false);
     const [animate, setAnimate] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setAnimate(true), 100);
+        
+        const fetchAdminData = async () => {
+            try {
+                // Assuming the admin's ID is stored in localStorage from login
+                const adminId = localStorage.getItem("userIdentifier");
+                if (!adminId) {
+                    throw new Error("Admin ID not found. Please log in again.");
+                }
+
+                const response = await fetch(`${backendUrl}/api/Admin/getProfileData/${adminId}`);
+                
+                if (!response.ok) {
+                    throw new Error("Failed to fetch profile data.");
+                }
+                
+                const data = await response.json();
+                
+                // The API returns { admin: { adminId, email, name } }
+                // We'll adapt it to the component's state structure
+                setUser({
+                    details: {
+                        id: data.admin.adminId,
+                        name: data.admin.name,
+                        email: data.admin.email,
+                    },
+                    profilePhoto: `https://ui-avatars.com/api/?name=${data.admin.name.replace(/\s/g, '+')}&background=818cf8&color=fff&size=256`,
+                });
+
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAdminData();
         return () => clearTimeout(timer);
     }, []);
 
     const handleProfileUpdate = (updatedData) => {
         setUser(prev => ({ ...prev, details: { ...prev.details, ...updatedData } }));
-        alert("Profile updated successfully!");
+        // In a real app, you would also make an API call here to update the user's name/email.
+        console.log("Profile updated successfully!");
     };
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center text-red-400">
+                <p>{error}</p>
+            </div>
+        );
+    }
+    
+    // This check ensures user is not null before rendering
+    if (!user) return null;
+
     const profileDetails = [
-        { icon: <Shield size={20} className="text-indigo-400" />, label: "Admin ID", value: user.details.id },
-        { icon: <User size={20} className="text-indigo-400" />, label: "Full Name", value: user.details.name },
-        { icon: <Mail size={20} className="text-indigo-400" />, label: "Email Address", value: user.details.email },
+        { icon: <Fingerprint size={20} className="text-indigo-400" />, label: "Admin ID", value: user.details.id },
+        { icon: <UserCircle size={20} className="text-indigo-400" />, label: "Full Name", value: user.details.name },
+        { icon: <AtSign size={20} className="text-indigo-400" />, label: "Email Address", value: user.details.email },
     ];
 
     return (
-        // FIX: Added React Fragment wrapper <> ... </>
         <>
-            <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4">
+            <div className="min-h-screen bg-gray-900 text-white font-sans">
                 <div className="fixed inset-0 -z-10 h-full w-full bg-gray-900 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
                 
-                <div className="w-full max-w-5xl">
-                    <Header animate={animate} />
-                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-4"></div>
-                </div>
+                <header className="w-full border-b border-white/10 bg-gray-900/50 backdrop-blur-lg sticky top-0 z-40">
+                    <div className="w-full max-w-7xl mx-auto">
+                        <Header animate={animate} />
+                    </div>
+                </header>
 
-                <main className={`w-full max-w-5xl transition-all duration-1000 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                    <div className="bg-gray-800/20 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
-                        <div className="p-6 sm:p-8">
-                            <div className="flex flex-col sm:flex-row items-center gap-6">
-                                <div className="relative flex-shrink-0">
-                                    <img src={user.profilePhoto} alt="Profile" className="w-32 h-32 rounded-full border-4 border-gray-800/50 shadow-lg object-cover" />
-                                    <button onClick={() => alert("Photo upload feature coming soon!")} className="absolute bottom-1 right-1 bg-indigo-600 hover:bg-indigo-700 p-2.5 rounded-full transition-all transform hover:scale-110 shadow-md">
-                                        <Camera size={16} />
-                                    </button>
-                                </div>
-                                <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                <main className={`w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 transition-all duration-1000 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                    <h1 className="text-3xl font-bold text-white mb-8">Administrator Profile</h1>
+                    
+                    <div className="bg-gray-800/20 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden p-6 sm:p-8">
+                        <div className="flex flex-col sm:flex-row items-start gap-6">
+                            <div className="relative flex-shrink-0 group">
+                                <img src={user.profilePhoto} alt="Profile" className="w-32 h-32 rounded-full border-4 border-gray-800/50 shadow-lg object-cover" />
+                                <button 
+                                    onClick={() => console.log("Photo upload feature coming soon!")} 
+                                    className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                >
+                                    <Camera size={24} />
+                                </button>
+                            </div>
+                            <div className="w-full">
+                                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                     <div>
-                                        <h1 className="text-2xl font-bold text-white">{user.details.name}</h1>
-                                        <p className="text-indigo-300 font-medium text-sm">{user.details.id}</p>
+                                        <h2 className="text-3xl font-bold text-white">{user.details.name}</h2>
+                                        <p className="text-indigo-300 font-medium">{user.details.id}</p>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
                                         <button onClick={() => setIsUpdateProfileModalOpen(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors">
                                             <Edit size={14} /> Update
                                         </button>
@@ -68,24 +138,25 @@ const AdminProfilePage = () => {
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="border-t border-white/10 mt-6 pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {profileDetails.map((detail, index) => (
-                                    <div key={index} className="flex items-center gap-4">
-                                        <div className="bg-gray-900/30 p-3 rounded-lg border border-white/10">{detail.icon}</div>
-                                        <div>
-                                            <p className="text-xs text-gray-400">{detail.label}</p>
-                                            <p className="font-semibold text-white text-sm">{detail.value}</p>
+                                <div className="border-t border-white/10 my-6"></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {profileDetails.map((detail, index) => (
+                                        <div key={index} className="flex items-center gap-4 bg-gray-900/30 p-4 rounded-lg border border-white/10">
+                                            <div className="bg-gray-800/50 p-3 rounded-lg">{detail.icon}</div>
+                                            <div>
+                                                <p className="text-xs text-gray-400">{detail.label}</p>
+                                                <p className="font-semibold text-white text-sm">{detail.value}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </main>
             </div>
 
-            <ResetPasswordModal isOpen={isResetPasswordModalOpen} onClose={() => setIsResetPasswordModalOpen(false)} userId={user.details.id} />
+            <ResetPasswordModal isOpen={isResetPasswordModalOpen} onClose={() => setIsResetPasswordModalOpen(false)} username={user.details.id} />
             <UpdateProfileModal isOpen={isUpdateProfileModalOpen} onClose={() => setIsUpdateProfileModalOpen(false)} currentUser={user.details} onUpdate={handleProfileUpdate} />
         </>
     );
@@ -108,32 +179,67 @@ const PasswordInput = ({ id, label, value, onChange }) => {
 };
 
 // --- Reset Password Modal ---
-const ResetPasswordModal = ({ isOpen, onClose, userId }) => {
+const ResetPasswordModal = ({ isOpen, onClose, username }) => {
     const [passwords, setPasswords] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
     const [isLoading, setIsLoading] = useState(false);
+    const [message, setMessage] = useState({ text: '', type: '' });
     
     useEffect(() => {
         if (isOpen) {
             setPasswords({ oldPassword: '', newPassword: '', confirmPassword: '' });
             setIsLoading(false);
+            setMessage({ text: '', type: '' });
         }
     }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage({ text: '', type: '' });
+
         if (passwords.newPassword !== passwords.confirmPassword) {
-            alert("New passwords do not match.");
+            setMessage({ text: "New passwords do not match. Please re-enter.", type: 'error' });
             return;
         }
+        if (passwords.newPassword.length < 6) {
+             setMessage({ text: "New password must be at least 6 characters long.", type: 'error' });
+            return;
+        }
+
         setIsLoading(true);
-        console.log("Submitting password change for:", { userId, ...passwords });
-        setTimeout(() => {
+
+        const payload = {
+            username: username,
+            role: "admin",
+            oldPassword: passwords.oldPassword,
+            newPassword: passwords.newPassword
+        };
+
+        try {
+            const response = await fetch(`${backendUrl}/api/Admin/UpdatePassword`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Use the error message from the API if available
+                throw new Error(data.error || "An unknown error occurred.");
+            }
+
+            setMessage({ text: data.message || "Password updated successfully!", type: 'success' });
+            setTimeout(() => {
+                onClose();
+            }, 2000);
+
+        } catch (err) {
+            setMessage({ text: err.message, type: 'error' });
+        } finally {
             setIsLoading(false);
-            alert("Password changed successfully! (Simulated)");
-            onClose();
-        }, 1500);
+        }
     };
 
     return (
@@ -142,6 +248,14 @@ const ResetPasswordModal = ({ isOpen, onClose, userId }) => {
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors rounded-full p-2 hover:bg-white/10"><X size={20} /></button>
                 <h2 className="text-2xl font-bold text-white mb-2">Change Password</h2>
                 <p className="text-gray-400 mb-6 text-sm">Update your password for enhanced security.</p>
+                
+                {message.text && (
+                    <div className={`flex items-center gap-3 p-3 rounded-lg mb-4 text-sm ${message.type === 'error' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}>
+                        {message.type === 'error' ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
+                        <span>{message.text}</span>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <PasswordInput id="old-password" label="Current Password" value={passwords.oldPassword} onChange={(e) => setPasswords({...passwords, oldPassword: e.target.value})} />
                     <PasswordInput id="new-password" label="New Password" value={passwords.newPassword} onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})} />
@@ -178,6 +292,7 @@ const UpdateProfileModal = ({ isOpen, onClose, currentUser, onUpdate }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);
+        // SIMULATED API CALL - replace with your actual API endpoint for updating profile
         console.log("Updating profile with:", formData);
         setTimeout(() => {
             setIsLoading(false);

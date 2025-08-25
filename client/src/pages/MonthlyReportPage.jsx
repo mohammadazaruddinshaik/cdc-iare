@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileSpreadsheet, Download, Calendar } from 'lucide-react';
+import { FileSpreadsheet, Download, Calendar, Info } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
@@ -30,20 +30,7 @@ const Toast = ({ message, type, onDismiss }) => {
 
 const DatePicker = ({ selectedDate, onSelectDate, label, icon, disabledDates }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [position, setPosition] = useState('bottom');
     const popoverRef = useRef(null);
-
-    const handleToggle = () => {
-        if (popoverRef.current) {
-            const rect = popoverRef.current.getBoundingClientRect();
-            if (window.innerHeight - rect.bottom < 350) {
-                setPosition('top');
-            } else {
-                setPosition('bottom');
-            }
-        }
-        setIsOpen(!isOpen);
-    };
 
     const handleSelect = (date) => {
         if (date) onSelectDate(date);
@@ -62,23 +49,21 @@ const DatePicker = ({ selectedDate, onSelectDate, label, icon, disabledDates }) 
         };
     }, [isOpen]);
 
-    const positionClass = position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
-
     return (
         <div className="relative" ref={popoverRef}>
-            <label className="flex items-center gap-2 text-md font-semibold text-gray-300 mb-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2">
                 {icon} {label}
             </label>
             <button
                 type="button"
-                onClick={handleToggle}
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white text-base text-left focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex justify-between items-center"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/20 rounded-xl text-white text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex justify-between items-center"
             >
-                <span>{selectedDate ? format(selectedDate, 'dd MMMM, yyyy') : 'Select a date'}</span>
-                <Calendar size={18} className="text-gray-400"/>
+                <span>{selectedDate ? format(selectedDate, 'dd MMM, yyyy') : 'Select date'}</span>
+                <Calendar size={16} className="text-gray-400"/>
             </button>
             {isOpen && (
-                <div className={`absolute w-max z-50 bg-[#0A1B3A] border border-white/20 rounded-xl shadow-2xl p-2 ${positionClass}`}>
+                <div className={`absolute w-full sm:w-max z-50 mt-2 bg-[#0A1B3A] border border-white/20 rounded-xl shadow-2xl p-1`}>
                     <DayPicker
                         mode="single"
                         selected={selectedDate}
@@ -170,12 +155,13 @@ const MonthlyReport = () => {
     return (
         <>
             <style>{`
-                /* Your existing styles are perfect, no changes needed */
-                .rdp { --rdp-cell-size: 40px; --rdp-accent-color: #3b82f6; --rdp-background-color: #60a5fa; color: #d1d5db; }
-                .rdp-months { padding: 1em; }
-                .rdp-caption_label { font-size: 1.125rem; font-weight: bold; color: #fff; }
+                /* Custom styles for react-day-picker to match the dark theme */
+                /* CHANGED: Reduced cell size and font size for a more compact calendar */
+                .rdp { --rdp-cell-size: 32px; --rdp-accent-color: #3b82f6; --rdp-background-color: #60a5fa; color: #d1d5db; font-size: 0.875rem; }
+                .rdp-months { padding: 0.5em; }
+                .rdp-caption_label { font-size: 1rem; font-weight: bold; color: #fff; }
                 .rdp-nav_button { color: #9ca3af; }
-                .rdp-head_cell { color: #6b7280; font-weight: 600; }
+                .rdp-head_cell { color: #6b7280; font-weight: 600; font-size: 0.8rem; }
                 .day-today { font-weight: bold; color: #60a5fa !important; background-color: rgba(96, 165, 250, 0.1) !important; }
                 .day-selected { color: #fff !important; font-weight: bold; }
             `}</style>
@@ -184,48 +170,45 @@ const MonthlyReport = () => {
             {toast.visible && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />}
 
             <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans">
-                <div className="px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="px-4 sm:px-6 lg:px-8 py-6 relative z-10">
                     <Header animate={animate} />
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-4"></div>
                 </div>
 
-                <main className="flex justify-center items-center pt-10 pb-20 px-4">
-                    {/* CHANGED: Container size is now fixed and centered */}
-                    <div className={`bg-white/5 backdrop-blur-xl rounded-2xl p-6 sm:p-8 w-[600px] h-[550px] flex flex-col justify-center shadow-2xl border border-white/10 transition-all duration-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-                        <div className="text-center mb-8">
-                            <div className="mx-auto h-14 w-14 bg-blue-500/10 rounded-full flex items-center justify-center border-2 border-blue-400/30">
-                                <Download className="h-7 w-7 text-blue-300" />
+                <main className="flex justify-center items-start pt-4 pb-20 px-4">
+                    {/* CHANGED: Reduced max-width for a smaller container */}
+                    <div className={`bg-white/5 backdrop-blur-xl rounded-2xl p-6 sm:p-8 w-full max-w-lg flex flex-col shadow-2xl border border-white/10 transition-all duration-500 ${animate ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                        <div className="text-center mb-6">
+                            <div className="mx-auto h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center border-2 border-blue-400/30">
+                                <Download className="h-6 w-6 text-blue-300" />
                             </div>
-                            <h1 className="mt-4 text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
-                                Monthly Report
+                            <h1 className="mt-4 text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
+                                Monthly Attendance Report
                             </h1>
-                            <p className="mt-2 text-md text-gray-400">
-                                Select a date range to generate a consolidated report.
+                            <p className="mt-1 text-sm text-gray-400">
+                                Select a date range to generate a report.
                             </p>
                         </div>
                         
-                        <div className="space-y-8">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <DatePicker 
                                     selectedDate={fromDate}
                                     onSelectDate={setFromDate}
-                                    label="1. From Date"
-                                    icon={<Calendar size={18}/>}
-                                    disabledDates={{ after: toDate }}
+                                    label="From Date"
+                                    icon={<Calendar size={16}/>}
+                                    disabledDates={{ after: toDate || new Date() }}
                                 />
                                 <DatePicker 
                                     selectedDate={toDate}
                                     onSelectDate={setToDate}
-                                    label="2. To Date"
-                                    icon={<Calendar size={18}/>}
-                                    disabledDates={{ before: fromDate }}
+                                    label="To Date"
+                                    icon={<Calendar size={16}/>}
+                                    disabledDates={{ before: fromDate, after: new Date() }}
                                 />
                             </div>
 
-                            <div className="space-y-3 pt-6 border-t border-white/10">
-                                <label className="block text-md font-semibold text-gray-300 text-center">
-                                    3. Download Report
-                                </label>
+                            <div className="pt-4 border-t border-white/10">
                                 <div className="flex justify-center">
                                     <button
                                         type="button"
