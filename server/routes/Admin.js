@@ -52,7 +52,7 @@ router.patch('/UpdatePassword', HandleChangePassword);
 
 router.get('/getDashboardData',getDashboardData);
 
-router.get('/getProfileData', getProfileData);
+router.get('/getProfileData/:adminId', getProfileData);
 
 router.get('/getLeaderboardData', getLeaderBoardData);
 

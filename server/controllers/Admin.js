@@ -1584,14 +1584,14 @@ async function getProfileData(req, res) {
       return res.status(400).json({ error: "adminId is required" });
     }
 
-    const Admin = await Faculty.findOne({
+    const admin = await Admin.findOne({
       adminId: new RegExp(`^${adminId}$`, "i")
     }).select("name adminId email -_id");
-    if (!Admin) {
+    if (!admin) {
       return res.status(404).json({ error: "Admin not found" });
     }
 
-    res.json({ Admin });
+    res.json({ admin });
 
   } catch (err) {
     console.error("Error fetching Admin data:", err);
