@@ -19,7 +19,8 @@ const { verifyAccess, authorize } = require("../middlewares/Auth");
 const router = express.Router();
 
 // Protect all routes in this file (Admin only)
-// router.use(verifyAccess, authorize("faculty"));
+
+router.use(verifyAccess, authorize("faculty"));
 
 router.get('/getDashboardData/:facultyid', getDashboardData);
 

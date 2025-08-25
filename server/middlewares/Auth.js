@@ -7,7 +7,7 @@ function verifyAccess(req, res, next) {
 
   // If no header token, try cookies
   if (!token && req.cookies && req.cookies.accessToken) {
-    token = req.cookies.accessToken;
+    token = req.cookies.webToken;
   }
 
   if (!token) {
