@@ -37,7 +37,7 @@ const AdminProfilePage = () => {
                     throw new Error("Admin ID not found. Please log in again.");
                 }
 
-                const response = await fetch(`${backendUrl}/api/Admin/getProfileData/${adminId}`);
+                const response = await fetch(`${backendUrl}/api/Admin/getProfileData/${adminId}`, {method : "GET",credentials: "include"});
                 
                 if (!response.ok) {
                     throw new Error("Failed to fetch profile data.");
@@ -220,7 +220,8 @@ const ResetPasswordModal = ({ isOpen, onClose, username }) => {
             const response = await fetch(`${backendUrl}/api/Admin/UpdatePassword`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                credentials: "include"
             });
 
             const data = await response.json();

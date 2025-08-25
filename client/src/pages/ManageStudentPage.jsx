@@ -292,6 +292,7 @@ const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(studentData),
+                credentials: "include"
             });
             if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
             await response.json();
@@ -411,6 +412,7 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, allStudents, 
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
+                credentials: "include"
             });
             if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
             await response.json();
@@ -502,7 +504,7 @@ const ManageStudentPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/getViewStudents`);
+            const response = await fetch(`${API_BASE_URL}/getViewStudents`, {method: "GET", credentials: "include"});
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
             setStudents(data.AllStudents || []);
@@ -547,6 +549,7 @@ const ManageStudentPage = () => {
                 method: 'DELETE', 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rollno }),
+                credentials: "include"
             });
             if (!response.ok) throw new Error('Failed to delete student.');
             await response.json();
@@ -563,6 +566,7 @@ const ManageStudentPage = () => {
                 method: 'PATCH', 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: username, role: 'student' }), 
+                credentials: "include"
             });
 
             if (!response.ok) {

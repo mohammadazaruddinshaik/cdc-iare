@@ -53,6 +53,7 @@ const LogsPage = () => {
 
         const response = await fetch(`http://localhost:5000/api/Student/getLogData/${rollno}`, {
           method: 'GET',
+          credentials: "include"
         });
 
         if (!response.ok) {

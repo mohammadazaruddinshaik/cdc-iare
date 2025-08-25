@@ -189,6 +189,7 @@ const ChangePasswordModal = ({ isOpen, onClose, rollNo }) => {
                     oldPassword: passwords.oldPassword, 
                     newPassword: passwords.newPassword 
                 }),
+                credentials: "include",
             });
             const result = await response.json();
             if (response.ok) {
@@ -375,6 +376,7 @@ const ProfilePage = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ rollno }),
+                    credentials: "include",
                 });
                 
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

@@ -99,14 +99,20 @@ const LeaderBoardPage = () => {
             try {
                 setLoading(true);
                 const BASE_URL = 'http://localhost:5000/api';
-                let endpoint = '/Faculty/getLeaderboardData/'; // Default for faculty and admin
+                let endpoint = '/Faculty/getLeaderboardData/';
                 if (userRole === 'student' && currentUserIdentifier) {
                     endpoint = `/Student/getLeaderboardData/${currentUserIdentifier}`;
                 }
+                else if(userRole === 'admin'){
+                    endpoint = '/Admin/getLeaderboardData/'
+                }
                 const apiUrl = `${BASE_URL}${endpoint}`;
                 
                 await new Promise((resolve) => setTimeout(resolve, 1500));
-                const response = await fetch(apiUrl);
+                const response = await fetch(apiUrl, {
+                    method : "GET", 
+                    credentials: "include",
+                });
 
                 if (!response.ok) throw new Error(`API Error: ${response.status}`);
                 const data = await response.json();
