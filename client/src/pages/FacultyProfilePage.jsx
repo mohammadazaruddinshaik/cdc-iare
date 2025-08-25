@@ -11,6 +11,9 @@ const InfoPill = ({ icon, text }) => (
     </div>
 );
 
+const backendUrl =  import.meta.env.VITE_BASE_URL;
+
+
 const PasswordInput = ({ id, label, value, onChange, error }) => {
     const [showPassword, setShowPassword] = useState(false);
     return (
@@ -65,7 +68,7 @@ const ChangePasswordModal = ({ isOpen, onClose, facultyId }) => {
 
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:5000/api/Faculty/UpdatePassword', {
+            const response = await fetch(`${backendUrl}/api/Faculty/UpdatePassword`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -146,7 +149,7 @@ const FacultyProfilePage = () => {
                 const facultyId = localStorage.getItem('userIdentifier');
                 if (!facultyId) throw new Error("Faculty ID not found.");
                 
-                const response = await fetch(`http://localhost:5000/api/Faculty/getProfileData/${facultyId}`, {method :"GET", credentials: "include"});
+                const response = await fetch(`${backendUrl}/api/Faculty/getProfileData/${facultyId}`, {method :"GET", credentials: "include"});
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const data = await response.json();

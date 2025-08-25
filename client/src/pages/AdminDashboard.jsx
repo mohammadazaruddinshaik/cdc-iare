@@ -141,6 +141,7 @@ const SectionHeader = ({ title, animate, delay }) => (
     </div>
 );
 
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 
 // --- Main Admin Dashboard Component ---
 const AdminDashboardPage = () => {
@@ -163,7 +164,7 @@ const AdminDashboardPage = () => {
 
         const fetchAdminData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/Admin/getDashboardData', 
+                const response = await fetch(`${backendUrl}/api/Admin/getDashboardData`, 
                     {
                         method : "GET",
                         credentials: "include"

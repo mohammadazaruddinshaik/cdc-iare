@@ -115,7 +115,8 @@ const MonthlyReport = () => {
         setIsLoading(true);
 
         try {
-            const backendUrl = "http://localhost:5000";
+            const backendUrl =  import.meta.env.VITE_BASE_URL;
+
             const fromDateFormatted = format(fromDate, 'yyyy-MM-dd');
             const toDateFormatted = format(toDate, 'yyyy-MM-dd');
             const params = new URLSearchParams({ from: fromDateFormatted, to: toDateFormatted });

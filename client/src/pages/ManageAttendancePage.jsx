@@ -4,7 +4,8 @@ import { User, LogOut, Menu, X, Search, QrCode, Edit, CheckSquare, Loader2, Chec
 import Header from '../components/Header';
 
 // --- CONFIGURATION ---
-const backendUrl = "http://localhost:5000";
+const backendUrl = import.meta.env.VITE_BASE_URL;
+
 
 // --- Section Header Component ---
 const SectionHeader = ({ title, animate, delay }) => (

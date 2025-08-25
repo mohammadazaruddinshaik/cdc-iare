@@ -9,6 +9,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Trophy, Medal, Award, Search, Crown, ListOrdered, ExternalLink, ChevronDown, User, LogOut, Menu, X } from 'lucide-react';
 import Header from '../components/Header';
 
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 // --- REUSABLE GLASS SKELETON LOADER ---
 const GlassSkeletonLoader = () => (
     <div className="animate-pulse w-full max-w-7xl mx-auto">
@@ -98,13 +99,13 @@ const LeaderBoardPage = () => {
         const fetchLeaderboardData = async () => {
             try {
                 setLoading(true);
-                const BASE_URL = 'http://localhost:5000/api';
-                let endpoint = '/Faculty/getLeaderboardData/';
+                const BASE_URL =  import.meta.env.VITE_BASE_URL;
+                let endpoint = '/api/Faculty/getLeaderBoardData/';
                 if (userRole === 'student' && currentUserIdentifier) {
-                    endpoint = `/Student/getLeaderboardData/${currentUserIdentifier}`;
+                    endpoint = `/api/Student/getLeaderBoardData/${currentUserIdentifier}`;
                 }
                 else if(userRole === 'admin'){
-                    endpoint = '/Admin/getLeaderboardData/'
+                    endpoint = '/api/Admin/getLeaderboardData/'
                 }
                 const apiUrl = `${BASE_URL}${endpoint}`;
                 

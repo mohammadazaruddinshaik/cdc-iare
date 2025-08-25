@@ -5,6 +5,7 @@ import BarChart from '../components/BarChart';
 import Header from '../components/Header';
 import { getCourseIcon, getRankBadge, getRankIcon } from '../utils/helpers';
 
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 // Batch-wise timetable data
 const batchWiseTimetable = {
     "SKILLUP BATCH-1": { Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5102" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5102" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102" }] },
@@ -47,7 +48,7 @@ const StudentDashboardPage = () => {
                     throw new Error('Roll number not found in localStorage');
                 }
 
-                const response = await fetch('http://localhost:5000/api/Student/getDashboardData', {
+                const response = await fetch(`${backendUrl}/api/Student/getDashboardData`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ "rollno": rollno }),

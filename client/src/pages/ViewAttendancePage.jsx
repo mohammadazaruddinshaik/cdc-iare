@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Search, ListOrdered, ChevronLeft, ChevronRight, Filter, Calendar, BookOpen, Loader2, ClipboardList } from 'lucide-react';
 import Header from '../components/Header';
-
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 const GlassSkeletonLoader = () => (
     <div className="animate-pulse w-full max-w-7xl mx-auto">
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 mb-8">
@@ -158,9 +158,9 @@ const ViewAttendance = () => {
                 
                 // Conditional API endpoint based on user role
                 if (userRole === 'admin') {
-                    apiUrl = 'http://localhost:5000/api/Admin/getViewStudentData';
+                    apiUrl = `${backendUrl}/api/Admin/getViewStudentData`;
                 } else if (userRole === 'faculty') {
-                    apiUrl = 'http://localhost:5000/api/Faculty/getViewStudentData';
+                    apiUrl = `${backendUrl}/api/Faculty/getViewStudentData`;
                 } else {
                     throw new Error("User role not found. Please log in again.");
                 }

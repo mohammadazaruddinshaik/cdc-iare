@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Header from '../components/Header'; // Assuming your Header component is in this path
 
-const backendUrl = "http://localhost:5000";
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 
 // --- Main Admin Profile Page Component ---
 const AdminProfilePage = () => {

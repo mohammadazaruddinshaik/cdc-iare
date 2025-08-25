@@ -121,7 +121,7 @@ const Header = ({ animate }) => {
 };
 
 // --- CONFIGURATION & DATA ---
-const backendUrl = "http://localhost:5000";
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 const courses = ["CP", "JFS", "DBMS", "AWS"];
 const batches = [
     { value: "attendance_skillup-1", label: "Skillup-1" }, { value: "attendance_skillup-2", label: "Skillup-2" }, { value: "attendance_skillup-3", label: "Skillup-3" },

@@ -12,6 +12,8 @@ import { ClipboardList, Search, Calendar, BookOpen, Loader2 } from 'lucide-react
 import Header from '../components/Header';
 
 // --- Logs Page Component ---
+const API_URL = import.meta.env.VITE_BASE_URL;
+
 const LogsPage = () => {
   // --- State for fetched data, loading, and errors ---
   const [logs, setLogs] = useState([]);
@@ -50,8 +52,9 @@ const LogsPage = () => {
         if (!rollno) {
           throw new Error("Roll number not found in local storage.");
         }
+    
 
-        const response = await fetch(`http://localhost:5000/api/Student/getLogData/${rollno}`, {
+        const response = await fetch(`${API_URL}/api/Student/getLogData/${rollno}`, {
           method: 'GET',
           credentials: "include"
         });

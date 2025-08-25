@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Header from '../components/Header'; // Assuming this is the correct path to your Header component
 
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 // This helper function safely processes the JSON response from the server.
 async function processResponse(response) {
     const contentType = response.headers.get('content-type');
@@ -67,7 +68,7 @@ const UpdateStudentPage = () => {
         setUpdateMessage({ type: '', text: '' });
         setStudentData(null);
         try {
-            const response = await fetch(`http://localhost:5000/api/Faculty/getStudentData/${searchRollNo.trim()}`, {method : "GET", credentials: "include"});
+            const response = await fetch(`${backendUrl}/api/Faculty/getStudentData/${searchRollNo.trim()}`, {method : "GET", credentials: "include"});
             const data = await processResponse(response);
             setStudentData({
                 ...data,
@@ -86,7 +87,7 @@ const UpdateStudentPage = () => {
         setUpdateLoading(true);
         setUpdateMessage({ type: '', text: '' });
         try {
-            const response = await fetch('http://localhost:5000/api/Faculty/ResetPassword', {
+            const response = await fetch(`${backendUrl}/api/Faculty/ResetPassword`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
