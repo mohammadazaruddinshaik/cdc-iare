@@ -135,7 +135,7 @@ const getRankIcon = (rank) => {
   return null;
 };
 
-
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 // --- FACULTY DASHBOARD COMPONENT ---
 const FacultyDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -153,7 +153,7 @@ const FacultyDashboard = () => {
           throw new Error("Faculty ID not found. Please log in again.");
         }
         
-        const response = await fetch(`http://localhost:5000/api/Faculty/getDashboardData/${userIdentifier}`, {
+        const response = await fetch(`${backendUrl}/api/Faculty/getDashboardData/${userIdentifier}`, {
           method : "GET",
           credentials: "include"
         });

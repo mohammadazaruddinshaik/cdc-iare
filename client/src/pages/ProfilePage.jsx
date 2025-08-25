@@ -9,7 +9,7 @@ import {
 import Header from '../components/Header';
 
 // --- UI & HELPER COMPONENTS ---
-
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 const ProfileDetailCard = ({ icon, label, value, description, variant = 'default' }) => {
     const variants = {
         default: 'bg-white/80 border-white/50 hover:shadow-xl',
@@ -180,7 +180,7 @@ const ChangePasswordModal = ({ isOpen, onClose, rollNo }) => {
         }
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:5000/api/Student/UpdatePassword', {
+            const response = await fetch(`${backendUrl}/api/Student/UpdatePassword`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -372,7 +372,7 @@ const ProfilePage = () => {
                 const rollno = localStorage.getItem('userIdentifier');
                 if (!rollno) throw new Error("Roll number not found in storage.");
                 
-                const response = await fetch('http://localhost:5000/api/Student/getProfileData', {
+                const response = await fetch(`${backendUrl}/api/Student/getProfileData`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ rollno }),

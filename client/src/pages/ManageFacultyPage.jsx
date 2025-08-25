@@ -6,7 +6,7 @@ import Header from '../components/Header';
 const SectionHeader = ({ title, animate, delay }) => (<div className={`flex items-center mb-4 transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: `${delay}ms` }}><div className="w-1 h-5 bg-white/50 rounded-full mr-3"></div><h2 className="text-md lg:text-lg font-bold text-white">{title}</h2></div>);
 
 // --- CONFIG & HELPERS ---
-const API_BASE_URL = 'http://localhost:5000/api/Admin';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 const subjects = ["CP", "AWS", "DBMS", "JFS"];
 const availableBatches = { "SKILLUP": ["1", "2", "3"], "SKILLNEXT": ["1", "2", "3"], "SKILLBRIDGE": ["1", "2", "3", "4", "5"] };
 
@@ -280,7 +280,7 @@ const ManageFacultyPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/getViewFaculty`, {method : "GET",credentials: "include"});
+            const response = await fetch(`${API_BASE_URL}/api/Admin/getViewFaculty`, {method : "GET",credentials: "include"});
             if (!response.ok) throw new Error("Network response was not ok.");
             const data = await response.json();
             setFacultyList(Array.isArray(data) ? data : []); 
@@ -312,7 +312,7 @@ const ManageFacultyPage = () => {
     };
     const handleAddFaculty = async (facultyData) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/addFaculty`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData), credentials: "include"});
+            const response = await fetch(`${API_BASE_URL}/api/Admin/addFaculty`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData), credentials: "include"});
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.message || 'Failed to add faculty.'); }
             showToast('success', 'Faculty added successfully!');
             fetchFaculty();
@@ -321,7 +321,7 @@ const ManageFacultyPage = () => {
     };
     const handleUpdateFaculty = async (facultyData) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/updateFaculty`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData), credentials: "include"});
+            const response = await fetch(`${API_BASE_URL}/api/Admin/updateFaculty`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(facultyData), credentials: "include"});
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.message || 'Failed to update faculty.'); }
             showToast('success', 'Faculty updated successfully!');
             fetchFaculty();
@@ -331,7 +331,7 @@ const ManageFacultyPage = () => {
     const handleDeleteConfirm = async () => {
         if (!facultyToDelete) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/deleteFaculty`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ facultyid: facultyToDelete.facultyid }),credentials: "include"});
+            const response = await fetch(`${API_BASE_URL}/api/Admin/deleteFaculty`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ facultyid: facultyToDelete.facultyid }),credentials: "include"});
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.message || 'Failed to delete faculty.'); }
             showToast('success', `Faculty ${facultyToDelete.name} has been deleted.`);
             fetchFaculty();

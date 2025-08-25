@@ -41,7 +41,7 @@ const BatchWiseReport = () => {
         setTimeout(() => setAnimate(true), 100);
     }, []);
 
-    const backendUrl = "http://localhost:5000";
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 
     const batches = [
         { value: "attendance_skillup-1", label: "SKILLUP BATCH-1" },

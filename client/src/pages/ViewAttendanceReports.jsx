@@ -175,7 +175,7 @@ const Header = ({ animate }) => {
 
 
 // --- Configuration & Helpers ---
-const backendUrl = "http://localhost:5000";
+const backendUrl =  import.meta.env.VITE_BASE_URL;
 
 const batchOptions = [
   { value: "attendance_skillup-1", label: "SKILLUP BATCH-1" },

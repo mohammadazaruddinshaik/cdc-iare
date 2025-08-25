@@ -118,7 +118,7 @@ const SessionReport = () => {
         .filter(Boolean);
 
     // --- MODIFIED: Set the correct base URL ---
-    const backendUrl = "http://localhost:5000";
+    const backendUrl =  import.meta.env.VITE_BASE_URL;
 
     const showToast = (message, type = 'info') => {
         setToast({ message, type, visible: true });

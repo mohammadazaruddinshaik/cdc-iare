@@ -8,7 +8,8 @@ import {
 import Header from '../components/Header'; // Assuming Header is in a components folder
 
 // --- CONFIGURATION ---
-const API_BASE_URL = 'http://localhost:5000/api/Admin';
+
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 const branches = ["CSE", "CSE (AI&ML)", "CSE (CS)","CSE (DS)","IT", "ECE", "EEE", "MECH", "CIVIL"];
 const batches = ["SKILLUP BATCH-1", "SKILLUP BATCH-2", "SKILLUP BATCH-3", "SKILLNEXT BATCH-1", "SKILLNEXT BATCH-2","SKILLNEXT BATCH-3", "SKILLBRIDGE BATCH-1","SKILLBRIDGE BATCH-2","SKILLBRIDGE BATCH-3","SKILLBRIDGE BATCH-4","SKILLBRIDGE BATCH-5"];
 
@@ -288,7 +289,7 @@ const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/addStudent`, {
+            const response = await fetch(`${API_BASE_URL}/api/Admin/addStudent`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(studentData),
@@ -408,7 +409,7 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, allStudents, 
         e.preventDefault();
         const payload = { rollno: editData.rollno, ...editData };
         try {
-            const response = await fetch(`${API_BASE_URL}/updateStudent`, {
+            const response = await fetch(`${API_BASE_URL}/api/Admin/updateStudent`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -504,7 +505,7 @@ const ManageStudentPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/getViewStudents`, {method: "GET", credentials: "include"});
+            const response = await fetch(`${API_BASE_URL}/api/Admin/getViewStudents`, {method: "GET", credentials: "include"});
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
             setStudents(data.AllStudents || []);
@@ -545,7 +546,7 @@ const ManageStudentPage = () => {
 
     const handleStudentDelete = async (rollno) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/deleteStudent`, {
+            const response = await fetch(`${API_BASE_URL}/api/Admin/deleteStudent`, {
                 method: 'DELETE', 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rollno }),
@@ -562,7 +563,7 @@ const ManageStudentPage = () => {
     
     const handlePasswordReset = async (username) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/ResetPassword`, {
+            const response = await fetch(`${API_BASE_URL}/api/Admin/ResetPassword`, {
                 method: 'PATCH', 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: username, role: 'student' }), 
