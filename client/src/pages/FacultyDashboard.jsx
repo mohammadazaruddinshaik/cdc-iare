@@ -155,7 +155,7 @@ const FacultyDashboard = () => {
         
         const response = await fetch(`${backendUrl}/api/Faculty/getDashboardData/${userIdentifier}`, {
           method : "GET",
-          credentials: "include"
+          credentials: "include",
         });
         
         if (!response.ok) {
