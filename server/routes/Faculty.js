@@ -15,6 +15,7 @@ const { getLeaderBoardData,
         HandleSessionPostAttendance} = require('../services/CommonRoutes');
 
 const { verifyAccess, authorize } = require("../middlewares/Auth");
+const { generateAndStoreQrCodes } = require('../services/DynamicRoutes');
 
 const router = express.Router();
 
@@ -47,6 +48,8 @@ router.post('/Mark-Session',HandleSessionPostAttendance);
 router.get("/batch-report-excel/",HandleBatchAttendanceReportExcel);
 
 router.get("/batch-report-pdf", HandleBatchAttendanceReportPDF);
+
+// router.post('/updateQr', generateAndStoreQrCodes);
 
 
 module.exports = router;

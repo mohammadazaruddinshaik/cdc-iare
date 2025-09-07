@@ -112,6 +112,7 @@ router.delete('/deleterecord',deleteAttendanceLog);
 
 router.post('/MarkAllBatchAttendance',HandleMarkAttendanceMultipleBatches);
 
+
 //-------------------------------   Manage Attendance Routes  End -----------------------------//
 
 
