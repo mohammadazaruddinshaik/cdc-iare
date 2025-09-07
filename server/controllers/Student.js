@@ -118,67 +118,6 @@ async function getProfileData(req, res) {
   }
 };
 
-async function updateAllStudentScores() {
-  const students = await Coder.find();
-
-  for (const student of students) {
-    try {
-      const { handles } = student;
-
-      const leetcodeData = handles.leetcode
-        ? await fetchLeetCode(handles.leetcode).catch(() => ({}))
-        : {};
-      const gfgData = handles.gfg
-        ? await fetchGFG(handles.gfg).catch(() => ({}))
-        : {};
-      const codechefData = handles.codechef
-        ? await fetchCodeChef(handles.codechef).catch(() => ({}))
-        : {};
-
-      const leetcodeScore =
-        (leetcodeData.easy || 0) * 2 +
-        (leetcodeData.medium || 0) * 4 +
-        (leetcodeData.hard || 0) * 6;
-
-      const normalizedRating = Math.max(
-        0,
-        Math.min(1, ((codechefData.rating || 0) - 1000) / (3500 - 1000))
-      );
-      const normalizedProblems = Math.max(
-        0,
-        Math.min(1, (codechefData.problemsSolved || 0) / 200)
-      );
-
-      const codechefScore = Math.round(
-        (normalizedRating * 0.5 + normalizedProblems * 0.5) * 500
-      );
-
-      const gfgScore = gfgData.codingScore || 0;
-
-      const totalScore = leetcodeScore + gfgScore + codechefScore;
-
-      await Coder.updateOne(
-        { rollno: student.rollno },
-        {
-          $set: {
-            scores: {
-              leetcode: leetcodeScore,
-              gfg: gfgScore,
-              codechef: codechefScore,
-            },
-            totalScore,
-            lastUpdated: new Date(),
-          },
-        }
-      );
-
-      console.log(`✅ Updated: ${student.rollno}`);
-    } catch (err) {
-      console.error(`❌ Failed to update ${student.rollno}:`, err.message);
-    }
-  }
-};
-
 async function HandleGetAnnouncements(req, res) {
   
   try {
@@ -204,7 +143,6 @@ async function HandleGetAnnouncements(req, res) {
 
 module.exports={
     getDashboardData,
-    updateAllStudentScores,
     HandleGetAnnouncements,
     getLogData,
     getProfileData

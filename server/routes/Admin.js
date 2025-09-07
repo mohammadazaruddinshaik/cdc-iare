@@ -1,5 +1,4 @@
 const express=require('express');
-const ExcelJS = require('exceljs');
 const {HandleSessionAttendanceReportPDF, 
       HandleSessionAttendanceReportExcel,  
       HandleMonthlyAttendanceReportExcel,
@@ -17,7 +16,7 @@ const {HandleSessionAttendanceReportPDF,
       getProfileData,
       deleteAttendanceLog} = require('../controllers/Admin');
 
-const getAttendanceModel=require('../services/GetAttendanceModel');
+const { updateAllStudentScores, generateAndStoreQrCodes } = require('../services/DynamicRoutes');
 
 const { HandleChangePassword,
         getViewStudentData, 
@@ -27,10 +26,22 @@ const { HandleChangePassword,
         HandleBatchAttendanceReportExcel, 
         HandleMarkAttendance,
         getStudentsByBatch,
-        HandleSessionPostAttendance} = require('../services/CommonRoutes');
+        HandleSessionPostAttendance,
+        HandleMarkAttendanceMultipleBatches} = require('../services/CommonRoutes');
 
 const { verifyAccess, authorize } = require("../middlewares/Auth");
 const router=express.Router();
+
+
+//-------------------------------   Manage Dynamic Routes  Start -----------------------------//
+
+
+router.post('/updateScores', updateAllStudentScores);
+
+router.post('/updateQr', generateAndStoreQrCodes);
+
+
+//-------------------------------   Manage Dynamic Routes  End -----------------------------//
 
 // Protect all routes in this file (Admin only)
 router.use(verifyAccess, authorize("admin"));
@@ -97,8 +108,14 @@ router.get('/getAbsenties', getStudentsForAttendanceUpdation);
 
 router.patch('/updateAttendance', HandleUpdateAttendance);
 
-router.delete('/deleterecord',deleteAttendanceLog)
+router.delete('/deleterecord',deleteAttendanceLog);
 
-//-------------------------------   Manage Attendance Routes  Start -----------------------------//
+router.post('/MarkAllBatchAttendance',HandleMarkAttendanceMultipleBatches);
+
+//-------------------------------   Manage Attendance Routes  End -----------------------------//
+
+
+
+
 
 module.exports=router;

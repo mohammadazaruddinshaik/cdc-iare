@@ -944,6 +944,165 @@ async function getStudentsByBatch(req, res) {
   }
 };
 
+async function HandleMarkAttendanceMultipleBatches(req, res) {
+  try {
+    const { date, course, batches, presentMap } = req.body;
+
+    // 🛡️ Input validation
+    if (
+      !date ||
+      !course ||
+      !Array.isArray(batches) ||
+      batches.length === 0 ||
+      typeof presentMap !== "object"
+    ) {
+      return res.status(400).json({ message: "Missing or invalid input data" });
+    }
+
+    const now = new Date();
+    const normalizeDate = (d) => new Date(d).toISOString().split("T")[0];
+    const reqDate = normalizeDate(date);
+
+    const results = [];
+
+    for (const batchName of batches) {
+      const batchFormatted = batchName
+        .replace(/BATCH/gi, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase();
+
+      const Attendance = getAttendanceModel(batchFormatted);
+
+      // If no map exists for this batch, skip
+      if (!presentMap[batchName]) {
+        results.push({
+          batch: batchFormatted,
+          status: "skipped",
+          message: "No present map provided"
+        });
+        continue;
+      }
+
+      const batchPresentMap = presentMap[batchName];
+
+      // Fetch attendance docs
+      const attendanceDocs = await Attendance.find();
+
+      // 🔍 Check if already marked
+      const alreadyMarkedDocs = attendanceDocs.filter(doc =>
+        doc.dailyLogs.some(
+          log => normalizeDate(log.date) === reqDate && log.course === course
+        )
+      );
+
+      if (alreadyMarkedDocs.length > 0) {
+        results.push({
+          batch: batchFormatted,
+          status: "skipped",
+          message: `Attendance already marked for course ${course} on ${reqDate}`
+        });
+        continue;
+      }
+
+      // 🎯 Validate QR hashes
+      const rollnos = Object.keys(batchPresentMap);
+      const students = await Student.find(
+        { rollno: { $in: rollnos } },
+        { rollno: 1, qrData: 1 }
+      );
+
+      const validatedPresentSet = new Set();
+      const mismatchedStudents = [];
+
+      for (const student of students) {
+        const expectedHash = student.qrData;
+        const providedHash = batchPresentMap[student.rollno];
+        if (expectedHash && providedHash && expectedHash === providedHash) {
+          validatedPresentSet.add(student.rollno);
+        } else {
+          mismatchedStudents.push(student.rollno);
+        }
+      }
+
+      const bulkUpdates = [];
+      const updatedStudents = [];
+
+      for (const doc of attendanceDocs) {
+        const { rollno, dailyLogs } = doc;
+        const isPresent = validatedPresentSet.has(rollno);
+
+        const hasAnyMarkedToday = dailyLogs.some(
+          log => normalizeDate(log.date) === reqDate
+        );
+
+        const newLog = {
+          date,
+          course,
+          status: isPresent ? "present" : "absent"
+        };
+
+        const incOps = {
+          [`courseAttendance.${course}.totalDays`]: 1
+        };
+
+        if (isPresent) {
+          incOps[`courseAttendance.${course}.presentDays`] = 1;
+        }
+
+        if (!hasAnyMarkedToday) {
+          incOps["overallAttendance.totalDays"] = 1;
+          if (isPresent) {
+            incOps["overallAttendance.presentDays"] = 1;
+          }
+        }
+
+        bulkUpdates.push({
+          updateOne: {
+            filter: { rollno },
+            update: {
+              $push: { dailyLogs: newLog },
+              $inc: incOps,
+              $set: { lastUpdated: now }
+            }
+          }
+        });
+
+        updatedStudents.push({ rollno, status: newLog.status });
+      }
+
+      if (bulkUpdates.length > 0) {
+        await Attendance.bulkWrite(bulkUpdates);
+      }
+
+      const presentiesCount = updatedStudents.filter(s => s.status === "present").length;
+      const absenteesCount = updatedStudents.filter(s => s.status === "absent").length;
+
+      results.push({
+        batch: batchFormatted,
+        status: "updated",
+        totalMarked: updatedStudents.length,
+        presentiesCount,
+        absenteesCount,
+        mismatchedStudents
+      });
+    }
+
+    return res.status(200).json({
+      message: `Attendance processing completed for course: ${course} on ${reqDate}`,
+      results
+    });
+
+  } catch (error) {
+    console.error("Error marking attendance:", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+};
+
+
 module.exports={
     getLeaderBoardData,
     HandleChangePassword,
@@ -953,5 +1112,6 @@ module.exports={
     HandleBatchAttendanceReportExcel,
     HandleMarkAttendance,
     HandleSessionPostAttendance,
-    getStudentsByBatch
+    getStudentsByBatch,
+    HandleMarkAttendanceMultipleBatches
 }
