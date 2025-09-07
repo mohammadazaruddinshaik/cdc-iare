@@ -140,8 +140,8 @@ const LoginPage = () => {
             const data = await response.json();
             const role = data.role;
             if (response.ok) {
-                localStorage.setItem("userIdentifier", username.toUpperCase());
-                localStorage.setItem("userRole", role); 
+                sessionStorage.setItem("userIdentifier", username.toUpperCase());
+                sessionStorage.setItem("userRole", role); 
                 switch (role) {
                     case 'admin':
                         navigate('/admin/dashboard');

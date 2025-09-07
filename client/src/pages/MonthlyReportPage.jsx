@@ -125,7 +125,7 @@ const MonthlyReport = () => {
             const response = await fetch(url, { method: 'GET' , credentials: "include"});
 
             if (!response.ok) {
-                throw new Error(`Download failed. Server responded with status ${response.status}.`);
+                throw new Error(`Download failed.`);
             }
 
             const blob = await response.blob();
@@ -171,7 +171,7 @@ const MonthlyReport = () => {
             {toast.visible && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />}
 
             <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans">
-                <div className="px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+                <div className="px-4 sm:px-6 lg:px-8 py-2 relative z-10">
                     <Header animate={animate} />
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-4"></div>
                 </div>

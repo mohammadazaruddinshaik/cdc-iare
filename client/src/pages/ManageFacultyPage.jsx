@@ -47,6 +47,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </div>
     );
 };
+// NEW: Batch Selector with responsive width to prevent overflow
 const BatchSelector = ({ selectedBatches, onBatchChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -61,18 +62,30 @@ const BatchSelector = ({ selectedBatches, onBatchChange }) => {
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
-                <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-30">
-                    <div className="max-h-56 overflow-y-auto p-2">
+                <div className="absolute top-full mt-1 w-72 md:w-full bg-white border border-gray-300 rounded-lg shadow-lg z-30 p-2">
+                    <div className="max-h-60 overflow-y-auto">
                         {Object.entries(availableBatches).map(([program, batches]) => (
                             <div key={program} className="p-2">
-                                <h4 className="font-semibold text-xs text-gray-700 px-2">{program}</h4>
-                                <div className="grid grid-cols-3 gap-2 mt-1">
-                                    {batches.map(batch => (
-                                        <label key={batch} className="flex items-center text-sm text-gray-700 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
-                                            <input type="checkbox" checked={selectedBatches.includes(`${program} BATCH-${batch}`)} onChange={() => handleBatchSelection(program, batch)} className={`h-4 w-4 text-blue-600 rounded focus:ring-blue-500`} />
-                                            <span className="ml-2">{batch}</span>
-                                        </label>
-                                    ))}
+                                <h4 className="font-semibold text-xs text-gray-500 uppercase tracking-wider px-1 mb-2">{program}</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {batches.map(batch => {
+                                        const batchName = `${program} BATCH-${batch}`;
+                                        const isSelected = selectedBatches.includes(batchName);
+                                        return (
+                                            <button
+                                                key={batch}
+                                                type="button"
+                                                onClick={() => handleBatchSelection(program, batch)}
+                                                className={`w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-md transition-colors duration-200 ${
+                                                    isSelected
+                                                        ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300'
+                                                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                                                }`}
+                                            >
+                                                {batch}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}
@@ -141,7 +154,12 @@ const ViewAllFaculty = ({ animate, facultyList, isLoading, error, onAction, desi
                             <div key={faculty.facultyid} className="bg-white rounded-xl border border-gray-200/80 transition-shadow duration-300 hover:shadow-xl flex flex-col animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
                                 <div className="p-5 flex-grow flex flex-col">
                                     <div className="flex items-start gap-4 mb-4">
-                                        <img className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" src={`https://www.iare.ac.in/sites/default/files/${faculty.facultyid}_0.png` || `https://ui-avatars.com/api/?name=${faculty.name.replace(' ', '+')}&background=random&color=fff`} alt={faculty.name} onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${faculty.name.replace(' ', '+')}&background=random&color=fff`; }} />
+                                        <img 
+                                            className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-md" 
+                                            src={`https://www.iare.ac.in/sites/default/files/${faculty.facultyid}_0.png`} 
+                                            alt={faculty.name} 
+                                            onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${faculty.name.replace(' ', '+')}&background=random&color=fff&size=128`; }} 
+                                        />
                                         <div className="flex-grow min-w-0">
                                             <h3 className="text-lg font-bold text-gray-800 truncate">{faculty.name}</h3>
                                             <p className="text-sm font-medium text-sky-600">{faculty.facultyid}</p>
@@ -208,7 +226,7 @@ const AddFacultyForm = ({ animate, onCancel, onFacultyAdded, allFaculty }) => {
         <div className={`bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl border border-white/50 transition-opacity duration-700 ${animate ? 'opacity-100' : 'opacity-0'}`}>
             <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-gray-800">Onboard New Faculty</h3><button onClick={onCancel} className="text-gray-500 hover:text-gray-800" aria-label="Close form"><XCircle size={24}/></button></div>
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                     <div><label className="text-sm font-semibold text-gray-700">Full Name</label><input type="text" name="name" value={facultyData.name} onChange={handleInputChange} className={`mt-1 w-full p-2.5 bg-white border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm`} /><p className="text-xs text-red-600 h-4 mt-1">{errors.name}</p></div>
                     <div><label className="text-sm font-semibold text-gray-700">Faculty ID</label><input type="text" name="facultyid" value={facultyData.facultyid} onChange={handleInputChange} className={`mt-1 w-full p-2.5 bg-white border ${errors.facultyid ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm`} /><p className="text-xs text-red-600 h-4 mt-1">{errors.facultyid}</p></div>
                     <div className="md:col-span-2"><label className="text-sm font-semibold text-gray-700">Email Address</label><input type="email" name="email" value={facultyData.email} onChange={handleInputChange} className={`mt-1 w-full p-2.5 bg-white border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm`} /><p className="text-xs text-red-600 h-4 mt-1">{errors.email}</p></div>
@@ -217,7 +235,9 @@ const AddFacultyForm = ({ animate, onCancel, onFacultyAdded, allFaculty }) => {
                 <div><label className="text-sm font-semibold text-gray-700">Assign Subjects</label><div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">{subjects.map(subject => (<label key={subject} className="flex items-center text-sm text-gray-700 font-medium"><input type="checkbox" checked={facultyData.subjects_assigned.includes(subject)} onChange={() => handleSubjectChange(subject)} className="h-4 w-4 text-blue-600 rounded" /><span className="ml-2">{subject}</span></label>))}</div></div>
                 <div><BatchSelector selectedBatches={facultyData.batches_assigned} onBatchChange={handleBatchChange}/></div>
                 <div className="flex items-center justify-end mt-6 pt-6 border-t border-gray-200">
-                    <button type="submit" disabled={isSubmitting} className="bg-gray-800 hover:bg-black text-white font-bold py-2.5 px-6 rounded-lg shadow-md flex items-center justify-center gap-2 w-36 disabled:bg-gray-400">{isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <><Check size={18} /> Add Faculty</>}</button>
+                    <button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 w-48 disabled:bg-gray-400 disabled:shadow-none disabled:opacity-70 transition-all">
+                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <><UserCheck size={18} /> Add Faculty</>}
+                    </button>
                 </div>
             </form>
         </div>
@@ -244,13 +264,21 @@ const ModifyFacultyPanel = ({ animate, preloadedFaculty, allFaculty, onCancel, o
         setIsSubmitting(false);
     };
 
+    // NEW: Function to reset the panel and search for another faculty
+    const handleReset = () => {
+        setFaculty(null);
+        setEditData(null);
+        setSearchId('');
+        setMessage('');
+    };
+
     return (
         <div className={`bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl border border-white/50 transition-opacity duration-700 ${animate ? 'opacity-100' : 'opacity-0'}`}>
             <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-gray-800">Find & Modify Faculty</h3><button onClick={onCancel} className="text-gray-500 hover:text-gray-800" aria-label="Close panel"><XCircle size={24}/></button></div>
             {!faculty && (<div><form onSubmit={handleSearch} className="flex gap-2 mb-4"><input type="text" value={searchId} onChange={e => setSearchId(e.target.value)} placeholder="Enter Faculty ID to begin..." className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm" /><button type="submit" disabled={isSearching} className="bg-gray-800 hover:bg-black text-white font-bold py-2 px-5 rounded-lg text-sm flex items-center justify-center disabled:bg-gray-400 w-32">{isSearching ? <Loader2 className="animate-spin h-5 w-5" /> : <><Search size={16} className="mr-2"/>Search</>}</button></form>{message && <p className="text-center text-sm font-semibold text-gray-600 my-4">{message}</p>}</div>)}
             {faculty && editData && (
                 <form onSubmit={handleUpdate} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                         <div><label className="text-sm font-semibold text-gray-700">Full Name</label><input type="text" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} required className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm" /></div>
                         <div><label className="text-sm font-semibold text-gray-700">Faculty ID</label><input type="text" value={editData.facultyid} readOnly className="mt-1 w-full p-2.5 bg-gray-100 border-gray-300 rounded-lg text-sm cursor-not-allowed" /></div>
                         <div className="md:col-span-2"><label className="text-sm font-semibold text-gray-700">Email Address</label><input type="email" value={editData.email} onChange={e => setEditData({...editData, email: e.target.value})} required className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm" /></div>
@@ -258,7 +286,15 @@ const ModifyFacultyPanel = ({ animate, preloadedFaculty, allFaculty, onCancel, o
                     </div>
                     <div><label className="text-sm font-semibold text-gray-700">Assign Subjects</label><div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">{subjects.map(subject => (<label key={subject} className="flex items-center text-sm text-gray-700 font-medium"><input type="checkbox" checked={editData.subjects_assigned?.includes(subject)} onChange={() => setEditData(prev => ({ ...prev, subjects_assigned: prev.subjects_assigned?.includes(subject) ? prev.subjects_assigned.filter(s => s !== subject) : [...(prev.subjects_assigned || []), subject] }))} className="h-4 w-4 text-blue-600 rounded" /><span className="ml-2">{subject}</span></label>))}</div></div>
                     <div><BatchSelector selectedBatches={editData.batches_assigned || []} onBatchChange={(batches) => setEditData({...editData, batches_assigned: batches})} /></div>
-                    <div className="flex justify-end gap-4 mt-2 pt-6 border-t border-gray-200"><button type="button" onClick={onCancel} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 px-6 rounded-lg text-sm">Cancel</button><button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm w-40 flex justify-center">{isSubmitting ? <Loader2 className="animate-spin" /> : 'Save Changes'}</button></div>
+                    <div className="flex justify-end gap-4 mt-2 pt-6 border-t border-gray-200">
+                        {/* NEW: "Find Another" button to reset the search */}
+                        <button type="button" onClick={handleReset} className="mr-auto flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg text-sm transition-colors">
+                            <Search size={16} />
+                            Find Another
+                        </button>
+                        <button type="button" onClick={onCancel} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg text-sm">Cancel</button>
+                        <button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-sm w-48 flex justify-center">{isSubmitting ? <Loader2 className="animate-spin" /> : 'Save Changes'}</button>
+                    </div>
                 </form>
             )}
         </div>
@@ -281,7 +317,10 @@ const ManageFacultyPage = () => {
         setError(null);
         try {
             const response = await fetch(`${API_BASE_URL}/api/Admin/getViewFaculty`, {method : "GET",credentials: "include"});
-            if (!response.ok) throw new Error("Network response was not ok.");
+            if (!response.ok){
+                sessionStorage.clear();
+                navigate('/', { replace: true });
+            }
             const data = await response.json();
             setFacultyList(Array.isArray(data) ? data : []); 
         } catch (err) {

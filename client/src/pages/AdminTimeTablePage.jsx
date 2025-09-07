@@ -113,7 +113,7 @@ const AdminTimetablePage = () => {
   const [timetableData, setTimetableData] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem("userRole", "admin");
+    sessionStorage.setItem("userRole", "admin");
     
     const batches = Object.keys(batchWiseTimetable);
     setAllBatches(batches);

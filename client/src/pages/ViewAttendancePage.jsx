@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Trophy, Search, ListOrdered, ChevronLeft, ChevronRight, Filter, Calendar, BookOpen, Loader2, ClipboardList } from 'lucide-react';
 import Header from '../components/Header';
-const backendUrl =  import.meta.env.VITE_BASE_URL;
+
+const backendUrl = import.meta.env.VITE_BASE_URL;
+
 const GlassSkeletonLoader = () => (
     <div className="animate-pulse w-full max-w-7xl mx-auto">
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 mb-8">
@@ -37,12 +39,10 @@ const GlassSkeletonLoader = () => (
     </div>
 );
 
-// ENHANCED Calendar Modal for daily logs
 const CalendarModal = ({ dailyLogs, position }) => {
     if (!dailyLogs || dailyLogs.length === 0) return null;
 
     const [currentDate, setCurrentDate] = useState(() => {
-        // Start with the date of the most recent log
         return new Date(dailyLogs.reduce((a, b) => new Date(a.date) > new Date(b.date) ? a : b).date);
     });
 
@@ -124,7 +124,6 @@ const CalendarModal = ({ dailyLogs, position }) => {
 const ViewAttendance = () => {
     const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBatch, setSelectedBatch] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
@@ -134,29 +133,20 @@ const ViewAttendance = () => {
 
     const listContainerRef = useRef(null);
     const hideTimerRef = useRef(null);
+    const navigate = useNavigate(); // <-- Initialize useNavigate
 
     useEffect(() => {
         const timer = setTimeout(() => setAnimate(true), 100);
         return () => clearTimeout(timer);
     }, []);
 
-    // REMOVED THE AUTO-SCROLLING EFFECT
-    /*
-    useEffect(() => {
-        if (!loading && listContainerRef.current) {
-            listContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, [currentPage, loading]);
-    */
-
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const userRole = localStorage.getItem("userRole");
+                const userRole = sessionStorage.getItem("userRole");
                 let apiUrl;
                 
-                // Conditional API endpoint based on user role
                 if (userRole === 'admin') {
                     apiUrl = `${backendUrl}/api/Admin/getViewStudentData`;
                 } else if (userRole === 'faculty') {
@@ -171,14 +161,16 @@ const ViewAttendance = () => {
                 }
                 const data = await response.json();
                 setAllStudents(data.AllStudents || []);
+                setLoading(false); // Set loading to false only on success
             } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
+                // **UPDATED ERROR HANDLING**
+                console.error("Failed to fetch attendance data:", err.message);
+                sessionStorage.clear(); // Clear storage on error
+                navigate('/', { replace: true }); // Redirect to login
             }
         };
         fetchData();
-    }, []);
+    }, [navigate]); // Add navigate to dependency array
 
     const batches = useMemo(() => ['All', ...[...new Set(allStudents.map(s => s.batch))].sort()], [allStudents]);
     
@@ -188,7 +180,7 @@ const ViewAttendance = () => {
                 (student.rollno.toLowerCase().includes(searchTerm.toLowerCase())) &&
                 (selectedBatch === 'All' || student.batch === selectedBatch)
             )
-            .sort((a, b) => a.rollno.localeCompare(b.rollno)); // Sort by roll number
+            .sort((a, b) => a.rollno.localeCompare(b.rollno));
     }, [allStudents, searchTerm, selectedBatch]);
 
     const paginatedStudents = useMemo(() => {
@@ -289,7 +281,7 @@ const ViewAttendance = () => {
                             <ClipboardList className="w-7 h-7 mr-2 sm:mr-3 text-blue-400" /> Attendance Board
                         </h1>
                     </div>
-                    {loading ? <GlassSkeletonLoader /> : error ? <div className="text-center p-8 text-red-400">Error: {error}</div> : (
+                    {loading ? <GlassSkeletonLoader /> : (
                         <>
                             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 mb-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -325,7 +317,6 @@ const ViewAttendance = () => {
                                                     onMouseEnter={(e) => handleMouseEnter(e, student)}
                                                     onMouseLeave={handleMouseLeave}
                                                 >
-                                                    {/* --- MOBILE VIEW --- */}
                                                     <div className="md:hidden p-3 w-full">
                                                         <div className="flex justify-between items-center">
                                                             <div className="flex items-center gap-3">
@@ -342,7 +333,6 @@ const ViewAttendance = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* --- DESKTOP VIEW --- */}
                                                     <div className="hidden md:grid grid-cols-12 gap-4 items-center px-4 py-3">
                                                         <div className="col-span-1 text-base text-gray-400">{sno}</div>
                                                         <div className="col-span-4">
@@ -370,20 +360,20 @@ const ViewAttendance = () => {
                 </div>
             </main>
              <style>{`
-                 @keyframes fadeInUp {
-                     from { opacity: 0; transform: translateY(20px); }
-                     to { opacity: 1; transform: translateY(0); }
-                 }
-                 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background-color: rgba(255, 255, 255, 0.2);
-                     border-radius: 10px;
-                     border: 2px solid transparent;
-                     background-clip: content-box;
-                 }
-                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
-                 `}</style>
+                  @keyframes fadeInUp {
+                      from { opacity: 0; transform: translateY(20px); }
+                      to { opacity: 1; transform: translateY(0); }
+                  }
+                  .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+                  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                  .custom-scrollbar::-webkit-scrollbar-thumb {
+                      background-color: rgba(255, 255, 255, 0.2);
+                      border-radius: 10px;
+                      border: 2px solid transparent;
+                      background-clip: content-box;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+                  `}</style>
         </div>
     );
 };

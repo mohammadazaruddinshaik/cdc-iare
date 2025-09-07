@@ -41,7 +41,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
     const styles = colorStyles[color] || colorStyles.red;
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 transition-opacity duration-300" onClick={onClose}>
-            {/* FIX: Removed 'scale-95' and 'opacity-0' to allow the animation to work correctly. */}
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
                 <div className="flex items-start">
                     <div className={`flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full mr-4 ${styles.iconContainer}`}><Icon className={`h-6 w-6 ${styles.icon}`} /></div>
@@ -131,21 +130,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     if (totalPages <= 1) return null;
     return (
         <div className="flex justify-center items-center gap-4 mt-8">
-            <button
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                 <ChevronLeft size={16} /> Previous
             </button>
-            <span className="text-sm font-medium text-gray-600">
-                Page {currentPage} of {totalPages}
-            </span>
-            <button
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <span className="text-sm font-medium text-gray-600">Page {currentPage} of {totalPages}</span>
+            <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                 Next <ChevronRight size={16} />
             </button>
         </div>
@@ -245,7 +234,7 @@ const ViewAllStudents = ({ animate, students, isLoading, error, onAction, onDele
                                         </div>
                                     </div>
                                     <div className="bg-gray-50/70 p-3 rounded-b-2xl flex justify-end gap-2">
-                                        <button onClick={() => setStudentToAction({ action: 'resetPassword', data: student })} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-amber-600 bg-amber-100 hover:bg-amber-200 transition-colors"><KeyRound size={14} /> Reset Pass</button>
+                                        <button onClick={() => setStudentToAction({ action: 'resetPassword', data: student })} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-amber-600 bg-amber-100 hover:bg-amber-200 transition-colors"><KeyRound size={14} /> Reset Password</button>
                                         <button onClick={() => onAction('find', student)} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors"><Edit size={14} /> Edit</button>
                                         <button onClick={() => setStudentToAction({ action: 'delete', data: student })} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-red-600 bg-red-100 hover:bg-red-200 transition-colors"><Trash2 size={14} /> Delete</button>
                                     </div>
@@ -295,7 +284,10 @@ const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
                 body: JSON.stringify(studentData),
                 credentials: "include"
             });
-            if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+            if (!response.ok) {
+                sessionStorage.clear();
+                navigate('/', { replace: true });
+            }
             await response.json();
             onStudentAdded(true, 'Student added successfully!');
             onCancel();
@@ -373,11 +365,10 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, allStudents, 
         if (preloadedStudent) {
             setStudent(preloadedStudent);
             setSearchId(preloadedStudent.rollno);
-            setIsEditing(false);
+            setIsEditing(false); // Default to view mode when preloaded
         } else {
-            setStudent(null);
-            setSearchId('');
-            setIsEditing(false);
+            // NEW: Reset state when preloadedStudent is null (e.g., switching tabs)
+            handleReset(); 
         }
     }, [preloadedStudent]);
     
@@ -415,7 +406,10 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, allStudents, 
                 body: JSON.stringify(payload),
                 credentials: "include"
             });
-            if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+            if (!response.ok){
+                sessionStorage.clear();
+                navigate('/', { replace: true });
+            }
             await response.json();
             onStudentUpdated(true, 'Student details updated successfully!');
             onCancel();
@@ -428,6 +422,15 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, allStudents, 
         onStudentDeleted(student.rollno);
         setShowDeleteModal(false);
         onCancel();
+    };
+    
+    // NEW: Function to reset state and return to search view
+    const handleReset = () => {
+        setStudent(null);
+        setEditData(null);
+        setSearchId('');
+        setMessage('');
+        setIsEditing(false);
     };
 
     return (
@@ -453,9 +456,9 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, allStudents, 
                         <div className="bg-white/70 p-6 rounded-2xl border border-gray-200 sticky top-28 text-center">
                             <img className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg mx-auto" src={`https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${student.rollno}/${student.rollno}.jpg`} alt={student.name} onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${student.name.replace(/ /g, '+')}&background=EBF4FF&color=0284C7&font-size=0.45&rounded=true&size=96`; }}/>
                             <div className="mt-4"><h2 className="text-xl font-bold text-gray-800">{student.name}</h2><p className="font-semibold text-blue-700">{student.rollno}</p></div>
-                            <div className="mt-6 flex justify-center gap-2">
+                            <div className="mt-6 flex flex-col gap-2">
                                 {!isEditing && <button onClick={() => handleEdit(student)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2"><Edit size={16}/> Edit Profile</button>}
-                                <button onClick={() => setShowDeleteModal(true)} title="Delete" className="bg-red-100 hover:bg-red-200 text-red-700 p-2.5 rounded-lg"><Trash2 size={16}/></button>
+                                <button onClick={handleReset} className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2"><Search size={16}/> Find Another</button>
                             </div>
                         </div>
                     </div>

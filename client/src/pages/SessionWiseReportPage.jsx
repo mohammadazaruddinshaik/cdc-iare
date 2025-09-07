@@ -93,7 +93,7 @@ const SessionReport = () => {
     // --- End of Data ---
 
     useEffect(() => {
-        localStorage.setItem("userRole", "admin");
+        sessionStorage.setItem("userRole", "admin");
         setDate(new Date().toISOString().split("T")[0]);
         setTimeout(() => setAnimate(true), 100);
     }, []);

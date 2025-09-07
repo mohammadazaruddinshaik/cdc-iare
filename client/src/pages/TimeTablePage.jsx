@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Code, Cloud, Database } from 'lucide-react';
 import Header from '../components/Header';
 
@@ -113,19 +114,22 @@ const TimetablePage = () => {
   const [facultySelectedBatch, setFacultySelectedBatch] = useState('');
 
   const [weeklySchedule, setWeeklySchedule] = useState([]);
-  const userRole = localStorage.getItem("userRole");
+  const userRole = sessionStorage.getItem("userRole");
+  const navigate = useNavigate();
 
   useEffect(() => {
     try {
         if (userRole === 'student') {
-            const batch = localStorage.getItem("batch");
+            const batch = sessionStorage.getItem("batch");
             if (!batch) {
-                setError('Batch not found. Please log in again.');
+                sessionStorage.clear();
+                navigate('/');
+                return; 
             } else {
                 setStudentBatch(batch);
             }
         } else if (userRole === 'faculty') {
-            const batchString = localStorage.getItem("facultybatches");
+            const batchString = sessionStorage.getItem("facultybatches");
             let batchesArray = [];
             
             if (batchString) {
@@ -133,28 +137,33 @@ const TimetablePage = () => {
             }
 
             if (!Array.isArray(batchesArray) || batchesArray.length === 0) {
-                setError('No batches assigned for faculty.');
+                setError('No batches have been assigned to you yet.');
             } else {
                 setFacultyBatches(batchesArray);
-                setFacultySelectedBatch(batchesArray[0]); // Select the first batch by default
+                setFacultySelectedBatch(batchesArray[0]);
             }
         } else {
-            setError('Unknown user role detected. Please log in.');
+            navigate('/login');
+            return;
         }
     } catch (e) {
-        console.error("Error processing user data from localStorage:", e);
-        setError("Failed to load user data. It might be corrupted. Please log in again.");
+        console.error("Error processing user data from sessionStorage:", e);
+        navigate('/login');
+        return;
     } finally {
         setIsLoading(false);
         setTimeout(() => setAnimate(true), 100);
     }
-  }, [userRole]);
+  }, [userRole, navigate]);
 
   useEffect(() => {
     let batch = userRole === 'student' ? studentBatch : facultySelectedBatch;
 
     if (!batch || !batchWiseTimetable[batch]) {
       setWeeklySchedule([]);
+      if (batch) {
+         console.warn(`Timetable data not found for batch: ${batch}`);
+      }
       return;
     }
 
@@ -188,7 +197,7 @@ const TimetablePage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#071225] to-[#0A1B3A] flex items-center justify-center text-white p-4">
         <div className="bg-white/10 backdrop-blur-xl rounded-lg p-8 text-center border border-white/20">
-          <h2 className="text-xl font-bold text-red-400 mb-4">An Error Occurred</h2>
+          <h2 className="text-xl font-bold text-yellow-400 mb-4">Notice</h2>
           <p className="text-gray-300">{error}</p>
         </div>
       </div>
@@ -202,7 +211,7 @@ const TimetablePage = () => {
         <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-4"></div>
       </div>
       <main className="px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto"> {/* Increased max-width for better spacing */}
+        <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-7 h-7 text-blue-400" />
@@ -234,9 +243,7 @@ const TimetablePage = () => {
               </div>
             )}
           </div>
-
-          {/* --- RESPONSIVE GRID FIX --- */}
-          {/* Changed 'xl:grid-cols-3' to 'lg:grid-cols-3' to show 3 columns on screens > 1024px wide. */}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {weeklySchedule.map((dayData, dayIndex) => (
               <div

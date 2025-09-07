@@ -1,127 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, LogOut, Menu, X, Search, CheckSquare, Loader2, Check, AlertCircle, RefreshCw, Users, ChevronDown, ClipboardCheck } from 'lucide-react';
-
-// --- Reusable Header Component (Copied for context) ---
-const Header = ({ animate }) => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [userData, setUserData] = useState({ primary: '', secondary: '' });
-    const userRole = localStorage.getItem("userRole");
-
-    useEffect(() => {
-        setIsMobileMenuOpen(false);
-    }, [location.pathname]);
-
-    useEffect(() => {
-        try {
-            const identifier = localStorage.getItem("userIdentifier");
-            if (userRole === 'faculty') {
-                const name = localStorage.getItem("userName") || "Faculty";
-                setUserData({ primary: name, secondary: identifier || 'N/A' });
-            } else {
-                setUserData({ primary: 'Faculty', secondary: 'User' });
-            }
-        } catch (error) {
-            setUserData({ primary: 'Error', secondary: 'Data Error' });
-        }
-    }, [userRole]);
-
-    const getLinkClass = (path) => {
-        const isActive = location.pathname === path;
-        return {
-            link: isActive ? 'text-white font-semibold' : 'text-gray-400 hover:text-white',
-            underline: isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-        };
-    };
-
-    const handleLogout = () => {
-        localStorage.clear();
-        sessionStorage.clear();
-        setIsMobileMenuOpen(false);
-        navigate('/');
-    };
-
-    let navLinks = [];
-    let dashboardPath = '/faculty/dashboard';
-    let profilePath = '/faculty/profile';
-
-    navLinks = [
-        { path: dashboardPath, label: 'Dashboard' },
-        { path: '/leaderboard', label: 'Leaderboard' },
-        { path: '/timetable', label: 'Time Table' },
-        { path: '/faculty/students', label: 'Attendance Board' },
-    ];
-
-    return (
-        <header className="text-white py-2 relative z-50">
-            {/* Desktop Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 sm:space-x-8">
-                    <div className="lg:hidden">
-                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none p-2 rounded-md hover:bg-white/10 transition-colors">
-                            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
-                    </div>
-                    <div className={`flex items-center space-x-2 transform transition-all duration-1000 ${animate ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
-                        <Link to={dashboardPath} className="relative">
-                            <span className="font-bold text-white text-lg sm:text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                                CDC PORTAL
-                            </span>
-                        </Link>
-                    </div>
-                    <nav className={`hidden lg:flex space-x-6 transform transition-all duration-1000 delay-200 ${animate ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
-                        {navLinks.map((navLink) => (
-                            <Link key={navLink.path} to={navLink.path} className={`${getLinkClass(navLink.path).link} relative group transition-all duration-300 hover:scale-105 text-sm`}>
-                                {navLink.label}
-                                <div className={`absolute -bottom-1 left-0 w-full h-0.5 bg-white transform ${getLinkClass(navLink.path).underline} transition-transform duration-300`}></div>
-                            </Link>
-                        ))}
-                    </nav>
-                </div>
-                <div className="flex items-center space-x-2 sm:space-x-4">
-                    <div className={`relative transform transition-all duration-1000 delay-400 ${animate ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`} onClick={() => navigate(profilePath)}>
-                        <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-full px-2 py-1.5 border border-white/20 hover:bg-white/15 transition-all duration-300 group cursor-pointer">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
-                                <User className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="hidden sm:block pr-2">
-                                <p className="text-sm font-semibold text-white">{userData.primary}</p>
-                                <p className="text-xs text-gray-300">{userData.secondary}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className={`flex items-center transform transition-all duration-1000 delay-500 ${animate ? 'translate-y-0 opacity-100' : '-translate-y-5 opacity-0'}`}>
-                        <button onClick={handleLogout} className="p-2.5 rounded-full bg-white/10 hover:bg-red-500/20 transition-all duration-300 group" aria-label="Logout">
-                            <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-            {/* Mobile Menu */}
-            <div className={`lg:hidden bg-slate-800/90 backdrop-blur-md mt-2 transition-all duration-300 ease-in-out overflow-hidden rounded-b-lg shadow-xl ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <nav className="flex flex-col p-4">
-                    {navLinks.map((navLink) => (
-                        <Link key={navLink.path} to={navLink.path} className={`${getLinkClass(navLink.path).link} py-3 px-3 rounded-md hover:bg-white/10 text-center text-lg`}>
-                            {navLink.label}
-                        </Link>
-                    ))}
-                    <div className="border-t border-white/20 my-2"></div>
-                    <Link to={profilePath} className={`${getLinkClass(profilePath).link} py-3 px-3 rounded-md hover:bg-white/10 text-center text-lg`}>
-                        My Profile
-                    </Link>
-                    <button onClick={handleLogout} className="text-red-500 hover:text-red-400 w-full py-3 px-3 rounded-md hover:bg-red-500/10 text-center text-lg font-semibold">
-                        Logout
-                    </button>
-                </nav>
-            </div>
-        </header>
-    );
-};
+import { User, LogOut, Menu, X, Search, QrCode, Edit, CheckSquare, Loader2, Check, AlertCircle, RefreshCw, Users, ChevronDown, UserX, ClipboardCheck } from 'lucide-react';
+import Header from '../components/Header';
 
 // --- CONFIGURATION & DATA ---
-const backendUrl =  import.meta.env.VITE_BASE_URL;
+const backendUrl = import.meta.env.VITE_BASE_URL;
 const courses = ["CP", "JFS", "DBMS", "AWS"];
 const batches = [
     { value: "attendance_skillup-1", label: "Skillup-1" }, { value: "attendance_skillup-2", label: "Skillup-2" }, { value: "attendance_skillup-3", label: "Skillup-3" },
@@ -182,7 +65,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, confirmText, isS
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-[100] p-4" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl" onClick={e => e.stopPropagation()}>
                 <div className="p-6 border-b flex items-center gap-3">
                     <div className="bg-blue-100 text-blue-600 p-2 rounded-full"><ClipboardCheck size={20} /></div>
                     <h3 className="text-lg font-bold text-gray-800">{title}</h3>
@@ -220,6 +103,16 @@ const MarkAttendanceForm = ({ animate }) => {
         setMessage({ type: '', text: '' });
     };
 
+    // --- BUG FIX: This useEffect now only resets the student list when the BATCH changes. ---
+    useEffect(() => {
+        if (students.length > 0) {
+            setStudents([]);
+            setSelection([]);
+            setSearchTerm('');
+            setMessage({ type: 'info', text: "Batch has changed. Please fetch the new student list." });
+        }
+    }, [formData.batch]);
+
     const handleFetchStudents = async (e) => {
         e.preventDefault();
         if (!formData.batch || !formData.course) {
@@ -233,8 +126,7 @@ const MarkAttendanceForm = ({ animate }) => {
         setSearchTerm('');
 
         try {
-            // NOTE: Using Faculty endpoint
-            const res = await fetch(`${backendUrl}/api/Faculty/getStudentsByBatch/${formData.batch}`, {method: "GET", credentials: "include"});
+            const res = await fetch(`${backendUrl}/api/Faculty/getStudentsByBatch/${formData.batch}`, { method: "GET", credentials: "include" });
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
@@ -288,7 +180,6 @@ const MarkAttendanceForm = ({ animate }) => {
             status: markMode
         };
         try {
-            // NOTE: Using Faculty endpoint
             const response = await fetch(`${backendUrl}/api/Faculty/Mark-Session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -338,8 +229,8 @@ const MarkAttendanceForm = ({ animate }) => {
                     <button type="submit" disabled={loading || !formData.batch || !formData.course} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors shadow-md flex items-center justify-center gap-2 disabled:bg-blue-300">{loading ? <Loader2 className="animate-spin" size={18} /> : <Users size={18} />} Get Students</button>
                 </form>
             </div>
-
-            {message.text && !isPreviewOpen && (<div className={`mt-4 p-3 rounded-lg text-sm font-semibold flex items-center gap-2 ${message.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{message.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />} {message.text}</div>)}
+            
+            {message.text && !isPreviewOpen && (<div className={`mt-4 p-3 rounded-lg text-sm font-semibold flex items-center gap-2 ${message.type === 'error' ? 'bg-red-100 text-red-800' : message.type === 'info' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{message.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />} {message.text}</div>)}
             {loading && <div className="text-center py-12"><Loader2 className="mx-auto h-10 w-10 text-blue-600 animate-spin" /><p className="mt-2 text-gray-600">Fetching Roster...</p></div>}
 
             {students.length > 0 && !loading && (
@@ -361,29 +252,43 @@ const MarkAttendanceForm = ({ animate }) => {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-3 p-3 bg-white rounded-lg border">
-                         <div className="relative w-full sm:w-auto">
+                       <div className="relative w-full sm:w-auto">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input type="text" placeholder="Search Roll No..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full sm:w-64 pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" placeholder="Search Roll No..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full sm:w-64 pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"/>
                         </div>
-                        <p className="text-sm text-gray-600 font-medium">
-                            Showing: <span className="font-bold">{filteredStudents.length}</span> of {students.length} | Selected: <span className="font-bold">{selection.length}</span>
-                        </p>
-                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                           <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={isAllFilteredSelected} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" /> 
-                           Select All Visible
-                        </label>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-64 overflow-y-auto pr-2 p-2 bg-white border rounded-lg">
-                        {filteredStudents.map(rollNo => (
-                            <label key={rollNo} className={`flex items-center gap-2 p-2.5 border-2 rounded-lg cursor-pointer transition-all duration-200 ${selection.includes(rollNo) ? (markMode === 'present' ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50') : 'border-gray-200 hover:border-gray-400'}`}>
-                                <input type="checkbox" checked={selection.includes(rollNo)} onChange={() => handleCheckboxChange(rollNo)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                                <span className="text-sm font-medium text-gray-700 font-mono">{rollNo}</span>
+                        <p className="text-sm text-gray-600 font-medium">Showing: <span className="font-bold">{filteredStudents.length}</span> of {students.length} | Selected: <span className="font-bold">{selection.length}</span></p>
+                        <div className="flex items-center gap-4">
+                            <button type="button" onClick={() => setSelection([])} className="text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center gap-1.5 font-semibold"><UserX size={14} /> Deselect All</button>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                                <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={isAllFilteredSelected} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" /> 
+                               Select All Visible
                             </label>
-                        ))}
+                        </div>
                     </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-96 overflow-y-auto pr-2 p-2 bg-white border rounded-lg">
+                        {filteredStudents.map(rollNo => {
+                            const isSelected = selection.includes(rollNo);
+                            const cardClasses = isSelected
+                                ? (markMode === 'present'
+                                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                    : 'border-red-500 bg-red-50 ring-2 ring-red-200')
+                                : 'border-gray-200 bg-white hover:border-blue-400';
+                            
+                            return (
+                                <div key={rollNo} onClick={() => handleCheckboxChange(rollNo)} className={`p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between ${cardClasses}`}>
+                                    <span className="font-mono font-semibold text-gray-800 text-sm">{rollNo}</span>
+                                    <div className={`w-5 h-5 flex items-center justify-center rounded-full transition-all ${isSelected ? (markMode === 'present' ? 'bg-blue-600' : 'bg-red-600') : 'bg-gray-300'}`}>
+                                        {isSelected && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <input type="checkbox" checked={isSelected} readOnly className="hidden" />
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
                     <div className="flex justify-end mt-4">
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors shadow-md flex items-center gap-2">
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-colors shadow-md flex items-center gap-2">
                             Preview Attendance
                         </button>
                     </div>
@@ -401,7 +306,7 @@ const MarkAttendanceForm = ({ animate }) => {
                     </div>
                     <div>
                         <h4 className="font-semibold text-gray-700 mb-2">Selected Roll Numbers ({selection.length} Total):</h4>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded-md border">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded-md border">
                             {selection.map(rollNo => (
                                 <span key={rollNo} className="text-xs font-mono bg-white text-gray-700 rounded px-2 py-1 text-center border">{rollNo}</span>
                             ))}
@@ -419,7 +324,7 @@ const FacultyMarkAttendancePage = () => {
     const [animate, setAnimate] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem("userRole", "faculty");
+        sessionStorage.setItem("userRole", "faculty");
         const timer = setTimeout(() => setAnimate(true), 100);
         return () => clearTimeout(timer);
     }, []);

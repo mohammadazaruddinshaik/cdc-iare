@@ -32,7 +32,7 @@ const AdminProfilePage = () => {
         const fetchAdminData = async () => {
             try {
                 // Assuming the admin's ID is stored in localStorage from login
-                const adminId = localStorage.getItem("userIdentifier");
+                const adminId = sessionStorage.getItem("userIdentifier");
                 if (!adminId) {
                     throw new Error("Admin ID not found. Please log in again.");
                 }

@@ -9,8 +9,8 @@ import { Navigate, Outlet } from 'react-router-dom';
  */
 const ProtectedRoute = ({ requiredRole, children }) => {
     // Check for user authentication and role in localStorage
-    const userRole = localStorage.getItem('userRole');
-    const userIdentifier = localStorage.getItem('userIdentifier');
+    const userRole = sessionStorage.getItem('userRole');
+    const userIdentifier = sessionStorage.getItem('userIdentifier');
 
     // 1. If user is not logged in, redirect to the login page
     if (!userIdentifier || !userRole) {

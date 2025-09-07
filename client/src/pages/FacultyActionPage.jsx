@@ -11,7 +11,7 @@ const FacultyActionPage = () => {
 
     useEffect(() => {
         // Set user role for demonstration
-        localStorage.setItem("userRole", "faculty");
+        sessionStorage.setItem("userRole", "faculty");
         // Trigger animation on component mount
         setTimeout(() => setAnimate(true), 100);
     }, []);

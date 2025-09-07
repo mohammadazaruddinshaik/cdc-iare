@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, LogOut, Menu, X, Search, QrCode, Edit, CheckSquare, Loader2, Check, AlertCircle, RefreshCw, Users, ChevronDown, UserX, ClipboardCheck, Trash2 } from 'lucide-react';
 import Header from '../components/Header';
@@ -133,6 +133,16 @@ const MarkAttendanceForm = ({ animate }) => {
         setMessage({ type: '', text: '' });
     };
 
+    // --- BUG FIX: This useEffect hook clears the old student list whenever the batch or course changes. ---
+    useEffect(() => {
+        if (students.length > 0) {
+            setStudents([]);
+            setSelection([]);
+            setSearchTerm('');
+            setMessage({ type: '', text: '' });
+        }
+    }, [formData.batch, formData.course]);
+
     const handleFetchStudents = async (e) => {
         e.preventDefault();
         if (!formData.batch || !formData.course) {
@@ -149,17 +159,14 @@ const MarkAttendanceForm = ({ animate }) => {
         try {
             const res = await fetch(`${backendUrl}/api/Admin/getStudentsByBatch/${formData.batch}`, {method: "GET", credentials: "include"});
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
+                sessionStorage.clear();
+                navigate('/', { replace: true });
             }
             const data = await res.json();
-
             const fetchedRollNumbers = (data.students || []).filter(rollno => typeof rollno === 'string');
             fetchedRollNumbers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-
             setStudents(fetchedRollNumbers);
             setSelection([]);
-
         } catch (err) {
             setMessage({ type: 'error', text: err.message || "Failed to fetch students." });
             console.error(err);
@@ -198,13 +205,7 @@ const MarkAttendanceForm = ({ animate }) => {
 
     const handleSubmitAttendance = async () => {
         setSubmitting(true);
-        const payload = {
-            course: formData.course,
-            students: selection,
-            batch: formData.batch,
-            date: formData.date,
-            status: markMode
-        };
+        const payload = { course: formData.course, students: selection, batch: formData.batch, date: formData.date, status: markMode };
         try {
             const response = await fetch(`${backendUrl}/api/Admin/Mark-Session`, {
                 method: 'POST',
@@ -218,17 +219,12 @@ const MarkAttendanceForm = ({ animate }) => {
                 throw new Error(errorData.message || `An error occurred. Status: ${response.status}`);
             }
             const batchLabel = batches.find(b => b.value === formData.batch)?.label || formData.batch;
-            setMessage({
-                type: 'success',
-                text: `Success! Marked ${selection.length} students as ${markMode} for ${batchLabel}.`
-            });
+            setMessage({ type: 'success', text: `Success! Marked ${selection.length} students as ${markMode} for ${batchLabel}.` });
             setLastSubmission(payload);
             setStudents([]);
             setSelection([]);
             setIsPreviewOpen(false);
-            setTimeout(() => {
-                resetForm();
-            }, 4000);
+            setTimeout(() => { resetForm(); }, 4000);
         } catch (err) {
             setMessage({ type: 'error', text: err.message || 'Failed to submit attendance.' });
         } finally {
@@ -283,33 +279,41 @@ const MarkAttendanceForm = ({ animate }) => {
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-3 p-3 bg-white rounded-lg border">
                        <div className="relative w-full sm:w-auto">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search Roll No..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full sm:w-64 pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
-                            />
+                            <input type="text" placeholder="Search Roll No..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full sm:w-64 pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"/>
                         </div>
-                        <p className="text-sm text-gray-600 font-medium">
-                            Showing: <span className="font-bold">{filteredStudents.length}</span> of {students.length} | Selected: <span className="font-bold">{selection.length}</span>
-                        </p>
-                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                           <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={isAllFilteredSelected} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" /> 
-                           Select All Visible
-                        </label>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-64 overflow-y-auto pr-2 p-2 bg-white border rounded-lg">
-                        {filteredStudents.map(rollNo => (
-                            <label key={rollNo} className={`flex items-center gap-2 p-2.5 border-2 rounded-lg cursor-pointer transition-all duration-200 ${selection.includes(rollNo) ? (markMode === 'present' ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50') : 'border-gray-200 hover:border-gray-400'}`}>
-                                <input type="checkbox" checked={selection.includes(rollNo)} onChange={() => handleCheckboxChange(rollNo)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                                <span className="text-sm font-medium text-gray-700 font-mono">{rollNo}</span>
+                        <p className="text-sm text-gray-600 font-medium">Showing: <span className="font-bold">{filteredStudents.length}</span> of {students.length} | Selected: <span className="font-bold">{selection.length}</span></p>
+                        <div className="flex items-center gap-4">
+                            <button type="button" onClick={() => setSelection([])} className="text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center gap-1.5 font-semibold"><UserX size={14} /> Deselect All</button>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                                <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={isAllFilteredSelected} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" /> 
+                               Select All Visible
                             </label>
-                        ))}
+                        </div>
                     </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-96 overflow-y-auto pr-2 p-2 bg-white border rounded-lg">
+                        {filteredStudents.map(rollNo => {
+                            const isSelected = selection.includes(rollNo);
+                            const cardClasses = isSelected
+                                ? (markMode === 'present'
+                                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                    : 'border-red-500 bg-red-50 ring-2 ring-red-200')
+                                : 'border-gray-200 bg-white hover:border-blue-400';
+                            
+                            return (
+                                <div key={rollNo} onClick={() => handleCheckboxChange(rollNo)} className={`p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between ${cardClasses}`}>
+                                    <span className="font-mono font-semibold text-gray-800 text-sm">{rollNo}</span>
+                                    <div className={`w-5 h-5 flex items-center justify-center rounded-full transition-all ${isSelected ? (markMode === 'present' ? 'bg-blue-600' : 'bg-red-600') : 'bg-gray-300'}`}>
+                                        {isSelected && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <input type="checkbox" checked={isSelected} readOnly className="hidden" />
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
                     <div className="flex justify-end mt-4">
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors shadow-md flex items-center gap-2">
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-colors shadow-md flex items-center gap-2">
                             Preview Attendance
                         </button>
                     </div>
@@ -351,7 +355,6 @@ const UpdateAttendanceForm = ({ animate }) => {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [fetchMode, setFetchMode] = useState('absent');
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [lastUpdate, setLastUpdate] = useState(null);
 
     const resetForm = () => {
         setFormData(initialFormState);
@@ -359,8 +362,16 @@ const UpdateAttendanceForm = ({ animate }) => {
         setSelection([]);
         setMessage({ type: '', text: '' });
         setIsPreviewOpen(false);
-        setLastUpdate(null);
     };
+
+    // --- BUG FIX: This useEffect hook clears the old student list whenever the query parameters change. ---
+    useEffect(() => {
+        if (studentList.length > 0) {
+            setStudentList([]);
+            setSelection([]);
+            setMessage({ type: '', text: '' });
+        }
+    }, [formData.batch, formData.course, formData.date]);
 
     const handleGetStudents = async (e) => {
         e.preventDefault();
@@ -368,7 +379,6 @@ const UpdateAttendanceForm = ({ animate }) => {
         setMessage({ type: '', text: '' });
         setStudentList([]);
         setSelection([]);
-        setLastUpdate(null);
 
         try {
             const { batch, date, course } = formData;
@@ -419,54 +429,23 @@ const UpdateAttendanceForm = ({ animate }) => {
         }
     };
 
-    const handleCheckboxChange = (rollNo) => {
-        setSelection(prev => 
-            prev.includes(rollNo) 
-                ? prev.filter(r => r !== rollNo) 
-                : [...prev, rollNo]
-        );
-    };
-
-    const handleSelectAll = (isChecked) => {
-        setSelection(isChecked ? studentList : []);
-    };
-
-    const handlePreviewUpdate = (e) => {
-        e.preventDefault();
-        if (selection.length === 0) {
-            setMessage({ type: 'error', text: "No students have been selected. Please check the boxes next to the roll numbers you wish to update." });
-            return;
-        }
-        setMessage({ type: '', text: '' });
-        setIsPreviewOpen(true);
-    };
+    const handleCheckboxChange = (rollNo) => { setSelection(prev => prev.includes(rollNo) ? prev.filter(r => r !== rollNo) : [...prev, rollNo]); };
+    const handleSelectAll = (isChecked) => { setSelection(isChecked ? studentList : []); };
+    const handlePreviewUpdate = (e) => { e.preventDefault(); if (selection.length === 0) { setMessage({ type: 'error', text: "No students have been selected. Please check the boxes next to the roll numbers you wish to update." }); return; } setMessage({ type: '', text: '' }); setIsPreviewOpen(true); };
 
     const handleSubmitUpdate = async () => {
         setSubmitting(true);
         const newStatus = fetchMode === 'absent' ? 'present' : 'absent';
-        const payload = {
-            course: formData.course,
-            students: selection,
-            batch: formData.batch,
-            date: formData.date,
-            status: newStatus
-        };
+        const payload = { course: formData.course, students: selection, batch: formData.batch, date: formData.date, status: newStatus };
 
         try {
-            const res = await fetch(`${backendUrl}/api/Admin/updateAttendance`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                credentials: "include"
-            });
-
+            const res = await fetch(`${backendUrl}/api/Admin/updateAttendance`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), credentials: "include" });
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
             }
             await res.json();
             setMessage({ type: 'success', text: `The attendance record has been successfully updated. ${selection.length} student(s) are now marked as '${newStatus}'.` });
-            setLastUpdate(payload);
             setStudentList([]);
             setSelection([]);
             setIsPreviewOpen(false);
@@ -478,7 +457,7 @@ const UpdateAttendanceForm = ({ animate }) => {
             setSubmitting(false);
         }
     };
-
+    
     const newStatus = fetchMode === 'absent' ? 'present' : 'absent';
 
     return (
@@ -525,39 +504,34 @@ const UpdateAttendanceForm = ({ animate }) => {
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="font-bold text-gray-800">Students Marked as <span className={`capitalize ${fetchMode === 'absent' ? 'text-red-600' : 'text-green-600'}`}>{fetchMode}</span> ({studentList.length})</h3>
                         <div className="flex items-center gap-4">
-                           <button type="button" onClick={() => setSelection([])} className="text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center gap-1.5 font-semibold">
-                                <UserX size={14} /> Deselect All
-                           </button>
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                                <input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={studentList.length > 0 && selection.length === studentList.length} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" /> Select All
-                            </label>
+                           <button type="button" onClick={() => setSelection([])} className="text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center gap-1.5 font-semibold"><UserX size={14} /> Deselect All</button>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer"><input type="checkbox" onChange={(e) => handleSelectAll(e.target.checked)} checked={studentList.length > 0 && selection.length === studentList.length} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" /> Select All</label>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-64 overflow-y-auto pr-2 p-2 bg-white border border-gray-200 rounded-lg">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-96 overflow-y-auto pr-2 p-2 bg-white border border-gray-200 rounded-lg">
                         {studentList.map(rollNo => {
                             const isSelected = selection.includes(rollNo);
-                            const newStatus = fetchMode === 'absent' ? 'present' : 'absent';
+                            const cardClasses = isSelected ? 'border-green-500 bg-green-100 ring-2 ring-green-200' : 'border-gray-200 bg-white hover:border-blue-400';
                             return (
-                                <label key={rollNo} className={`flex items-center gap-2 p-2.5 border-2 rounded-lg cursor-pointer transition-all duration-200 ${isSelected ? (newStatus === 'present' ? 'border-green-500 bg-green-100' : 'border-red-500 bg-red-100') : 'border-gray-200 hover:border-blue-500 bg-white'}`}>
-                                    <input type="checkbox" checked={isSelected} onChange={() => handleCheckboxChange(rollNo)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                                    <span className="text-sm font-medium text-gray-900 font-mono">{rollNo}</span>
-                                </label>
+                                <div key={rollNo} onClick={() => handleCheckboxChange(rollNo)} className={`p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between ${cardClasses}`}>
+                                    <span className="font-mono font-semibold text-gray-800 text-sm">{rollNo}</span>
+                                    <div className={`w-5 h-5 flex items-center justify-center rounded-full transition-all ${isSelected ? 'bg-green-600' : 'bg-gray-300'}`}>
+                                        {isSelected && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <input type="checkbox" checked={isSelected} readOnly className="hidden" />
+                                </div>
                             );
                         })}
                     </div>
                     <div className="flex justify-end mt-4">
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors shadow-md flex items-center gap-2">
-                            Preview Changes
-                        </button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-colors shadow-md flex items-center gap-2">Preview Changes</button>
                     </div>
                 </form>
             )}
 
             <ConfirmationModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} onConfirm={handleSubmitUpdate} title="Confirm Attendance Update" confirmText="Confirm & Update" isSubmitting={submitting}>
                 <div className="space-y-4">
-                    <div className="p-4 rounded-lg bg-yellow-100 border border-yellow-300 text-sm text-yellow-800">
-                        You are about to change the status of <strong>{selection.length} student(s)</strong> from <strong className="capitalize">{fetchMode}</strong> to <strong className="capitalize">{newStatus}</strong>. Please review the details below before confirming.
-                    </div>
+                    <div className="p-4 rounded-lg bg-yellow-100 border border-yellow-300 text-sm text-yellow-800">You are about to change the status of <strong>{selection.length} student(s)</strong> from <strong className="capitalize">{fetchMode}</strong> to <strong className="capitalize">{newStatus}</strong>. Please review the details below before confirming.</div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div className="bg-gray-50 p-3 rounded-lg border"><p className="text-xs text-gray-500">Batch</p><p className="font-semibold text-gray-800">{batches.find(b => b.value === formData.batch)?.label}</p></div>
                         <div className="bg-gray-50 p-3 rounded-lg border"><p className="text-xs text-gray-500">Course</p><p className="font-semibold text-gray-800">{formData.course}</p></div>
@@ -566,9 +540,7 @@ const UpdateAttendanceForm = ({ animate }) => {
                     <div>
                         <h4 className="font-semibold text-gray-700 mb-2">Selected Roll Numbers for Update ({selection.length}):</h4>
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded-md border">
-                            {selection.map(rollNo => (
-                                <span key={rollNo} className="text-xs font-mono bg-white text-gray-700 rounded px-2 py-1 text-center border">{rollNo}</span>
-                            ))}
+                            {selection.map(rollNo => (<span key={rollNo} className="text-xs font-mono bg-white text-gray-700 rounded px-2 py-1 text-center border">{rollNo}</span>))}
                         </div>
                     </div>
                 </div>
@@ -577,56 +549,31 @@ const UpdateAttendanceForm = ({ animate }) => {
     );
 };
 
-// --- New Delete Records Component ---
+// --- 3. Delete Records Component ---
 const DeleteRecordsForm = ({ animate }) => {
-    // Set initial date to today's date in YYYY-MM-DD format
+    // This component is unchanged but included for completeness
     const initialFormState = { batch: '', course: '', date: new Date().toISOString().substring(0, 10) };
     const [formData, setFormData] = useState(initialFormState);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const resetForm = () => {
-        // Reset to initial state, which includes today's date
-        setFormData(initialFormState);
-        setMessage({ type: '', text: '' });
-        setIsConfirmationOpen(false);
-    };
-
-    const handlePreviewDelete = (e) => {
-        e.preventDefault();
-        if (!formData.batch || !formData.course || !formData.date) {
-            setMessage({ type: 'error', text: "Please select a batch, course, and date to delete records." });
-            return;
-        }
-        setMessage({ type: '', text: '' });
-        setIsConfirmationOpen(true);
-    };
-
+    const resetForm = () => { setFormData(initialFormState); setMessage({ type: '', text: '' }); setIsConfirmationOpen(false); };
+    const handlePreviewDelete = (e) => { e.preventDefault(); if (!formData.batch || !formData.course || !formData.date) { setMessage({ type: 'error', text: "Please select a batch, course, and date." }); return; } setMessage({ type: '', text: '' }); setIsConfirmationOpen(true); };
     const handleDeleteRecords = async () => {
         setIsSubmitting(true);
-        const payload = {
-            batch: formData.batch,
-            course: formData.course,
-            date: formData.date,
-        };
+        const payload = { batch: formData.batch, course: formData.course, date: formData.date };
         try {
-            const res = await fetch(`${backendUrl}/api/Admin/deleterecord`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                credentials: "include"
-            });
+            const res = await fetch(`${backendUrl}/api/Admin/deleterecord`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), credentials: "include" });
             if (!res.ok) {
                 const errorData = await res.json();
-                throw new Error(errorData.message || `An error occurred. Status: ${res.status}`);
+                throw new Error(errorData.message || `An error occurred.`);
             }
-            setMessage({ type: 'success', text: `Successfully deleted attendance records for ${formData.course} on ${formData.date} for batch ${batches.find(b => b.value === formData.batch)?.label}.` });
+            setMessage({ type: 'success', text: `Successfully deleted records for ${formData.course} on ${formData.date}.` });
             setIsConfirmationOpen(false);
             setTimeout(resetForm, 4000);
         } catch (err) {
-            setMessage({ type: 'error', text: err.message || "Failed to delete records. Please try again." });
-            console.error(err);
+            setMessage({ type: 'error', text: err.message || "Failed to delete records." });
         } finally {
             setIsSubmitting(false);
         }
@@ -641,45 +588,24 @@ const DeleteRecordsForm = ({ animate }) => {
                 </div>
                 <button onClick={resetForm} className="text-sm text-gray-600 hover:text-red-600 flex items-center gap-1.5 p-2 rounded-lg hover:bg-gray-200 transition-colors"><RefreshCw size={14} /> Reset Form</button>
             </div>
-
             <div className="p-4 border-2 border-dashed rounded-xl border-gray-300 bg-gray-50">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white font-bold text-lg">!</div>
                     <h4 className="text-lg font-bold text-gray-800">Select Records to Delete</h4>
                 </div>
                 <form onSubmit={handlePreviewDelete} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700">Batch</label>
-                        <CustomSelect options={batches} value={formData.batch} onChange={(value) => setFormData(p => ({ ...p, batch: value }))} placeholder="Select a Batch" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700">Course</label>
-                        <CustomSelect options={courses.map(c => ({ value: c, label: c }))} value={formData.course} onChange={(value) => setFormData(p => ({ ...p, course: value }))} placeholder="Select a Course" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700">Date</label>
-                        <input type="date" value={formData.date} onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))} required className="w-full p-2.5 mt-1 bg-white border border-gray-300 rounded-lg text-sm text-gray-900" />
-                    </div>
+                    <div><label className="text-xs font-semibold text-gray-700">Batch</label><CustomSelect options={batches} value={formData.batch} onChange={(value) => setFormData(p => ({ ...p, batch: value }))} placeholder="Select a Batch" /></div>
+                    <div><label className="text-xs font-semibold text-gray-700">Course</label><CustomSelect options={courses.map(c => ({ value: c, label: c }))} value={formData.course} onChange={(value) => setFormData(p => ({ ...p, course: value }))} placeholder="Select a Course" /></div>
+                    <div><label className="text-xs font-semibold text-gray-700">Date</label><input type="date" value={formData.date} onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))} required className="w-full p-2.5 mt-1 bg-white border border-gray-300 rounded-lg text-sm text-gray-900" /></div>
                     <button type="submit" className="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors shadow-md flex items-center justify-center gap-2 disabled:bg-red-300" disabled={isSubmitting || !formData.batch || !formData.course || !formData.date}>
                         {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />} Delete Records
                     </button>
                 </form>
             </div>
             {message.text && (<div className={`mt-4 p-3 rounded-lg text-sm font-semibold flex items-center gap-2 ${message.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{message.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />} {message.text}</div>)}
-
-            <ConfirmationModal 
-                isOpen={isConfirmationOpen} 
-                onClose={() => setIsConfirmationOpen(false)} 
-                onConfirm={handleDeleteRecords} 
-                title="Confirm Record Deletion" 
-                confirmText="Confirm Deletion"
-                isSubmitting={isSubmitting}
-            >
+            <ConfirmationModal isOpen={isConfirmationOpen} onClose={() => setIsConfirmationOpen(false)} onConfirm={handleDeleteRecords} title="Confirm Record Deletion" confirmText="Confirm Deletion" isSubmitting={isSubmitting}>
                 <div className="space-y-4">
-                    <div className="p-4 rounded-lg bg-red-100 border border-red-300 text-sm text-red-800 font-semibold flex items-center gap-3">
-                        <AlertCircle size={20} className="flex-shrink-0" />
-                        <span>Warning: This action is permanent and cannot be reversed. All attendance records for the selected session will be completely erased.</span>
-                    </div>
+                    <div className="p-4 rounded-lg bg-red-100 border border-red-300 text-sm text-red-800 font-semibold flex items-center gap-3"><AlertCircle size={20} className="flex-shrink-0" /><span>Warning: This action is permanent. All attendance records for the selected session will be erased.</span></div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-gray-50 p-3 rounded-lg border"><p className="text-xs text-gray-500">Batch</p><p className="font-semibold text-gray-800">{batches.find(b => b.value === formData.batch)?.label}</p></div>
                         <div className="bg-gray-50 p-3 rounded-lg border"><p className="text-xs text-gray-500">Course</p><p className="font-semibold text-gray-800">{formData.course}</p></div>
@@ -690,7 +616,6 @@ const DeleteRecordsForm = ({ animate }) => {
         </div>
     );
 };
-
 
 // --- Main Attendance Page Component ---
 const AttendancePage = () => {
@@ -706,7 +631,7 @@ const AttendancePage = () => {
     const tabs = [
         { id: 'mark', label: 'Mark Session', icon: <CheckSquare size={16} /> },
         { id: 'update', label: 'Update Records', icon: <Edit size={16} /> },
-        { id: 'delete', label: 'Delete Records', icon: <Trash2 size={16} /> }, // New Tab
+        { id: 'delete', label: 'Delete Records', icon: <Trash2 size={16} /> }, 
         { id: 'scan', label: 'Scan QR', icon: <QrCode size={16} /> },
     ];
 

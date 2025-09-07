@@ -8,14 +8,14 @@ import {
 } from 'lucide-react';
 
 // --- GLOBAL CONFIGURATION ---
-const BACKEND_URL =  import.meta.env.VITE_BASE_URL;
+const BACKEND_URL = import.meta.env.VITE_BASE_URL;
 const getFormattedDate = () => new Date().toISOString().split('T')[0];
 const COURSES = ["CP", "JFS", "DBMS", "AWS"];
 
 const ROLE_CONFIG = {
     faculty: {
         title: "Faculty Attendance Portal",
-        sessionTitle: "Create Session",
+        sessionTitle: "Mark Session Attendance", // <-- ENHANCED TITLE
         reportTitle: "Attendance Report",
         verificationTitle: "Faculty Verification",
         idPlaceholder: "Enter Faculty ID",
@@ -38,7 +38,7 @@ const ROLE_CONFIG = {
     },
     admin: {
         title: "Admin Attendance Portal",
-        sessionTitle: "Create Admin Session",
+        sessionTitle: "Mark Session Attendance", // <-- ENHANCED TITLE
         reportTitle: "Admin Attendance Report",
         verificationTitle: "Admin Verification",
         idPlaceholder: "Enter Admin ID",
@@ -74,35 +74,13 @@ async function fetchApi(url, options = {}) {
         return response.json();
     } catch (networkError) {
         if (networkError.message.includes('Failed to fetch')) {
-            throw new Error(`Cannot connect to the server at ${BACKEND_URL}. Please check your network connection.`);
+            throw new Error(`Cannot connect to the server. Please check your network connection.`);
         }
         throw networkError;
     }
 }
 
 // --- REUSABLE UI COMPONENTS ---
-const AttendanceDonutChart = ({ present, total }) => {
-    const percentage = total > 0 ? (present / total) * 100 : 0;
-    const circumference = 2 * Math.PI * 54;
-    const offset = circumference - (percentage / 100) * circumference;
-    return (
-        <div className="relative w-40 h-40 sm:w-48 sm:h-48 mx-auto">
-            <svg className="w-full h-full" viewBox="0 0 120 120">
-                <circle className="text-gray-200" strokeWidth="12" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60" />
-                <circle
-                    className="text-green-500 transition-all duration-1000 ease-out"
-                    strokeWidth="12" strokeDasharray={circumference} strokeDashoffset={offset}
-                    strokeLinecap="round" stroke="currentColor" fill="transparent"
-                    r="54" cx="60" cy="60" transform="rotate(-90 60 60)"
-                />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl sm:text-4xl font-bold text-gray-700">{percentage.toFixed(0)}%</span>
-                <span className="text-sm text-gray-500">Present</span>
-            </div>
-        </div>
-    );
-};
 
 const UserMessageModal = ({ message, type, onClose }) => {
     if (!message) return null;
@@ -137,6 +115,24 @@ const ExitConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
     );
 };
 
+const AttendanceProgressBar = ({ present, total }) => {
+    const percentage = total > 0 ? (present / total) * 100 : 0;
+    return (
+        <div className="w-full">
+            <div className="flex justify-between items-center mb-1">
+                <span className="text-base font-semibold text-gray-700">Overall Presence</span>
+                <span className="text-base font-bold text-green-600">{percentage.toFixed(0)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                    className="bg-green-500 h-3 rounded-full transition-all duration-1000 ease-out"
+                    style={{ width: `${percentage}%` }}
+                ></div>
+            </div>
+        </div>
+    );
+};
+
 // --- MAIN ATTENDANCE COMPONENT ---
 const PostAttendancePage = () => {
     const navigate = useNavigate();
@@ -160,14 +156,22 @@ const PostAttendancePage = () => {
     const isStoppingScanner = useRef(false);
 
     useEffect(() => {
-        const userRole = localStorage.getItem("userRole") || 'faculty';
+        const userRole = sessionStorage.getItem("userRole") || 'faculty';
         setConfig(ROLE_CONFIG[userRole] || ROLE_CONFIG.faculty);
     }, []);
 
     useEffect(() => {
-        if (view === 'analytics' && document.fullscreenElement) {
-            document.exitFullscreen().catch(() => { });
+        if (view === 'scanner') {
+            document.body.style.overscrollBehaviorY = 'contain';
+        } else {
+            document.body.style.overscrollBehaviorY = 'auto';
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => { });
+            }
         }
+        return () => {
+            document.body.style.overscrollBehaviorY = 'auto';
+        };
     }, [view]);
 
     useEffect(() => {
@@ -193,20 +197,16 @@ const PostAttendancePage = () => {
                 return;
             }
             if (!scannerRef.current) {
-                scannerRef.current = new Html5Qrcode('reader');
+                scannerRef.current = new Html5Qrcode('reader', {
+                    experimentalFeatures: { useOffscreenCanvas: true },
+                });
             }
             try {
                 const state = scannerRef.current.getState();
-                if (state === Html5QrcodeScannerState.SCANNING) {
-                    return;
-                }
-                const qrboxSize = window.innerWidth < 768 ? 220 : 300;
+                if (state === Html5QrcodeScannerState.SCANNING) return;
+                const qrboxSize = window.innerWidth < 768 ? 250 : 300;
                 const config = { fps: 10, qrbox: { width: qrboxSize, height: qrboxSize } };
-                await scannerRef.current.start(
-                    { facingMode: 'environment' },
-                    config,
-                    onScanSuccess
-                );
+                await scannerRef.current.start({ facingMode: 'environment' }, config, onScanSuccess);
             } catch (err) {
                 setScanResult({ rollno: null, message: 'CAMERA ERROR', type: 'error', photoUrl: <CameraOff className="w-16 h-16 text-red-400" /> });
             }
@@ -224,19 +224,11 @@ const PostAttendancePage = () => {
         setView('loading');
         try {
             const collectionName = config.formatCollection(selectedBatch);
-            
-            // Conditional API path based on user role
-            const userRole = localStorage.getItem("userRole") || 'faculty';
-            let apiUrl;
-
-            if (userRole === 'admin') {
-                apiUrl = `${BACKEND_URL}/api/Admin/getStudentsByBatch/${collectionName}`;
-            } else { // 'faculty' role
-                apiUrl = `${BACKEND_URL}/api/Faculty/getStudentsByBatch/${collectionName}`;
-            }
-
+            const userRole = sessionStorage.getItem("userRole") || 'faculty';
+            const apiUrl = userRole === 'admin'
+                ? `${BACKEND_URL}/api/Admin/getStudentsByBatch/${collectionName}`
+                : `${BACKEND_URL}/api/Faculty/getStudentsByBatch/${collectionName}`;
             const data = await fetchApi(apiUrl, { method: "GET", credentials: "include" });
-
             if (!data || !Array.isArray(data.students)) {
                 throw new Error("Data format from server is invalid.");
             }
@@ -255,20 +247,18 @@ const PostAttendancePage = () => {
         setIsScanningPaused(true);
         let result;
         let rollno = null;
+
         try {
             const parsedData = JSON.parse(decodedText);
-            if (parsedData && typeof parsedData.rollno === 'string' && parsedData.rollno.trim()) {
-                rollno = parsedData.rollno.trim().toUpperCase();
-            } else {
-                throw new Error("Invalid QR data structure.");
-            }
+            rollno = parsedData?.rollno?.trim().toUpperCase();
+            if (!rollno) throw new Error("Invalid QR data structure.");
         } catch (error) {
             result = { rollno: 'INVALID', message: 'Invalid QR Format', type: 'error' };
             setScanResult(result);
             setTimeout(() => {
-                setScanResult({ rollno: null, message: 'Point camera at QR code', type: 'info', photoUrl: null });
+                setScanResult({ rollno: null, message: 'Point camera at QR code', type: 'info' });
                 setIsScanningPaused(false);
-            }, 3000);
+            }, 2500);
             return;
         }
 
@@ -277,25 +267,22 @@ const PostAttendancePage = () => {
         } else if (!validStudents.current.has(rollno)) {
             result = { rollno, message: 'Not from this batch', type: 'error' };
         } else {
-            let hashValue = "";
-            try {
-                const parsed = JSON.parse(decodedText);
-                hashValue = parsed.hash || "";
-            } catch { }
+            const hashValue = JSON.parse(decodedText).hash || "";
             scannedData.current.set(rollno, hashValue);
             setScanCount(scannedData.current.size);
             const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${rollno}/${rollno}.jpg`;
             result = { rollno, message: 'Verified!', type: 'success', photoUrl };
         }
+
         setScanResult(result);
         setTimeout(() => {
             setScanResult({ rollno: null, message: 'Point camera at QR code', type: 'info', photoUrl: null });
             setIsScanningPaused(false);
-        }, 3000);
+        }, 2500);
     };
 
     const handleProcessReport = async () => {
-        const storedId = localStorage.getItem("userIdentifier");
+        const storedId = sessionStorage.getItem("userIdentifier");
         if (idInput.trim().toLowerCase() !== storedId?.toLowerCase()) {
             setUserMessage({ text: "The ID you entered does not match. Please try again.", type: 'error' });
             return;
@@ -315,7 +302,7 @@ const PostAttendancePage = () => {
                 body: JSON.stringify(requestBody),
                 credentials: "include"
             });
-            setReportData({ ...result });
+            setReportData(result);
             setIsVerificationModalOpen(false);
             setView('analytics');
         } catch (error) {
@@ -326,10 +313,7 @@ const PostAttendancePage = () => {
     };
 
     const handleEnterFullScreen = () => { document.documentElement.requestFullscreen().catch(() => { }); setView('selection'); };
-    const handleConfirmExit = () => {
-        if (document.fullscreenElement) document.exitFullscreen();
-        navigate(config.dashboardPath);
-    };
+    const handleConfirmExit = () => { navigate(config.dashboardPath); };
 
     // --- RENDER FUNCTIONS ---
     const renderSplashView = () => (
@@ -350,36 +334,44 @@ const PostAttendancePage = () => {
         </div>
     );
 
+    // --- ENHANCEMENT: Redesigned the session selection view ---
     const renderSelectionView = () => (
-        <div className="w-full max-w-md mx-auto transition-all duration-500 animate-fade-in p-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-10 border-4 border-gray-50 text-center">
-                <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="w-10 h-10" />
+        <div className="w-full max-w-lg mx-auto transition-all duration-500 animate-fade-in p-4 relative">
+            {/* Background Aurora Effect */}
+            <div className="absolute -top-40 -left-40 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl opacity-40 animate-pulse"></div>
+            <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-40 animate-pulse animation-delay-2000"></div>
+            
+            <div className="bg-gradient-to-br from-white/90 to-gray-100/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 sm:p-12 border border-gray-200 text-center">
+                <div className="relative w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="absolute inset-0 bg-blue-200 rounded-full animate-ping opacity-30"></div>
+                    <BookOpen className="w-12 h-12" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{config.sessionTitle}</h1>
-                <p className="text-gray-500 mt-2 text-sm sm:text-base">Select a batch and course to begin</p>
-                <form onSubmit={handleStartScanning} className="space-y-6 text-left mt-8">
-                    <div className="relative">
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 animate-fade-in" style={{ animationDelay: '100ms' }}>{config.sessionTitle}</h1>
+                <p className="text-gray-500 mt-3 text-base sm:text-lg animate-fade-in" style={{ animationDelay: '200ms' }}>Select a batch and course to begin.</p>
+                <form onSubmit={handleStartScanning} className="space-y-8 text-left mt-10">
+                    <div className="relative animate-fade-in" style={{ animationDelay: '300ms' }}>
                         <label className="text-sm font-semibold text-gray-600 mb-2 block">Batch</label>
                         <Group className="absolute left-4 top-11 text-gray-400" size={20} />
-                        <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)} required className="pl-12 pr-10 appearance-none w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-base text-gray-700 focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
+                        <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)} required className="pl-12 pr-10 appearance-none w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
                             <option value="" disabled>Choose a batch...</option>
                             {config.batches.map(batch => <option key={batch.value} value={batch.value}>{batch.label}</option>)}
                         </select>
                         <ChevronDown className="absolute right-4 top-11 text-gray-400 pointer-events-none" />
                     </div>
-                    <div className="relative">
+                    <div className="relative animate-fade-in" style={{ animationDelay: '400ms' }}>
                         <label className="text-sm font-semibold text-gray-600 mb-2 block">Course / Session</label>
                         <BookOpen className="absolute left-4 top-11 text-gray-400" size={20} />
-                        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} required className="pl-12 pr-10 appearance-none w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-base text-gray-700 focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
+                        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} required className="pl-12 pr-10 appearance-none w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
                             <option value="" disabled>Choose a course...</option>
                             {COURSES.map(course => <option key={course} value={course}>{course}</option>)}
                         </select>
                         <ChevronDown className="absolute right-4 top-11 text-gray-400 pointer-events-none" />
                     </div>
-                    <button type="submit" className="w-full bg-gradient-to-br from-blue-500 to-blue-600 text-white py-4 mt-4 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-blue-700 transition transform hover:scale-105 shadow-lg flex items-center justify-center gap-3">
-                        <ScanLine size={24} /> Begin Scanning
-                    </button>
+                    <div className="animate-fade-in" style={{ animationDelay: '500ms' }}>
+                        <button type="submit" className="w-full bg-gradient-to-br from-blue-500 to-blue-600 text-white py-4 mt-4 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-blue-700 transition transform hover:scale-105 shadow-lg hover:shadow-blue-500/50 flex items-center justify-center gap-3">
+                            <ScanLine size={24} /> Begin Scanning
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -387,20 +379,28 @@ const PostAttendancePage = () => {
 
     const renderScannerView = () => {
         const batchLabel = config.batches.find(b => b.value === selectedBatch)?.label || selectedBatch;
+        const borderColor = {
+            info: 'border-blue-400',
+            success: 'border-green-500',
+            warning: 'border-yellow-500',
+            error: 'border-red-500',
+        }[scanResult.type] || 'border-blue-400';
+
         return (
             <div className="w-full h-full max-w-sm md:max-w-md lg:max-w-lg mx-auto flex flex-col items-center gap-3 p-2 justify-center animate-fade-in text-white">
                 <div className="w-full text-center bg-black/30 backdrop-blur-sm p-2 rounded-xl border border-white/10">
                     <p className="font-bold text-lg">{batchLabel}</p><p className="text-xs text-blue-300">{selectedCourse}</p>
                 </div>
-                <div className="relative w-full aspect-square bg-black/50 backdrop-blur-xl rounded-3xl p-2 shadow-2xl border-2 border-white/10 scanner-container">
+                <div className={`relative w-full aspect-square bg-black rounded-3xl p-2 shadow-2xl border-4 ${borderColor} transition-colors duration-300`}>
                     <div id="reader" className="w-full h-full rounded-2xl overflow-hidden"></div>
                     {!isScanningPaused && <div className="scanner-laser"></div>}
                     {isScanningPaused && (
                         <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-4 rounded-2xl animate-fade-in text-center">
-                            {scanResult.photoUrl && typeof scanResult.photoUrl === 'string' && (
-                                <img src={scanResult.photoUrl} alt="Student" className="w-40 h-40 rounded-full border-4 border-green-400 object-cover mb-4" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                            )}
-                            {scanResult.type === 'error' && scanResult.message === 'CAMERA ERROR' && scanResult.photoUrl}
+                            {scanResult.photoUrl && typeof scanResult.photoUrl === 'string' ? (
+                                <img src={scanResult.photoUrl} alt="Student" className={`w-32 h-32 rounded-full border-4 ${borderColor} object-cover mb-4`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            ) : scanResult.type === 'error' && scanResult.message === 'CAMERA ERROR' ? (
+                                scanResult.photoUrl
+                            ) : null}
                             <p className="font-bold text-2xl tracking-wider text-white">{scanResult.rollno || '-----'}</p>
                             <p className={`font-semibold text-lg mt-1 ${scanResult.type === 'success' ? 'text-green-400' : scanResult.type === 'warning' ? 'text-yellow-400' : 'text-red-400'}`}>{scanResult.message}</p>
                         </div>
@@ -421,45 +421,56 @@ const PostAttendancePage = () => {
     };
 
     const renderAnalyticsView = () => {
-        if (!reportData) return <div className="text-white">Generating report...</div>;
+        if (!reportData) return <div className="text-center text-gray-600"><Loader2 className="animate-spin w-8 h-8 mx-auto" /><p>Generating report...</p></div>;
         const batchLabel = config.batches.find(b => b.value === selectedBatch)?.label || selectedBatch;
         return (
-            <div className="w-11/12 max-w-2xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-gray-800 animate-fade-in">
-                <div className="text-center">
-                    <CheckCircle2 size={48} className="mx-auto text-green-500 mb-2" />
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Attendance Summary</h1>
-                    <div className="mt-2 text-sm text-gray-500 bg-gray-50 rounded-lg py-2 px-4 inline-block">
-                        <span className="font-semibold text-gray-700">{batchLabel}</span>
-                        <span className="mx-2">|</span>
-                        <span className="font-semibold text-gray-700">{selectedCourse}</span>
-                    </div>
-                </div>
-
-                <div className="my-8">
-                    <AttendanceDonutChart present={reportData.presentiesCount || 0} total={reportData.totalMarked || 0} />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                    <div className="bg-blue-50 p-4 rounded-xl text-center"><Users className="mx-auto text-blue-500 mb-1" size={24} /><p className="text-3xl font-bold">{reportData.totalMarked || 0}</p><p className="text-gray-500 font-semibold text-sm">Total Students</p></div>
-                    <div className="bg-green-50 p-4 rounded-xl text-center"><UserCheck className="mx-auto text-green-500 mb-1" size={24} /><p className="text-3xl font-bold">{reportData.presentiesCount || 0}</p><p className="text-gray-500 font-semibold text-sm">Present</p></div>
-                    <div className="bg-red-50 p-4 rounded-xl text-center"><UserX className="mx-auto text-red-500 mb-1" size={24} /><p className="text-3xl font-bold">{reportData.absenteesCount || 0}</p><p className="text-gray-500 font-semibold text-sm">Absent</p></div>
-                </div>
-
-                {Array.isArray(reportData.mismatchedStudents) && reportData.mismatchedStudents.length > 0 && (
-                    <div className="mt-8">
-                        <h3 className="font-bold text-lg mb-2 text-yellow-600 text-center">Mismatched Scans</h3>
-                        <div className="h-24 bg-yellow-50 rounded-lg p-3 overflow-y-auto border border-yellow-200">
-                            <div className="flex flex-wrap gap-2 justify-center">
-                                {reportData.mismatchedStudents.map(roll => (
-                                    <span key={roll} className="bg-yellow-200 text-yellow-800 font-mono text-xs font-semibold px-2 py-1 rounded-full">{roll}</span>
-                                ))}
-                            </div>
+            <div className="w-full max-w-md bg-gray-50 rounded-2xl shadow-2xl text-gray-800 animate-fade-in overflow-hidden">
+                <div className="p-6 bg-white">
+                    <div className="text-center">
+                        <CheckCircle2 size={48} className="mx-auto text-green-500 mb-2" />
+                        <h1 className="text-2xl font-bold text-gray-800">Attendance Submitted</h1>
+                        <div className="mt-2 text-sm text-gray-500 bg-gray-100 rounded-lg py-2 px-4 inline-block">
+                            <span className="font-semibold text-gray-700">{batchLabel}</span>
+                            <span className="mx-2">|</span>
+                            <span className="font-semibold text-gray-700">{selectedCourse}</span>
                         </div>
                     </div>
-                )}
-                <button onClick={() => navigate(config.dashboardPath)} className="w-full bg-gray-700 text-white py-3 mt-8 rounded-xl font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center gap-3">
-                    <LogOut size={24} /> Finish & Exit
-                </button>
+                    <div className="my-6 space-y-4">
+                        <AttendanceProgressBar present={reportData.presentiesCount || 0} total={reportData.totalMarked || 0} />
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                            <div className="bg-blue-50 p-3 rounded-lg"><p className="text-2xl font-bold text-blue-600">{reportData.totalMarked || 0}</p><p className="text-xs font-semibold text-blue-500">TOTAL</p></div>
+                            <div className="bg-green-50 p-3 rounded-lg"><p className="text-2xl font-bold text-green-600">{reportData.presentiesCount || 0}</p><p className="text-xs font-semibold text-green-500">PRESENT</p></div>
+                            <div className="bg-red-50 p-3 rounded-lg"><p className="text-2xl font-bold text-red-600">{reportData.absenteesCount || 0}</p><p className="text-xs font-semibold text-red-500">ABSENT</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-gray-100 p-4 max-h-80 overflow-y-auto custom-scrollbar-light">
+                    <div className="mb-4">
+                        <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><UserCheck size={18} className="text-green-500" /> Present Students</h3>
+                        <div className="bg-white rounded-lg p-2 space-y-1">
+                            {reportData.presentStudents?.length > 0 ? (
+                                reportData.presentStudents.map(roll => (
+                                    <p key={roll} className="text-sm font-mono text-gray-600 bg-green-50 rounded px-2 py-1">{roll}</p>
+                                ))
+                            ) : <p className="text-sm text-gray-400 p-2">No students were marked present.</p>}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2"><UserX size={18} className="text-red-500" /> Absent Students</h3>
+                        <div className="bg-white rounded-lg p-2 space-y-1">
+                            {reportData.absentStudents?.length > 0 ? (
+                                reportData.absentStudents.map(roll => (
+                                    <p key={roll} className="text-sm font-mono text-gray-600 bg-red-50 rounded px-2 py-1">{roll}</p>
+                                ))
+                            ) : <p className="text-sm text-gray-400 p-2">All students were present.</p>}
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 bg-white border-t border-gray-200">
+                    <button onClick={() => navigate(config.dashboardPath)} className="w-full bg-gray-700 text-white py-3 rounded-xl font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center gap-3">
+                        <LogOut size={20} /> Finish & Exit
+                    </button>
+                </div>
             </div>
         );
     };
@@ -493,33 +504,29 @@ const PostAttendancePage = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center font-sans p-2 sm:p-4 relative overflow-hidden bg-gray-100">
+        <div className={`min-h-screen w-full flex items-center justify-center font-sans p-2 sm:p-4 relative overflow-hidden bg-gray-100 ${view === 'scanner' ? 'touch-none' : ''}`}>
             <style>{`
-                .scanner-container { animation: pulse-border 2s infinite; }
-                @keyframes pulse-border { 0%, 100% { border-color: rgba(59, 130, 246, 0.4); } 50% { border-color: rgba(59, 130, 246, 1); } }
+                @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+                .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
                 .scanner-laser {
                     position: absolute; top: 0; left: 0; right: 0;
                     height: 3px; background: #38bdf8;
                     box-shadow: 0 0 10px 2px #38bdf8;
-                    animation: laser-beam 2s infinite linear;
+                    animation: laser-beam 2.5s infinite linear;
                 }
                 @keyframes laser-beam { 0% { top: 5%; } 50% { top: 95%; } 100% { top: 5%; } }
-                @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
-                .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+                .custom-scrollbar-light::-webkit-scrollbar { width: 6px; }
+                .custom-scrollbar-light::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar-light::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.2); border-radius: 20px; }
+                .animation-delay-2000 { animation-delay: 2s; }
             `}</style>
             {view !== 'splash' && view !== 'analytics' && (
-                <div className="absolute inset-0 transition-opacity duration-500 opacity-100">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225]"></div>
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225]"></div>
             )}
             <div className="relative z-10 w-full h-full flex items-center justify-center">
                 {renderView()}
             </div>
-            <UserMessageModal
-                message={userMessage.text}
-                type={userMessage.type}
-                onClose={() => setUserMessage({ text: null, type: 'info' })}
-            />
+            <UserMessageModal message={userMessage.text} type={userMessage.type} onClose={() => setUserMessage({ text: null, type: 'info' })} />
             {isVerificationModalOpen && renderVerificationModal()}
             <ExitConfirmationModal isOpen={isExitModalOpen} onClose={() => setIsExitModalOpen(false)} onConfirm={handleConfirmExit} />
         </div>

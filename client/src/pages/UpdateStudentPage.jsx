@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     Search, 
     User, 
@@ -15,9 +16,10 @@ import {
     KeyRound,
     GraduationCap
 } from 'lucide-react';
-import Header from '../components/Header'; // Assuming this is the correct path to your Header component
+import Header from '../components/Header';
 
-const backendUrl =  import.meta.env.VITE_BASE_URL;
+const backendUrl = import.meta.env.VITE_BASE_URL;
+
 // This helper function safely processes the JSON response from the server.
 async function processResponse(response) {
     const contentType = response.headers.get('content-type');
@@ -28,9 +30,15 @@ async function processResponse(response) {
         }
         return data;
     } else {
-        throw new Error('The server sent an unexpected response. This could be a temporary issue. Please try again.');
+        // If the response is not OK and not JSON, it's a critical server error.
+        if (!response.ok) {
+             throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        // Handle cases like 204 No Content, which is a success but has no body.
+        return null;
     }
 }
+
 
 // A reusable component to display student details.
 const ProfileDetail = ({ icon, label, value }) => (
@@ -52,6 +60,7 @@ const UpdateStudentPage = () => {
     const [searchError, setSearchError] = useState('');
     const [updateLoading, setUpdateLoading] = useState(false);
     const [updateMessage, setUpdateMessage] = useState({ type: '', text: '' });
+    const navigate = useNavigate(); // <-- Initialize useNavigate
 
     useEffect(() => {
         const timer = setTimeout(() => setAnimate(true), 100);
@@ -68,7 +77,7 @@ const UpdateStudentPage = () => {
         setUpdateMessage({ type: '', text: '' });
         setStudentData(null);
         try {
-            const response = await fetch(`${backendUrl}/api/Faculty/getStudentData/${searchRollNo.trim()}`, {method : "GET", credentials: "include"});
+            const response = await fetch(`${backendUrl}/api/Faculty/getStudentData/${searchRollNo.trim()}`, { method: "GET", credentials: "include" });
             const data = await processResponse(response);
             setStudentData({
                 ...data,
@@ -76,8 +85,17 @@ const UpdateStudentPage = () => {
                 profilePhoto: `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${data.rollno}/${data.rollno}.jpg`
             });
         } catch (error) {
-            setSearchError(error.message || 'Failed to fetch student data');
-            setStudentData(null);
+            // **UPDATED ERROR HANDLING**
+            console.error("Search error:", error.message);
+            // Non-critical errors like "student not found" can be shown locally
+            if (error.message.toLowerCase().includes('not found')) {
+                 setSearchError(error.message);
+                 setStudentData(null);
+            } else {
+                // For critical errors (network, auth), clear session and redirect
+                sessionStorage.clear();
+                navigate('/', { replace: true });
+            }
         } finally {
             setLoading(false);
         }
@@ -99,8 +117,12 @@ const UpdateStudentPage = () => {
             const result = await processResponse(response);
             setUpdateMessage({ type: 'success', text: result.message || 'Password reset successfully!' });
         } catch (error) {
-            setUpdateMessage({ type: 'error', text: error.message || 'An unknown error occurred.' });
+            // **UPDATED ERROR HANDLING**
+            console.error("Password reset error:", error.message);
+            sessionStorage.clear();
+            navigate('/', { replace: true });
         } finally {
+            // This will only run if the request succeeds, as an error causes a redirect.
             setUpdateLoading(false);
         }
     };

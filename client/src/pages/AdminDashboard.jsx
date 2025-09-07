@@ -3,7 +3,31 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Users, UserCheck, CalendarCheck, FileText, ArrowRight, Clock, CheckSquare, AlertCircle, User, LogOut, Menu, X } from 'lucide-react';
 import Header from '../components/Header';
 
-// --- Generic Session Bar Chart Component (No changes needed) ---
+// --- Animated Number Component ---
+const AnimatedNumber = ({ value }) => {
+    const [displayValue, setDisplayValue] = useState(0);
+
+    useEffect(() => {
+        let startTime = null;
+        const duration = 1500; // Animation duration in ms
+
+        const animation = (currentTime) => {
+            if (!startTime) startTime = currentTime;
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            const nextValue = Math.floor(progress * value);
+            setDisplayValue(nextValue);
+            if (progress < 1) {
+                requestAnimationFrame(animation);
+            }
+        };
+
+        requestAnimationFrame(animation);
+    }, [value]);
+
+    return <span>{displayValue}</span>;
+};
+
+// --- Generic Session Bar Chart Component ---
 const SessionBarChart = ({ data, barColor }) => {
     if (!Array.isArray(data) || data.length === 0) {
         return <div className="text-center text-gray-500 py-4"><p>No sessions scheduled for today.</p></div>;
@@ -41,99 +65,19 @@ const SessionBarChart = ({ data, barColor }) => {
 
 
 const batchWiseTimetable = {
-  "SKILLUP BATCH-1": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5102", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5102", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102", type: "Lecture" }]
-  },
-  "SKILLUP BATCH-2": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "AWS", room: "5106", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5106", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5106", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5106", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5106", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }]
-  },
-  "SKILLUP BATCH-3": {
-    Monday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104", type: "Lecture" }],
-    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5104", type: "Lecture" }],
-    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5104", type: "Lecture" }],
-    Thursday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }],
-    Friday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }],
-    Saturday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }]
-  },
-  "SKILLNEXT BATCH-1": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5204", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5204", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5204", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5204", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5204", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5204", type: "Lecture" }]
-  },
-  "SKILLNEXT BATCH-2": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5104", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5104", type: "Lecture" }]
-  },
-  "SKILLNEXT BATCH-3": {
-    Monday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102", type: "Lecture" }],
-    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102", type: "Lecture" }],
-    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5102", type: "Lecture" }],
-    Thursday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }],
-    Friday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102", type: "Lecture" }],
-    Saturday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }]
-  },
-  "SKILLBRIDGE BATCH-1": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5101", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5101", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5101", type: "Lecture" }]
-  },
-  "SKILLBRIDGE BATCH-2": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5005", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5005", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5005", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5005", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5005", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5005", type: "Lecture" }]
-  },
-  "SKILLBRIDGE BATCH-3": {
-    Monday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5201", type: "Lecture" }],
-    Tuesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5201", type: "Lecture" }],
-    Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5201", type: "Lecture" }],
-    Thursday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5201", type: "Lecture" }],
-    Friday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5201", type: "Lecture" }],
-    Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5201", type: "Lecture" }]
-  },
-  "SKILLBRIDGE BATCH-4": {
-    Monday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5101", type: "Lecture" }],
-    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }],
-    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }],
-    Thursday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5101", type: "Lecture" }],
-    Friday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }],
-    Saturday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5101", type: "Lecture" }]
-  },
-  "SKILLBRIDGE BATCH-5": {
-    Monday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }],
-    Tuesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }],
-    Wednesday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5106", type: "Lecture" }],
-    Thursday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5106", type: "Lecture" }],
-    Friday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5106", type: "Lecture" }],
-    Saturday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5106", type: "Lecture" }]
-  }
+  "SKILLUP BATCH-1": { Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5102", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5102", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102", type: "Lecture" }] },
+  "SKILLUP BATCH-2": { Monday: [{ time: "9:30AM - 12:15PM", subject: "AWS", room: "5106", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5106", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5106", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5106", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5106", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }] },
+  "SKILLUP BATCH-3": { Monday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104", type: "Lecture" }], Tuesday: [{ time: "1:15PM - 3:50PM", subject: "AWS", room: "5104", type: "Lecture" }], Wednesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5104", type: "Lecture" }], Thursday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }], Friday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }], Saturday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }] },
+  "SKILLNEXT BATCH-1": { Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5204", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5204", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5204", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5204", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5204", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5204", type: "Lecture" }] },
+  "SKILLNEXT BATCH-2": { Monday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5104", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5104", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5104", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5104", type: "Lecture" }] },
+  "SKILLNEXT BATCH-3": { Monday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5102", type: "Lecture" }], Tuesday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5102", type: "Lecture" }], Wednesday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5102", type: "Lecture" }], Thursday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }], Friday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5102", type: "Lecture" }], Saturday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5102", type: "Lecture" }] },
+  "SKILLBRIDGE BATCH-1": { Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5101", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5101", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5101", type: "Lecture" }] },
+  "SKILLBRIDGE BATCH-2": { Monday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5005", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5005", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5005", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5005", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5005", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5005", type: "Lecture" }] },
+  "SKILLBRIDGE BATCH-3": { Monday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5201", type: "Lecture" }], Tuesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5201", type: "Lecture" }], Wednesday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5201", type: "Lecture" }], Thursday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5201", type: "Lecture" }], Friday: [{ time: "1:15PM - 3:50PM", subject: "DBMS", room: "5201", type: "Lecture" }], Saturday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5201", type: "Lecture" }] },
+  "SKILLBRIDGE BATCH-4": { Monday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5101", type: "Lecture" }], Tuesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }], Wednesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5101", type: "Lecture" }], Thursday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5101", type: "Lecture" }], Friday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5101", type: "Lecture" }], Saturday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5101", type: "Lecture" }] },
+  "SKILLBRIDGE BATCH-5": { Monday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }], Tuesday: [{ time: "1:15PM - 3:50PM", subject: "CP", room: "5106", type: "Lecture" }], Wednesday: [{ time: "1:15PM - 3:50PM", subject: "JFS", room: "5106", type: "Lecture" }], Thursday: [{ time: "9:30AM - 12:15PM", subject: "CP", room: "5106", type: "Lecture" }], Friday: [{ time: "9:30AM - 12:15PM", subject: "DBMS", room: "5106", type: "Lecture" }], Saturday: [{ time: "9:30AM - 12:15PM", subject: "JFS", room: "5106", type: "Lecture" }] }
 };
 
-
-
-// --- Section Header Component (No changes needed) ---
 const SectionHeader = ({ title, animate, delay }) => (
     <div className={`flex items-center mb-4 transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: `${delay}ms` }}>
         <div className="w-1 h-5 bg-white/50 rounded-full mr-3"></div>
@@ -141,7 +85,7 @@ const SectionHeader = ({ title, animate, delay }) => (
     </div>
 );
 
-const backendUrl =  import.meta.env.VITE_BASE_URL;
+const backendUrl = import.meta.env.VITE_BASE_URL;
 
 // --- Main Admin Dashboard Component ---
 const AdminDashboardPage = () => {
@@ -151,27 +95,24 @@ const AdminDashboardPage = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     
-    // Helper function to format API batch names
     const formatApiBatchName = (apiName) => {
         const parts = apiName.replace('attendance_', '').split('-');
-        if (parts.length < 2) return apiName; // fallback
+        if (parts.length < 2) return apiName;
         const name = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
         return `${name.toUpperCase()} BATCH-${parts[1]}`;
     };
 
     useEffect(() => {
-        localStorage.setItem("userRole", "admin");
+        sessionStorage.setItem("userRole", "admin");
 
         const fetchAdminData = async () => {
             try {
-                const response = await fetch(`${backendUrl}/api/Admin/getDashboardData`, 
-                    {
-                        method : "GET",
-                        credentials: "include"
-                    }
-                );
+                const response = await fetch(`${backendUrl}/api/Admin/getDashboardData`, {
+                    method : "GET",
+                    credentials: "include"
+                });
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error('Network response was not okk');
                 }
                 const result = await response.json();
 
@@ -197,14 +138,13 @@ const AdminDashboardPage = () => {
                         let [hours] = time.split(':');
                         if (hours === '12') hours = '00';
                         if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
-
                         const isMorning = parseInt(hours) < 13;
 
                         const sessionDetails = {
                             batchName: `${formattedBatchName} (${classInfo.subject})`,
                             present: summary.presentCount,
                             total: summary.totalCount,
-                            status: 'marked' // Assume 'marked' if data is present in the summary
+                            status: 'marked'
                         };
 
                         if (isMorning) {
@@ -227,8 +167,11 @@ const AdminDashboardPage = () => {
                 });
 
             } catch (err) {
-                setError(err.message || 'Failed to load dashboard data.');
+                // --- MODIFIED: Error Handling ---
+                // If any error occurs, clear session and navigate to homepage.
                 console.error("Fetch error:", err);
+                sessionStorage.clear();
+                navigate('/', { replace: true });
             } finally {
                 setIsLoading(false);
                 setAnimate(true);
@@ -236,17 +179,17 @@ const AdminDashboardPage = () => {
         };
 
         fetchAdminData();
-    }, []);
+    }, [navigate]); // Added navigate to dependency array
     
     if (isLoading) {
         return <div className="min-h-screen bg-gradient-to-br from-[#F0F2F5] to-[#E5E7EB] flex items-center justify-center"><div className="relative"><div className="animate-spin rounded-full h-16 w-16 border-4 border-[#071225] border-t-transparent"></div></div></div>;
     }
-
+    
+    // This part will now likely not be reached on error, but it's a good fallback.
     if (error || !adminData) {
         return <div className="min-h-screen bg-gradient-to-br from-[#F0F2F5] to-[#E5E7EB] flex items-center justify-center"><div className="bg-white rounded-lg p-8 shadow-lg max-w-md mx-4"><h2 className="text-xl font-bold text-red-600 mb-4">An Error Occurred</h2><p className="text-gray-600 mb-4">{error || 'Failed to load dashboard data.'}</p><button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Retry</button></div></div>;
     }
 
-    // --- The rest of the component JSX remains the same ---
     const managementItems = [
         { title: "Manage Students", icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />, count: adminData.stats.totalStudents, description: "View, Add, or Edit Student Details", bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", path: "/admin/manage-students" },
         { title: "Manage Faculty", icon: <UserCheck className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />, count: adminData.stats.totalFaculty, description: "View, Add, or Edit Faculty Details", bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", path: "/admin/manage-faculty" },
@@ -288,7 +231,7 @@ const AdminDashboardPage = () => {
                                         </div>
                                         <p className="text-xs text-gray-600 mb-3 h-8">{item.description}</p>
                                         <div className="flex items-end justify-between mt-auto">
-                                            {item.count ? <p className="text-2xl lg:text-3xl font-bold bg-gradient-to-br from-gray-800 to-gray-600 bg-clip-text text-transparent">{item.count}</p> : <div />}
+                                            {item.count ? <p className="text-2xl lg:text-3xl font-bold bg-gradient-to-br from-gray-800 to-gray-600 bg-clip-text text-transparent"><AnimatedNumber value={item.count} /></p> : <div />}
                                             <div className="bg-gray-800 text-white font-bold py-1.5 px-3 rounded-md text-xs self-end shadow-md">Manage</div>
                                         </div>
                                     </div>
@@ -318,7 +261,10 @@ const AdminDashboardPage = () => {
             </header>
 
             <main className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 relative z-10">
-                <h2 className={`text-lg lg:text-xl font-bold text-[#071225] mb-4 transition-opacity duration-1000 delay-1000 ${animate ? 'opacity-100' : 'opacity-0'}`}>Today's Attendance</h2>
+                <div className={`flex items-center gap-3 text-[#071225] mb-4 transition-opacity duration-1000 delay-1000 ${animate ? 'opacity-100' : 'opacity-0'}`}>
+                    <CalendarCheck className="w-6 h-6"/>
+                    <h2 className="text-lg lg:text-xl font-bold">Today's Attendance Status</h2>
+                </div>
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                     {sessionItems.map((item, index) => (
                         <div key={index} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col border border-white/50 relative overflow-hidden group ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${1000 + index * 100}ms` }}>

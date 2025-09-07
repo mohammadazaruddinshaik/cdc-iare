@@ -1,22 +1,72 @@
+import React, { useState, useEffect } from 'react';
 
-// src/components/DonutChart.jsx
-import React from 'react';
-const DonutChart = ({ percentage, presentColor, absentColor }) => {
-  const radius = 40;
+const DonutChart = ({ percentage = 0, presentColor = '#60A5FA', absentColor = '#374151' }) => {
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
+  const [offset, setOffset] = useState(0);
+
+  const sqSize = 120;
   const strokeWidth = 10;
-  const innerRadius = radius - strokeWidth / 2;
-  const circumference = 2 * Math.PI * innerRadius;
-  const offset = circumference - (percentage / 100) * circumference;
+  const radius = (sqSize - strokeWidth) / 2;
+  const viewBox = `0 0 ${sqSize} ${sqSize}`;
+  const circumference = radius * Math.PI * 2;
+
+  useEffect(() => {
+    // Animate the SVG circle offset for the fill effect
+    const progressOffset = ((100 - percentage) / 100) * circumference;
+    setOffset(progressOffset);
+
+    // Animate the percentage text from 0 to the target value
+    let start = 0;
+    const end = parseInt(percentage, 10);
+    if (start === end) return;
+
+    const duration = 1500; // Animation duration in ms
+    const incrementTime = (duration / end) || 20; // Avoid division by zero
+    
+    const timer = setInterval(() => {
+      start += 1;
+      setAnimatedPercentage(start);
+      if (start === end) clearInterval(timer);
+    }, incrementTime);
+
+    // Cleanup on component unmount
+    return () => clearInterval(timer);
+  }, [percentage, circumference]);
 
   return (
-    <div className="relative flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32">
-      <svg className="w-full h-full" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={innerRadius} fill="none" stroke={absentColor || "#374151"} strokeWidth={strokeWidth} />
-        <circle cx="50" cy="50" r={innerRadius} fill="none" stroke={presentColor} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform="rotate(-90 50 50)" className="transition-all duration-1000 ease-out" />
+    <div className="relative w-32 h-32 sm:w-36 sm:h-36">
+      <svg width={sqSize} height={sqSize} viewBox={viewBox}>
+        <circle
+          className="fill-transparent"
+          cx={sqSize / 2}
+          cy={sqSize / 2}
+          r={radius}
+          stroke={absentColor}
+          strokeWidth={`${strokeWidth}px`}
+        />
+        <circle
+          className="fill-transparent transition-all duration-[1500ms] ease-out"
+          cx={sqSize / 2}
+          cy={sqSize / 2}
+          r={radius}
+          stroke={presentColor}
+          strokeWidth={`${strokeWidth}px`}
+          transform={`rotate(-90 ${sqSize / 2} ${sqSize / 2})`}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: offset,
+            strokeLinecap: 'round',
+          }}
+        />
       </svg>
-      <span className="absolute text-lg sm:text-xl font-bold text-white animate-pulse">{percentage}%</span>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="font-bold text-2xl sm:text-3xl text-white">
+          {animatedPercentage}
+          <span className="text-base sm:text-lg">%</span>
+        </span>
+      </div>
     </div>
   );
 };
-export default DonutChart;
 
+export default DonutChart;

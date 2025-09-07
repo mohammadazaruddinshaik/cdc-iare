@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Mail, Book, Briefcase, Loader2, Lock, X, Eye, EyeOff } from 'lucide-react';
-import Header from '../components/Header'; // Assuming Header is in a separate file
+import { useNavigate } from 'react-router-dom';
+import { User, Mail, Book, Briefcase, Loader2, Lock, X, Eye, EyeOff, AlertTriangle, CheckCircle } from 'lucide-react';
+import Header from '../components/Header';
 
-// --- Sub-Components ---
-const InfoPill = ({ icon, text }) => (
-    <div className="flex items-center gap-2 bg-indigo-500/10 text-indigo-300 font-medium py-2 px-4 rounded-full border border-indigo-500/30">
-        {icon}
-        <span>{text}</span>
+// --- UI & HELPER COMPONENTS (Adapted from Student Profile) ---
+const backendUrl = import.meta.env.VITE_BASE_URL;
+
+const ProfileDetailCard = ({ icon, label, value, description }) => (
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl h-full group">
+        <div className="flex items-start gap-4">
+            <div className="p-3 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                {React.cloneElement(icon, {
+                    className: "w-6 h-6 text-blue-600 group-hover:text-indigo-700 transition-colors"
+                })}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-500 font-medium uppercase tracking-wide mb-1">{label}</p>
+                <p className="font-bold text-gray-800 text-lg break-words leading-tight">{value}</p>
+                {description && <p className="text-xs text-gray-400 mt-2 leading-relaxed">{description}</p>}
+            </div>
+        </div>
     </div>
 );
-
-const backendUrl =  import.meta.env.VITE_BASE_URL;
-
 
 const PasswordInput = ({ id, label, value, onChange, error }) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -83,7 +92,7 @@ const ChangePasswordModal = ({ isOpen, onClose, facultyId }) => {
             if (response.ok) {
                 setApiMessage({ type: 'success', text: 'Password updated! Logging you out...' });
                 setTimeout(() => {
-                    localStorage.clear();
+                    sessionStorage.clear();
                     navigate('/');
                 }, 2000);
             } else {
@@ -128,7 +137,8 @@ const ChangePasswordModal = ({ isOpen, onClose, facultyId }) => {
     );
 };
 
-// --- Main Component: Faculty's own profile page ---
+
+// --- MAIN COMPONENT ---
 const FacultyProfilePage = () => {
     const [facultyData, setFacultyData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -142,15 +152,17 @@ const FacultyProfilePage = () => {
     }, []);
     
     useEffect(() => {
-        // Renamed function to match the call below
         const fetchProfileData = async () => {
             try {
                 setLoading(true);
-                const facultyId = localStorage.getItem('userIdentifier');
+                const facultyId = sessionStorage.getItem('userIdentifier');
                 if (!facultyId) throw new Error("Faculty ID not found.");
                 
                 const response = await fetch(`${backendUrl}/api/Faculty/getProfileData/${facultyId}`, {method :"GET", credentials: "include"});
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok){
+                    sessionStorage.clear();
+                    navigate('/', { replace: true });
+                }
                 
                 const data = await response.json();
                 if (data.faculty) {
@@ -172,76 +184,80 @@ const FacultyProfilePage = () => {
                 setLoading(false);
             }
         };
-        // Corrected function call
         fetchProfileData();
     }, []);
-
-    const handleOpenModal = () => setIsModalOpen(true);
-    const handleCloseModal = () => setIsModalOpen(false);
 
     if (loading) return (<div className="flex flex-col justify-center items-center h-screen bg-gray-900"><Loader2 className="w-12 h-12 animate-spin text-indigo-400" /><p className="mt-4 text-lg text-gray-300">Loading Your Profile...</p></div>);
     if (error || !facultyData) return (<div className="flex justify-center items-center h-screen bg-gray-900"><div className="text-center bg-red-900/20 rounded-lg p-6"><h2 className="text-2xl font-bold text-red-400">Failed to Load Profile</h2><p className="text-red-300 mt-2">Could not fetch your data.</p><p className="text-sm text-gray-500 mt-4">Error: {error}</p></div></div>);
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white font-sans">
-            <div className="fixed inset-0 -z-10 h-full w-full bg-gray-900 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-            <div className="fixed top-0 left-1/4 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-indigo-600 opacity-20 blur-[120px]"></div>
-            <div className="fixed top-1/2 right-1/4 -z-10 m-auto h-[250px] w-[250px] rounded-full bg-purple-600 opacity-15 blur-[100px]"></div>
+        <div className="min-h-screen text-gray-800 font-sans bg-gradient-to-br from-[#F0F2F5] to-[#E5E7EB] overflow-x-hidden">
+            <div className="bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] w-full rounded-bl-[3rem] rounded-br-[3rem] relative overflow-hidden">
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
+                </div>
 
-            <div className="px-4 sm:px-6 lg:px-8 relative z-10">
-                <Header animate={animate} />
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-4"></div>
-            </div>
-            <main className="pt-8 pb-12">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6">
-                    <div className={`bg-gray-800/20 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden transition-all duration-1000 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                        <div className="p-6 sm:p-10">
-                            <div className="flex flex-col items-center sm:flex-row sm:items-end gap-6">
-                                <img src={facultyData.profilePhoto} alt="Profile" className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-6 border-gray-800/50 shadow-2xl object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/818cf8/ffffff?text=AZ'; }} />
-                                <div className="text-center sm:text-left">
-                                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{facultyData.name}</h1>
-                                    <div className="mt-2 flex flex-col sm:flex-row sm:items-center justify-center sm:justify-start gap-x-5 gap-y-2 text-indigo-300">
-                                        <p className="font-semibold flex items-center gap-2">
-                                            <User size={16} />
-                                            {facultyData.id}
-                                        </p>
-                                        <a href={`mailto:${facultyData.email}`} className="font-semibold flex items-center gap-2 hover:text-white transition-colors">
-                                            <Mail size={16} />
-                                            {facultyData.email}
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                <div className="px-4 sm:px-6 lg:px-8 relative z-10">
+                    <Header animate={animate} />
+                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-6"></div>
 
-                            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white border-b-2 border-indigo-500/50 pb-2 mb-4">Subjects Assigned</h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {facultyData.subjects.length > 0 ? facultyData.subjects.map(subject => (<InfoPill key={subject} icon={<Book size={16} />} text={subject} />)) : <p className="text-gray-400">No subjects assigned.</p>}
+                    <div className={`py-12 flex items-center transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+                        <div className="flex flex-col lg:flex-row items-center justify-between w-full max-w-7xl mx-auto gap-12 lg:gap-16">
+                            <div className="flex flex-col lg:flex-row items-center gap-8 text-white">
+                                <div className="relative flex-shrink-0">
+                                    <img src={facultyData.profilePhoto} alt="Profile" className="w-44 h-44 rounded-full border-4 border-white/30 shadow-2xl object-cover"
+                                        onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${facultyData.name.replace(/ /g, '+')}&background=1F2937&color=BFDBFE&font-size=0.4&rounded=true&size=176`; }}
+                                    />
+                                </div>
+                                <div className="flex-grow text-center lg:text-left space-y-4">
+                                    <div>
+                                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2">{facultyData.name}</h1>
+                                        <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-blue-300 text-lg">
+                                            <p className="font-mono flex items-center gap-2"><User size={18} /> {facultyData.id}</p>
+                                            <a href={`mailto:${facultyData.email}`} className="font-medium flex items-center gap-2 hover:text-white transition-colors">
+                                                <Mail size={18} /> {facultyData.email}
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div className="pt-2 flex justify-center lg:justify-start">
+                                        <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium hover:bg-white/20 transition-colors">
+                                            <Lock size={14} /> Change Password
+                                        </button>
                                     </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white border-b-2 border-indigo-500/50 pb-2 mb-4">Batches Assigned</h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {facultyData.batches.length > 0 ? facultyData.batches.map(batch => (<InfoPill key={batch} icon={<Briefcase size={16} />} text={batch} />)) : <p className="text-gray-400">No batches assigned.</p>}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="mt-10 pt-6 border-t border-white/10 flex justify-end">
-                                <button
-                                    onClick={handleOpenModal}
-                                    className="flex items-center gap-2 border border-slate-600 text-slate-300 font-bold py-2 px-5 rounded-xl transition-all duration-300 transform hover:scale-105 hover:bg-slate-700 hover:text-white hover:border-slate-500"
-                                >
-                                    <Lock size={18} />
-                                    Change Password
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <main className="px-4 sm:px-6 lg:px-8 py-12 relative z-10 max-w-7xl mx-auto">
+                <div className={`transition-all duration-1000 delay-300 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+                    <section>
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">Assigned Responsibilities</h2>
+                            <p className="text-gray-600">Your currently assigned subjects and batches.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <ProfileDetailCard 
+                                icon={<Book />} 
+                                label="Subjects Assigned" 
+                                value={facultyData.subjects.length > 0 ? facultyData.subjects.join(', ') : 'No subjects assigned'}
+                                description="List of courses you are responsible for."
+                            />
+                            <ProfileDetailCard 
+                                icon={<Briefcase />} 
+                                label="Batches Assigned" 
+                                value={facultyData.batches.length > 0 ? facultyData.batches.join(', ') : 'No batches assigned'}
+                                description="Groups of students you are currently mentoring."
+                            />
+                        </div>
+                    </section>
+                </div>
             </main>
-            <ChangePasswordModal isOpen={isModalOpen} onClose={handleCloseModal} facultyId={facultyData.id} />
+
+            <ChangePasswordModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} facultyId={facultyData.id} />
         </div>
     );
 };
