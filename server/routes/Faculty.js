@@ -12,17 +12,19 @@ const { getLeaderBoardData,
         HandleBatchAttendanceReportPDF, 
         HandleMarkAttendance,
         getStudentsByBatch,
-        HandleSessionPostAttendance} = require('../services/CommonRoutes');
-
+        HandleSessionPostAttendance,
+        HandleMarkAttendanceMultipleBatches,
+        getStudentsByBatches} = require('../services/CommonRoutes');
+        
 const { verifyAccess, authorize } = require("../middlewares/Auth");
-const { generateAndStoreQrCodes } = require('../services/DynamicRoutes');
+const { generateAndStoreQrCodes } = require('../services/DynamicRoutes.js');
 
 const router = express.Router();
-
-// Protect all routes in this file (Admin only)
-
+        
+        // Protect all routes in this file (Admin only)
+        
 router.use(verifyAccess, authorize("faculty"));
-
+        
 router.get('/getDashboardData/:facultyid', getDashboardData);
 
 router.get('/getLeaderBoardData', getLeaderBoardData);
@@ -39,17 +41,22 @@ router.patch('/ResetPassword', HandleResetPassword);
 
 router.post("/announcements", HandelPostAnnouncements);
 
-router.post('/Mark-Attendance', HandleMarkAttendance);
+router.get('/getStudentsByBatches',getStudentsByBatches);
 
 router.get('/getStudentsByBatch/:batch',getStudentsByBatch);
 
+router.post('/Mark-Attendance', HandleMarkAttendance);
+
 router.post('/Mark-Session',HandleSessionPostAttendance);
+
+router.post('/MarkAllBatchAttendance',HandleMarkAttendanceMultipleBatches);
 
 router.get("/batch-report-excel/",HandleBatchAttendanceReportExcel);
 
 router.get("/batch-report-pdf", HandleBatchAttendanceReportPDF);
 
-// router.post('/updateQr', generateAndStoreQrCodes);
+router.post('/updateQr', generateAndStoreQrCodes);
+
 
 
 module.exports = router;

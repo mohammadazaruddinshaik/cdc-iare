@@ -16,7 +16,7 @@ const {HandleSessionAttendanceReportPDF,
       getProfileData,
       deleteAttendanceLog} = require('../controllers/Admin');
 
-const { updateAllStudentScores, generateAndStoreQrCodes } = require('../services/DynamicRoutes');
+const { updateAllStudentScores, generateAndStoreQrCodes } = require('../services/DynamicRoutes.js');
 
 const { HandleChangePassword,
         getViewStudentData, 

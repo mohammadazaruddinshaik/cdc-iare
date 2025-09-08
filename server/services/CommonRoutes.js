@@ -946,16 +946,10 @@ async function getStudentsByBatch(req, res) {
 
 async function HandleMarkAttendanceMultipleBatches(req, res) {
   try {
-    const { date, course, batches, presentMap } = req.body;
+    const { date, batches } = req.body;
 
     // 🛡️ Input validation
-    if (
-      !date ||
-      !course ||
-      !Array.isArray(batches) ||
-      batches.length === 0 ||
-      typeof presentMap !== "object"
-    ) {
+    if (!date || typeof batches !== "object" || Object.keys(batches).length === 0) {
       return res.status(400).json({ message: "Missing or invalid input data" });
     }
 
@@ -965,7 +959,19 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
 
     const results = [];
 
-    for (const batchName of batches) {
+    // 🔁 Iterate over batches map
+    for (const [batchName, batchData] of Object.entries(batches)) {
+      const { course, presentMap } = batchData;
+
+      if (!course || !presentMap) {
+        results.push({
+          batch: batchName,
+          status: "skipped",
+          message: "Course or presentMap missing"
+        });
+        continue;
+      }
+
       const batchFormatted = batchName
         .replace(/BATCH/gi, "")
         .replace(/\s+/g, "-")
@@ -976,7 +982,7 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
       const Attendance = getAttendanceModel(batchFormatted);
 
       // If no map exists for this batch, skip
-      if (!presentMap[batchName]) {
+      if (Object.keys(presentMap).length === 0) {
         results.push({
           batch: batchFormatted,
           status: "skipped",
@@ -985,12 +991,10 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
         continue;
       }
 
-      const batchPresentMap = presentMap[batchName];
-
-      // Fetch attendance docs
+      // 📄 Fetch attendance docs
       const attendanceDocs = await Attendance.find();
 
-      // 🔍 Check if already marked
+      // 🔍 Check if already marked for this batch+course+date
       const alreadyMarkedDocs = attendanceDocs.filter(doc =>
         doc.dailyLogs.some(
           log => normalizeDate(log.date) === reqDate && log.course === course
@@ -1007,7 +1011,7 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
       }
 
       // 🎯 Validate QR hashes
-      const rollnos = Object.keys(batchPresentMap);
+      const rollnos = Object.keys(presentMap);
       const students = await Student.find(
         { rollno: { $in: rollnos } },
         { rollno: 1, qrData: 1 }
@@ -1018,7 +1022,7 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
 
       for (const student of students) {
         const expectedHash = student.qrData;
-        const providedHash = batchPresentMap[student.rollno];
+        const providedHash = presentMap[student.rollno];
         if (expectedHash && providedHash && expectedHash === providedHash) {
           validatedPresentSet.add(student.rollno);
         } else {
@@ -1090,7 +1094,7 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
     }
 
     return res.status(200).json({
-      message: `Attendance processing completed for course: ${course} on ${reqDate}`,
+      message: `Attendance processing completed on ${reqDate}`,
       results
     });
 
@@ -1099,6 +1103,59 @@ async function HandleMarkAttendanceMultipleBatches(req, res) {
     if (!res.headersSent) {
       return res.status(500).json({ message: "Internal server error" });
     }
+  }
+};
+
+async function getStudentsByBatches(req, res) {
+  try {
+    const { batches } = req.query;
+
+    // ✅ Validation
+    if (!batches) {
+      return res.status(400).json({ message: "Missing 'batches' query parameter" });
+    }
+
+    // ✅ Split comma-separated string into array
+    const batchList = batches.split(",").map((b) => b.trim());
+
+    if (batchList.length === 0) {
+      return res.status(400).json({ message: "No valid batches provided" });
+    }
+
+    const result = {};
+
+    for (const batch of batchList) {
+      try {
+        const Attendance = getAttendanceModel(batch);
+
+        const students = await Attendance.find({}, { rollno: 1, _id: 0 });
+
+        if (!students || students.length === 0) {
+          result[batch] = {
+            total: 0,
+            students: [],
+            message: `No students found for batch '${batch}'`,
+          };
+        } else {
+          const rollnos = students.map((s) => s.rollno);
+          result[batch] = {
+            total: rollnos.length,
+            students: rollnos,
+          };
+        }
+      } catch (err) {
+        result[batch] = {
+          total: 0,
+          students: [],
+          message: `Batch collection not found: ${batch}`,
+        };
+      }
+    }
+
+    res.status(200).json({ batches: result });
+  } catch (err) {
+    console.error("❌ Error fetching students by batches:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -1113,5 +1170,6 @@ module.exports={
     HandleMarkAttendance,
     HandleSessionPostAttendance,
     getStudentsByBatch,
-    HandleMarkAttendanceMultipleBatches
+    HandleMarkAttendanceMultipleBatches,
+    getStudentsByBatches
 }
