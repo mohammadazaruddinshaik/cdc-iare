@@ -21,7 +21,9 @@ const { generateAndStoreQrCodes } = require('../services/DynamicRoutes.js');
 
 const router = express.Router();
         
-        // Protect all routes in this file (Admin only)
+// Protect all routes in this file (Admin only)
+router.post('/MarkAllBatchAttendance',HandleMarkAttendanceMultipleBatches);
+
         
 router.use(verifyAccess, authorize("faculty"));
         
@@ -49,7 +51,6 @@ router.post('/Mark-Attendance', HandleMarkAttendance);
 
 router.post('/Mark-Session',HandleSessionPostAttendance);
 
-router.post('/MarkAllBatchAttendance',HandleMarkAttendanceMultipleBatches);
 
 router.get("/batch-report-excel/",HandleBatchAttendanceReportExcel);
 

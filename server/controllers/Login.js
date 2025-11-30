@@ -12,7 +12,7 @@ async function HandleLogin(req, res) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Determine role based on username
+    // Identify role based on username pattern
     const getRole = (username) => {
       if (username.startsWith("2")) return "student";
       if (username.toUpperCase().startsWith("IARE")) return "faculty";
@@ -21,8 +21,11 @@ async function HandleLogin(req, res) {
     };
 
     const role = getRole(username);
+    if (!role) {
+      return res.status(400).json({ error: "Invalid username format" });
+    }
 
-    // Pick the correct model & identifier field
+    // Select proper model and identifier
     let Model, identifierKey;
     if (role === "student") {
       Model = Student;
@@ -33,29 +36,31 @@ async function HandleLogin(req, res) {
     } else if (role === "admin") {
       Model = Admin;
       identifierKey = "adminId";
-    } else {
-      return res.status(400).json({ error: "Invalid role" });
     }
 
-    // Case-insensitive search
+    // Case-insensitive query
     const query = {};
     query[identifierKey] = new RegExp(`^${username}$`, "i");
     const user = await Model.findOne(query);
-    if (!user) return res.status(401).json({ error: "User not found" });
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
 
-    // Check password
+    // Password verification
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
-    // Identifier for token payload
-    const identifier =
+    // Determine identifier for payload
+    const identifierValue =
       role === "student"
         ? user.rollno
         : role === "faculty"
         ? user.facultyid
         : user.adminId;
 
-    // Role-based expiry settings
+    // Token expiry times
     const jwtExpiry =
       role === "student" ? "15m" : role === "faculty" ? "60m" : "45m";
 
@@ -66,26 +71,32 @@ async function HandleLogin(req, res) {
         ? 60 * 60 * 1000
         : 45 * 60 * 1000;
 
-    // Sign JWT
+    // ✅ Sign JWT with role-specific identifier
     const accessToken = jwt.sign(
-      { id: user._id, role, username: identifier },
+      {
+        id: user._id,
+        role,
+        username: identifierValue, // still keep for display
+        rollno: role === "student" ? user.rollno : undefined,
+        facultyid: role === "faculty" ? user.facultyid : undefined,
+        adminId: role === "admin" ? user.adminId : undefined,
+      },
       process.env.JWT_SECRET,
       { expiresIn: jwtExpiry }
     );
 
-    // Send as HTTP-only cookie
+    // ✅ Send JWT as secure, HTTP-only cookie
     res.cookie("webToken", accessToken, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  maxAge: cookieMaxAge,
-});
-
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: cookieMaxAge,
+    });
 
     return res.json({
       message: "Login successful",
       role,
-      username: identifier,
+      username: identifierValue,
       expiresIn: jwtExpiry,
     });
   } catch (err) {

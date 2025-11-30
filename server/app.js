@@ -3,6 +3,7 @@ const connectDB = require("./Connect");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const cron = require("node-cron");
+const Run=require('./services/PasswordHash')
 
 const LoginRouter = require("./routes/Login");
 const StudentRouter = require("./routes/Student");
@@ -12,6 +13,7 @@ const AdminRouter = require("./routes/Admin");
 
 const app = express();
 const cookieParser = require("cookie-parser");
+const { generateAndStoreQrCodes } = require("./services/DynamicRoutes");
 
 // Middlewares
 app.use(cookieParser());
@@ -31,11 +33,16 @@ app.use(cors({
 // Database connection
 connectDB();
 
+// Run();
+
 // Routes
 app.use("/api/login", LoginRouter);
 app.use("/api/Student", StudentRouter);
 app.use("/api/Faculty", FacultyRouter);
 app.use("/api/Admin", AdminRouter);
+
+
+// generateAndStoreQrCodes();
 
 
 // Start server

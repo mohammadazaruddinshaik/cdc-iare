@@ -30,7 +30,7 @@ function getShortBatchName(fullBatchName) {
       ?.split("-")
       .pop() || "";
 
-  return `V-${code}-${number}`;
+  return `VI-${code}-${number}`;
 }
 
 const drawTableHeaders = (doc, y) => {
@@ -319,7 +319,7 @@ async function HandleSessionAttendanceReportExcel(req, res) {
 
     // Sheet 1: Attendance Summary
     const summarySheet = workbook.addWorksheet("Attendance Summary");
-    styleHeaders(summarySheet, "B.Tech V Semester Attendance Summary");
+    styleHeaders(summarySheet, "B.Tech VI Semester Attendance Summary");
 
     const headerRow = summarySheet.addRow(["BATCH", "BRANCH", "Total Strength", "Present", "Absent"]);
     headerRow.eachCell((cell, colNumber) => {
@@ -429,9 +429,9 @@ async function HandleSessionAttendanceReportExcel(req, res) {
 
     // Sheet 2: Branch-wise Summary
     const branchSummarySheet = workbook.addWorksheet("Branch-wise Summary");
-    styleHeaders(branchSummarySheet, "B.Tech V Semester Branch-wise Summary");
+    styleHeaders(branchSummarySheet, "B.Tech VI Semester Branch-wise Summary");
 
-    const branchHeaderRow = branchSummarySheet.addRow(["V SEM BRANCH (BATCHES)", "Total Strength", "Present", "Absent"]);
+    const branchHeaderRow = branchSummarySheet.addRow(["VI SEM BRANCH (BATCHES)", "Total Strength", "Present", "Absent"]);
     branchHeaderRow.eachCell((cell, colNumber) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "34495e" } };
       cell.font = { bold: true, size: 12, color: { argb: "FFFFFF" }, name: "Calibri" };
@@ -533,7 +533,7 @@ async function HandleSessionAttendanceReportExcel(req, res) {
         // Get unique batches for this branch
         const branchBatches = [...new Set(sortedAbsentees.map(student => student.batch))].sort();
 
-        styleHeaders(sheet, `V SEM ${branch} - Absentees List`);
+        styleHeaders(sheet, `VI SEM ${branch} - Absentees List`);
 
         const absenteeHeaderRow = sheet.addRow(["S.No", "Roll No", "Name", "Branch", "Batch"]);
         absenteeHeaderRow.height = 25;
@@ -614,7 +614,7 @@ async function HandleSessionAttendanceReportExcel(req, res) {
       }
     });
 
-    const fileName = `V-SEM: ${session}-${displayDate}_Attendance_Report.xlsx`;
+    const fileName = `VI-SEM: ${session}-${displayDate}_Attendance_Report.xlsx`;
     const encodedFileName = encodeURIComponent(fileName);
     res.setHeader(
       "Content-Disposition",
@@ -743,7 +743,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
 
-    const fileName = `VSEM-${session}-${displayDate}-AttendanceReport.pdf`;
+    const fileName = `VI-SEM-${session}-${displayDate}-AttendanceReport.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     const encodedFileName = encodeURIComponent(fileName);
     res.setHeader(
@@ -782,7 +782,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
     };
 
     // Generate Summary Report (First Sheet)
-    let currentY = addHeaders(doc, "B.Tech V Semester Attendance Summary");
+    let currentY = addHeaders(doc, "B.Tech VI Semester Attendance Summary");
 
     // Summary table
     const summaryTableHeaders = ['BATCH', 'BRANCH', 'Total Strength', 'Present', 'Absent'];
@@ -818,7 +818,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
 
       if (yPos + 20 > 750) {
         doc.addPage();
-        yPos = addHeaders(doc, "B.Tech V Semester Attendance Summary");
+        yPos = addHeaders(doc, "B.Tech VI Semester Attendance Summary");
         // Re-add table header
         xPos = 50;
         doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
@@ -894,10 +894,10 @@ async function HandleSessionAttendanceReportPDF(req, res) {
 
     // Generate Branch-wise Summary (Second Sheet)
     doc.addPage();
-    currentY = addHeaders(doc, "B.Tech V Semester Branch-wise Summary");
+    currentY = addHeaders(doc, "B.Tech VI Semester Branch-wise Summary");
 
     // Branch-wise summary table
-    const branchTableHeaders = ['V SEM BRANCH (BATCHES)', 'Total Strength', 'Present', 'Absent'];
+    const branchTableHeaders = ['VI SEM BRANCH (BATCHES)', 'Total Strength', 'Present', 'Absent'];
     const branchColWidths = [247, 83, 83, 82]; // Adjusted widths for better fit
     yPos = currentY;
 
@@ -922,7 +922,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
 
       if (yPos + 20 > 750) {
         doc.addPage();
-        yPos = addHeaders(doc, "B.Tech V Semester Branch-wise Summary");
+        yPos = addHeaders(doc, "B.Tech VI Semester Branch-wise Summary");
         // Re-add table header
         xPos = 50;
         doc.rect(50, yPos, 495, 25).fillAndStroke('#34495e', '#000000');
@@ -1019,7 +1019,7 @@ async function HandleSessionAttendanceReportPDF(req, res) {
       const branchBatches = [...new Set(branchAbsentees.map(student => student.batch))].sort();
 
       doc.addPage();
-      const title = `V SEM ${branch} - Absentees List`;
+      const title = `VI SEM ${branch} - Absentees List`;
       currentY = addHeaders(doc, title);
 
       // Absentee table

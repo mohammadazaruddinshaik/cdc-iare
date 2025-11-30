@@ -93,6 +93,8 @@ async function generateAndStoreQrCodes(req, res) {
   try {
     console.log("Starting daily QR code generation...");
 
+    const SECRET_KEY = process.env.Attendance_Secret;
+
     const today = new Date().toISOString().slice(0, 10);
     const students = await Student.find({});
 
@@ -106,32 +108,32 @@ async function generateAndStoreQrCodes(req, res) {
       const dataToHash = `${student.rollno}:${today}:${SECRET_KEY}`;
       const hash = crypto.createHash("sha256").update(dataToHash).digest("hex");
 
-      const qrData = hash;
       const qrPayload = JSON.stringify({ rollno: student.rollno, hash });
       const qrDataUrl = await QRCode.toDataURL(qrPayload);
+
 
       bulkOps.push({
         updateOne: {
           filter: { _id: student._id },
-          update: { $set: { qrData, qrLink: qrDataUrl } },
+          update: { $set: { qrData: hash, qrLink: qrDataUrl } },
         },
       });
     }
 
     if (bulkOps.length > 0) {
-      await Student.bulkWrite(bulkOps);
+      const result = await Student.bulkWrite(bulkOps);
+      console.log("Bulk write result:", result);
     }
 
     console.log(`✅ Successfully updated QR codes for ${students.length} students.`);
 
-    // final response
-    res.status(200).json({
+    return res.status(200).json({
       msg: "QR codes updated successfully",
       updatedCount: students.length,
     });
   } catch (error) {
     console.error("Error during daily QR code update:", error);
-    res.status(500).json({
+    return res.status(500).json({
       msg: "Error during daily QR code update",
       error: error.message,
     });
