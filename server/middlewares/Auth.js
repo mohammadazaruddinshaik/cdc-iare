@@ -16,31 +16,18 @@ function verifyAccess(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Attach payload to request for later use
     req.user = {
-      id: payload.id,
+      id: payload.id,  // use sub since that’s what you signed in login
       role: payload.role,
       username: payload.username,
-      rollno: payload.rollno, // ✅ include rollno in token payload at login time
     };
-
-    // ✅ Check if rollno is being passed in params, query, or body
-    const incomingRollno =
-      req.params.rollno || req.query.rollno || req.body.rollno;
-
-    if (incomingRollno && incomingRollno !== String(payload.rollno)) {
-      return res
-        .status(403)
-        .json({ error: "Access denied: roll number mismatch" });
-    }
-
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 
+// Role-based authorization
 function authorize(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
