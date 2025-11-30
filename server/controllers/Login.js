@@ -63,8 +63,14 @@ async function HandleLogin(req, res) {
     // Token expiry times
     const jwtExpiry =
       role === "student" ? "15m" : role === "faculty" ? "60m" : "45m";
+      role === "student" ? "15m" : role === "faculty" ? "60m" : "45m";
 
     const cookieMaxAge =
+      role === "student"
+        ? 15 * 60 * 1000
+        : role === "faculty"
+        ? 60 * 60 * 1000
+        : 45 * 60 * 1000;
       role === "student"
         ? 15 * 60 * 1000
         : role === "faculty"

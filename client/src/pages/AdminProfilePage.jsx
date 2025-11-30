@@ -13,7 +13,7 @@ import {
     AlertTriangle,
     CheckCircle
 } from 'lucide-react';
-import Header from '../components/Header'; // Assuming your Header component is in this path
+import Header from '../components/Header'; 
 
 const backendUrl =  import.meta.env.VITE_BASE_URL;
 
@@ -31,7 +31,6 @@ const AdminProfilePage = () => {
         
         const fetchAdminData = async () => {
             try {
-                // Assuming the admin's ID is stored in localStorage from login
                 const adminId = sessionStorage.getItem("userIdentifier");
                 if (!adminId) {
                     throw new Error("Admin ID not found. Please log in again.");

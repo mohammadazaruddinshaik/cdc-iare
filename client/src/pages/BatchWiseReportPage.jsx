@@ -54,7 +54,8 @@ const BatchWiseReport = () => {
         { value: "attendance_skillbridge-2", label: "SKILLBRIDGE BATCH-2" },
         { value: "attendance_skillbridge-3", label: "SKILLBRIDGE BATCH-3" },
         { value: "attendance_skillbridge-4", label: "SKILLBRIDGE BATCH-4" },
-        { value: "attendance_skillbridge-5", label: "SKILLBRIDGE BATCH-5" }
+        { value: "attendance_skillbridge-5", label: "SKILLBRIDGE BATCH-5" },
+        { value: "attendance_skillbridge-6", label: "SKILLBRIDGE BATCH-6" }
     ];
 
     const showToast = (message, type = 'info') => {
@@ -105,7 +106,7 @@ const BatchWiseReport = () => {
 
             const shortBatch = getShortBatchName(selectedBatch);
             const formattedDate = formatDateForFilename(date);
-            const filename = `${shortBatch}-${formattedDate}-AttendanceReport.${fileExtension}`;
+            const filename = `IIISEM-${formattedDate}-AttendanceReport.${fileExtension}`;
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);

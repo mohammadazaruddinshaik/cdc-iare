@@ -16,12 +16,16 @@ const SectionHeader = ({ title, animate, delay }) => (
 );
 
 // --- Data for forms ---
-const courses = ["CP", "JFS", "DBMS", "AWS"];
+const courses = ["CP", "JFS", "DBS"];
 const batches = [
     { value: "attendance_skillup-1", label: "Skillup-1" }, { value: "attendance_skillup-2", label: "Skillup-2" }, { value: "attendance_skillup-3", label: "Skillup-3" },
     { value: "attendance_skillnext-1", label: "Skillnext-1" }, { value: "attendance_skillnext-2", label: "Skillnext-2" }, { value: "attendance_skillnext-3", label: "Skillnext-3" },
-    { value: "attendance_skillbridge-1", label: "Skillbridge-1" }, { value: "attendance_skillbridge-2", label: "Skillbridge-2" }, { value: "attendance_skillbridge-3", label: "Skillbridge-3" }, { value: "attendance_skillbridge-4", label: "Skillbridge-4" }, { value: "attendance_skillbridge-5", label: "Skillbridge-5" }
+    { value: "attendance_skillbridge-1", label: "Skillbridge-1" }, { value: "attendance_skillbridge-2", label: "Skillbridge-2" }, { value: "attendance_skillbridge-3", label: "Skillbridge-3" }, { value: "attendance_skillbridge-4", label: "Skillbridge-4" }, { value: "attendance_skillbridge-5", label: "Skillbridge-5" }, { value: "attendance_skillbridge-6", label: "Skillbridge-6" }
 ];
+
+// const batches = [
+//     { value: "attendance_skillup-1", label: "Skillup-1" },
+//     { value: "attendance_skillnext-1", label: "Skillnext-1" }, { value: "attendance_skillnext-2", label: "Skillnext-2" }, ];
 
 // --- Custom Modern Select Component ---
 const CustomSelect = ({ options, value, onChange, placeholder }) => {

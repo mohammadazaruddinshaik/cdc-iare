@@ -7,8 +7,8 @@ const SectionHeader = ({ title, animate, delay }) => (<div className={`flex item
 
 // --- CONFIG & HELPERS ---
 const API_BASE_URL = import.meta.env.VITE_BASE_URL;
-const subjects = ["CP", "AWS", "DBMS", "JFS"];
-const availableBatches = { "SKILLUP": ["1", "2", "3"], "SKILLNEXT": ["1", "2", "3"], "SKILLBRIDGE": ["1", "2", "3", "4", "5"] };
+const subjects = ["CP", "JFS", "DBS"];
+const availableBatches = { "SKILLUP": ["1", "2", "3"], "SKILLNEXT": ["1", "2", "3"], "SKILLBRIDGE": ["1", "2", "3", "4", "5","6"] };
 
 // --- UI COMPONENTS ---
 const InfoTag = ({ icon, text, color }) => (<div className={`flex items-center gap-1.5 text-xs font-medium py-1 px-2.5 rounded-full border ${color}`}>{icon}<span>{text}</span></div>);
@@ -27,6 +27,26 @@ const Toast = ({ message, type, onDismiss }) => {
     const colors = { success: 'bg-green-600', error: 'bg-red-600' };
     useEffect(() => { const timer = setTimeout(onDismiss, 4000); return () => clearTimeout(timer); }, [onDismiss]);
     return (<div className={`fixed bottom-5 right-5 flex items-center gap-4 p-4 rounded-xl text-white shadow-2xl z-[150] animate-fade-in-up ${colors[type]}`}> {icons[type]}<p className="font-semibold">{message}</p><button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/20" aria-label="Dismiss"><XCircle size={18} /></button></div>);
+};
+const PasswordResetSuccessModal = ({ isOpen, onClose, data }) => {
+    if (!isOpen || !data) return null;
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-center animate-fade-in">
+                <Check className="h-16 w-16 text-green-500 bg-green-100 rounded-full p-3 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-slate-900">Password Reset Successful</h3>
+                <p className="text-sm text-slate-600 mt-2">{data.message}</p>
+                <div className="mt-4 bg-slate-100 border border-slate-200 rounded-lg p-3">
+                    <p className="text-xs text-slate-500">New Default Password:</p>
+                    <p className="text-lg font-mono font-bold text-slate-800 tracking-wider select-all">{data.defaultPassword}</p>
+                </div>
+                <p className="text-xs text-red-600 mt-2">Please copy this password and share it with the faculty member securely. They will be required to change it upon their next login.</p>
+                <button onClick={onClose} className="mt-6 w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                    Acknowledge & Close
+                </button>
+            </div>
+        </div>
+    );
 };
 const StatusIndicator = ({ isLoading, error, hasNoResults }) => {
     if (isLoading) return (<div className="text-center py-16 flex flex-col items-center"><Loader2 className="h-12 w-12 text-sky-600 animate-spin" /><h3 className="mt-4 text-lg font-semibold text-gray-800">Fetching Faculty Records...</h3><p className="mt-1 text-sm text-gray-500">Just a moment, we're gathering the data.</p></div>);
@@ -47,7 +67,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </div>
     );
 };
-// NEW: Batch Selector with responsive width to prevent overflow
 const BatchSelector = ({ selectedBatches, onBatchChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -174,6 +193,7 @@ const ViewAllFaculty = ({ animate, facultyList, isLoading, error, onAction, desi
                                 </div>
                                 <div className="bg-gray-50/70 p-3 mt-auto flex justify-end gap-2 rounded-b-xl">
                                     <button onClick={() => onAction('find', faculty)} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors"><Edit size={14} /> Modify</button>
+                                    <button onClick={() => onAction('resetPassword', faculty)} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-amber-600 bg-amber-100 hover:bg-amber-200 transition-colors"><RefreshCcw size={14} /> Reset Pass</button>
                                     <button onClick={() => onAction('delete', faculty)} className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg text-red-600 bg-red-100 hover:bg-red-200 transition-colors"><Trash2 size={14} /> Delete</button>
                                 </div>
                             </div>
@@ -264,7 +284,6 @@ const ModifyFacultyPanel = ({ animate, preloadedFaculty, allFaculty, onCancel, o
         setIsSubmitting(false);
     };
 
-    // NEW: Function to reset the panel and search for another faculty
     const handleReset = () => {
         setFaculty(null);
         setEditData(null);
@@ -287,7 +306,6 @@ const ModifyFacultyPanel = ({ animate, preloadedFaculty, allFaculty, onCancel, o
                     <div><label className="text-sm font-semibold text-gray-700">Assign Subjects</label><div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">{subjects.map(subject => (<label key={subject} className="flex items-center text-sm text-gray-700 font-medium"><input type="checkbox" checked={editData.subjects_assigned?.includes(subject)} onChange={() => setEditData(prev => ({ ...prev, subjects_assigned: prev.subjects_assigned?.includes(subject) ? prev.subjects_assigned.filter(s => s !== subject) : [...(prev.subjects_assigned || []), subject] }))} className="h-4 w-4 text-blue-600 rounded" /><span className="ml-2">{subject}</span></label>))}</div></div>
                     <div><BatchSelector selectedBatches={editData.batches_assigned || []} onBatchChange={(batches) => setEditData({...editData, batches_assigned: batches})} /></div>
                     <div className="flex justify-end gap-4 mt-2 pt-6 border-t border-gray-200">
-                        {/* NEW: "Find Another" button to reset the search */}
                         <button type="button" onClick={handleReset} className="mr-auto flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg text-sm transition-colors">
                             <Search size={16} />
                             Find Another
@@ -307,6 +325,8 @@ const ManageFacultyPage = () => {
     const [activeTab, setActiveTab] = useState('view');
     const [preloadedFaculty, setPreloadedFaculty] = useState(null);
     const [facultyToDelete, setFacultyToDelete] = useState(null);
+    const [facultyToResetPassword, setFacultyToResetPassword] = useState(null);
+    const [resetSuccessData, setResetSuccessData] = useState(null);
     const [toast, setToast] = useState({ message: '', type: '' });
     const [facultyList, setFacultyList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -344,6 +364,8 @@ const ManageFacultyPage = () => {
     const handleAction = (action, data = null) => {
         if (action === 'delete') {
             setFacultyToDelete(data);
+        } else if (action === 'resetPassword') {
+            setFacultyToResetPassword(data);
         } else {
             setPreloadedFaculty(data);
             setActiveTab(action);
@@ -380,6 +402,26 @@ const ManageFacultyPage = () => {
             setFacultyToDelete(null);
         }
     };
+    const handleResetPasswordConfirm = async () => {
+        if (!facultyToResetPassword) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/Admin/ResetPassword`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: 'admin', username: facultyToResetPassword.facultyid }),
+                credentials: "include"
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to reset password.');
+            }
+            setResetSuccessData({ message: data.message, defaultPassword: data.defaultPassword });
+        } catch (err) {
+            showToast('error', err.message);
+        } finally {
+            setFacultyToResetPassword(null);
+        }
+    };
     
     const tabs = [{ id: 'view', label: 'Directory', icon: <Users size={16} /> }, { id: 'add', label: 'Onboard Faculty', icon: <UserCheck size={16} /> }, { id: 'find', label: 'Find & Modify', icon: <Search size={16} /> }];
 
@@ -400,6 +442,8 @@ const ManageFacultyPage = () => {
                 <div className={activeTab === 'find' ? 'block' : 'hidden'}><ModifyFacultyPanel animate={animate} preloadedFaculty={preloadedFaculty} allFaculty={facultyList} onCancel={() => setActiveTab('view')} onFacultyUpdated={handleUpdateFaculty} /></div>
             </main>
             <ConfirmationModal isOpen={!!facultyToDelete} onClose={() => setFacultyToDelete(null)} onConfirm={handleDeleteConfirm} title="Confirm Deletion" message={`Are you sure you want to permanently delete ${facultyToDelete?.name}? This action cannot be undone.`} confirmText="Yes, Delete" theme="danger" />
+            <ConfirmationModal isOpen={!!facultyToResetPassword} onClose={() => setFacultyToResetPassword(null)} onConfirm={handleResetPasswordConfirm} title="Confirm Password Reset" message={`Are you sure you want to reset the password for ${facultyToResetPassword?.name}? A new default password will be generated.`} confirmText="Yes, Reset" theme="warning" />
+            <PasswordResetSuccessModal isOpen={!!resetSuccessData} onClose={() => setResetSuccessData(null)} data={resetSuccessData} />
         </div>
     );
 };

@@ -31,6 +31,7 @@ import ViewAttendance from './pages/ViewAttendancePage';
 import ViewAttendanceReports from './pages/ViewAttendanceReports';
 import FacultyActionPage from './pages/FacultyActionPage';
 import FacultyMarkAttendancePage from './pages/FacultyMarkAttendancePage';
+import MultiBatchAttendancePage from './pages/MultiBatchAttendancePage';
 
 // Admin-specific Pages
 import AdminTimetablePage from './pages/AdminTimeTablePage';
@@ -70,6 +71,7 @@ function App() {
           <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
           <Route path="/faculty/action" element={<FacultyActionPage />} />
           <Route path="/post-attendance" element={<PostAttendance />} />
+          <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
           <Route path="/faculty/mark-attendance" element={<FacultyMarkAttendancePage />} />
           <Route path="/faculty/students" element={<ViewAttendance />} />
           <Route path="/faculty/reports" element={<ViewAttendanceReports />} />

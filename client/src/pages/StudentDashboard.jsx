@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, BarChart3, CalendarOff, Code, BookOpen } from 'lucide-react';
+import { Trophy, BarChart4, CalendarOff, Code, BookOpen } from 'lucide-react';
 import BarChart from '../components/BarChart';
 import Header from '../components/Header';
 import { getCourseIcon } from '../utils/helpers';
-
-// -----------------------------------------------------------------------------
-// Helper Functions (Defined first to prevent reference errors)
-// -----------------------------------------------------------------------------
 
 const getRankBadge = (rank) => {
     switch (rank) {
@@ -54,11 +50,6 @@ const AnimatedNumber = ({ value, duration = 1500 }) => {
 
     return <span>{displayValue}</span>;
 };
-
-
-// -----------------------------------------------------------------------------
-// Reusable Components
-// -----------------------------------------------------------------------------
 
 const DonutChart = ({ percentage, displayPercentage, presentColor, absentColor }) => {
     const size = 120;
@@ -144,13 +135,13 @@ const TopCoderCard = ({ coder, index, animate }) => (
             </h3>
             <div className="flex flex-wrap gap-1 text-xs text-gray-700 mb-2">
                 <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md">
-                    <span className="font-semibold text-green-700">GFG:</span> {animate ? <AnimatedNumber value={coder.scores.gfg} /> : 0}
+                    <span className="font-semibold text-green-700">GeekForGeeks:</span> {animate ? <AnimatedNumber value={coder.scores.gfg} /> : 0}
                 </div>
                 <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md">
-                    <span className="font-semibold text-yellow-700">LC:</span> {animate ? <AnimatedNumber value={coder.scores.leetcode} /> : 0}
+                    <span className="font-semibold text-yellow-700">LeetCode:</span> {animate ? <AnimatedNumber value={coder.scores.leetcode} /> : 0}
                 </div>
                 <div className="bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-md">
-                    <span className="font-semibold text-blue-700">CC:</span> {animate ? <AnimatedNumber value={coder.scores.codechef} /> : 0}
+                    <span className="font-semibold text-blue-700">CodeChef:</span> {animate ? <AnimatedNumber value={coder.scores.codechef} /> : 0}
                 </div>
             </div>
         </div>
@@ -164,58 +155,55 @@ const TopCoderCard = ({ coder, index, animate }) => (
 );
 
 
-// -----------------------------------------------------------------------------
-// Main Dashboard Component
-// -----------------------------------------------------------------------------
-
 const backendUrl = import.meta.env.VITE_BASE_URL;
+
 const batchWiseTimetable = {
     "SKILLUP BATCH-1": {
-      Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ],
-      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5102" } ],
-      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "DBMS", room: "5102" } ],
-      Thursday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5102" } ],
-      Friday: [ { time: "1:15PM - 3:50PM", subject: "AWS", room: "5102" } ],
-      Saturday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5102" } ]
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5102" } ],
+      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ],
+      Thursday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5102" } ],
+      Friday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5102" } ],
+      Saturday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5102" } ]
     },
     "SKILLUP BATCH-2": {
-      Monday: [ { time: "9:30AM - 12:15PM", subject: "AWS", room: "5106" } ],
-      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5106" } ],
-      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5106" } ],
-      Thursday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5106" } ],
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "DBS", room: "5106" } ],
+      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5106" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5106" } ],
+      Thursday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5106" } ],
       Friday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5106" } ],
       Saturday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5106" } ]
     },
     "SKILLUP BATCH-3": {
-      Monday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104" } ],
-      Tuesday: [ { time: "1:15PM - 3:50PM", subject: "AWS", room: "5104" } ],
-      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5104" } ],
-      Thursday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ],
-      Friday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
-      Saturday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ]
+      Monday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5104" } ],
+      Tuesday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5104" } ],
+      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5104" } ],
+      Thursday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
+      Friday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ],
+      Saturday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ]
     },
     "SKILLNEXT BATCH-1": {
-      Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5204" } ],
-      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "DBMS", room: "5204" } ],
-      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5204" } ],
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5204" } ],
+      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "DBS", room: "5204" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5204" } ],
       Thursday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5204" } ],
       Friday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5204" } ],
       Saturday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5204" } ]
     },
-    "SKILLNEXT BATCH-2": {
-      Monday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ],
+     "SKILLNEXT BATCH-2": {
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
       Tuesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
-      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5104" } ],
-      Thursday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5104" } ],
-      Friday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5104" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5104" } ],
+      Thursday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5104" } ],
+      Friday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5104" } ],
       Saturday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5104" } ]
     },
     "SKILLNEXT BATCH-3": {
       Monday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5102" } ],
       Tuesday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5102" } ],
-      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5102" } ],
-      Thursday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ],
-      Friday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5102" } ],
+      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5102" } ],
+      Thursday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5102" } ],
+      Friday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ],
       Saturday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5102" } ]
     },
     "SKILLBRIDGE BATCH-1": {
@@ -223,42 +211,51 @@ const batchWiseTimetable = {
       Tuesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5101" } ],
       Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5101" } ],
       Thursday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5101" } ],
-      Friday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5101" } ],
-      Saturday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5101" } ]
+      Friday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5101" } ],
+      Saturday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5101" } ]
     },
     "SKILLBRIDGE BATCH-2": {
-      Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5005" } ],
-      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "DBMS", room: "5005" } ],
-      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5005" } ],
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5005" } ],
+      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5005" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5005" } ],
       Thursday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5005" } ],
-      Friday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5005" } ],
-      Saturday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5005" } ]
+      Friday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5005" } ],
+      Saturday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5005" } ]
     },
     "SKILLBRIDGE BATCH-3": {
-      Monday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5201" } ],
-      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5201" } ],
-      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5201" } ],
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5201" } ],
+      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5201" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "DBS", room: "5201" } ],
       Thursday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5201" } ],
-      Friday: [ { time: "1:15PM - 3:50PM", subject: "DBMS", room: "5201" } ],
+      Friday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5201" } ],
       Saturday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5201" } ]
     },
     "SKILLBRIDGE BATCH-4": {
-      Monday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5101" } ],
+      Monday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5101" } ],
       Tuesday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5101" } ],
-      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5101" } ],
-      Thursday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5101" } ],
-      Friday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5101" } ],
-      Saturday: [ { time: "9:30AM - 12:15PM", subject: "DBMS", room: "5101" } ]
+      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5101" } ],
+      Thursday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5101" } ],
+      Friday: [ { time: "9:30AM - 12:15PM", subject: "DBS", room: "5101" } ],
+      Saturday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5101" } ]
     },
     "SKILLBRIDGE BATCH-5": {
-      Monday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5106" } ],
-      Tuesday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5106" } ],
-      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5106" } ],
+      Monday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5106" } ],
+      Tuesday: [ { time: "1:15PM - 3:50PM", subject: "DBS", room: "5106" } ],
+      Wednesday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5106" } ],
       Thursday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5106" } ],
-      Friday: [ { time: "9:30AM - 12:15PM", subject: "DBMS", room: "5106" } ],
-      Saturday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5106" } ]
+      Friday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5106" } ],
+      Saturday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5106" } ]
+    },
+    "SKILLBRIDGE BATCH-6": {
+      Monday: [ { time: "9:30AM - 12:15PM", subject: "CP", room: "5301" } ],
+      Tuesday: [ { time: "9:30AM - 12:15PM", subject: "JFS", room: "5301" } ],
+      Wednesday: [ { time: "9:30AM - 12:15PM", subject: "DBS", room: "5301" } ],
+      Thursday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5301" } ],
+      Friday: [ { time: "1:15PM - 3:50PM", subject: "CP", room: "5301" } ],
+      Saturday: [ { time: "1:15PM - 3:50PM", subject: "JFS", room: "5301" } ]
     }
 };
+
 const maxCodingScores = {
     GeeksforGeeks: 3000,
     LeetCode: 8000,
@@ -278,8 +275,7 @@ const StudentDashboardPage = () => {
     const courseMapping = {
         'CP': { title: "Competitive Programming", bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", progressColor: "bg-gradient-to-r from-blue-600 to-purple-600" },
         'JFS': { title: "Java Full Stack", bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-red-50", progressColor: "bg-gradient-to-r from-orange-600 to-red-600" },
-        'AWS': { title: "Amazon Web Services", bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", progressColor: "bg-gradient-to-r from-purple-600 to-indigo-600" },
-        'DBMS': { title: "Database Management System", bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", progressColor: "bg-gradient-to-r from-green-600 to-teal-600" }
+        'DBS': { title: "Database Solutions", bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", progressColor: "bg-gradient-to-r from-green-600 to-teal-600" },
     };
 
     useEffect(() => {
@@ -492,8 +488,7 @@ const StudentDashboardPage = () => {
                             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-blue-500/10 to-transparent group-hover:translate-x-full transition-transform duration-1000"></div>
                             <div className="flex items-center justify-between mb-6 sm:mb-8 relative z-10">
                                 <h2 className="text-xl sm:text-2xl font-bold text-[#071225] flex items-center">
-                                    <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 mr-3 text-blue-600" />
-                                    Coding Performance
+                                    Your Coding Performance
                                 </h2>
                             </div>
                             <div className="relative z-10">
@@ -508,12 +503,8 @@ const StudentDashboardPage = () => {
                             <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-10 relative z-10 gap-4">
                                 <h2 className="text-2xl sm:text-3xl font-bold text-[#071225] flex items-center">
-                                    <Trophy className="w-7 h-7 sm:w-8 sm:h-8 mr-3 text-yellow-600" />
                                     Top Coders
                                 </h2>
-                                <div className="text-sm text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-2 rounded-full shadow-lg font-semibold flex-shrink-0">
-                                    🏆 Leaderboard
-                                </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                                 {getTopCoders.length > 0 ? getTopCoders.map((coder, index) => (

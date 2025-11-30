@@ -5,8 +5,6 @@ import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import Header from '../components/Header'; // Adjust path if necessary
 
-// --- Reusable Helper Components ---
-
 const SpinnerOverlay = ({ isLoading }) => {
     if (!isLoading) return null;
     return (

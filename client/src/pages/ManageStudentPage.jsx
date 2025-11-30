@@ -11,8 +11,8 @@ import Header from '../components/Header'; // Assuming Header is in a components
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 const branches = ["CSE", "CSE (AI&ML)", "CSE (CS)","CSE (DS)","IT", "ECE", "EEE", "MECH", "CIVIL"];
-const batches = ["SKILLUP BATCH-1", "SKILLUP BATCH-2", "SKILLUP BATCH-3", "SKILLNEXT BATCH-1", "SKILLNEXT BATCH-2","SKILLNEXT BATCH-3", "SKILLBRIDGE BATCH-1","SKILLBRIDGE BATCH-2","SKILLBRIDGE BATCH-3","SKILLBRIDGE BATCH-4","SKILLBRIDGE BATCH-5"];
-
+const batches = ["SKILLUP BATCH-1", "SKILLUP BATCH-2", "SKILLUP BATCH-3", "SKILLNEXT BATCH-1", "SKILLNEXT BATCH-2","SKILLNEXT BATCH-3", "SKILLBRIDGE BATCH-1","SKILLBRIDGE BATCH-2","SKILLBRIDGE BATCH-3","SKILLBRIDGE BATCH-4","SKILLBRIDGE BATCH-5","SKILLBRIDGE BATCH-6"];
+// const batches = ["SKILLUP BATCH-1", "SKILLNEXT BATCH-1", "SKILLNEXT BATCH-2"];
 // --- HELPER & UI COMPONENTS ---
 
 const SectionHeader = ({ title, animate, delay }) => (
@@ -259,7 +259,9 @@ const ViewAllStudents = ({ animate, students, isLoading, error, onAction, onDele
 // --- 2. ADD STUDENT ---
 const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
     const [addMode, setAddMode] = useState('solo');
-    const initialStudentState = { rollno: "", name: "", branch: "CSE", batch: "SKILLUP BATCH-2", handles: { leetcode: "", gfg: "", codechef: "", hackerank: "" } };
+    
+    const initialStudentState = { rollno: "", name: "", branch: "", batch: "", handles: { leetcode: "", gfg: "", codechef: "", hackerank: "" } };
+    
     const [studentData, setStudentData] = useState(initialStudentState);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [csvFile, setCsvFile] = useState(null);
@@ -290,7 +292,11 @@ const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
             }
             await response.json();
             onStudentAdded(true, 'Student added successfully!');
-            onCancel();
+            
+            // UPDATED: Reset the form state to empty
+            setStudentData(initialStudentState); 
+            
+            onCancel(); // Switch back to the 'view' tab
         } catch (error) {
             onStudentAdded(false, 'Failed to add student. Please try again.');
         } finally {
@@ -314,8 +320,24 @@ const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div><label className="text-sm font-semibold text-gray-700">Roll Number</label><input type="text" name="rollno" value={studentData.rollno} onChange={handleInputChange} required className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm" placeholder="e.g., 20BD1A0501" /></div>
                             <div><label className="text-sm font-semibold text-gray-700">Full Name</label><input type="text" name="name" value={studentData.name} onChange={handleInputChange} required className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm" placeholder="e.g., John Doe" /></div>
-                            <div><label className="text-sm font-semibold text-gray-700">Branch</label><select name="branch" value={studentData.branch} onChange={handleInputChange} className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm">{branches.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
-                            <div><label className="text-sm font-semibold text-gray-700">Batch</label><select name="batch" value={studentData.batch} onChange={handleInputChange} className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm">{batches.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
+                            
+                            {/* UPDATED: Branch select with required and default option */}
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700">Branch</label>
+                                <select name="branch" value={studentData.branch} onChange={handleInputChange} required className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm">
+                                    <option value="" disabled>Select a Branch...</option>
+                                    {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                                </select>
+                            </div>
+                            
+                            {/* UPDATED: Batch select with required and default option */}
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700">Batch</label>
+                                <select name="batch" value={studentData.batch} onChange={handleInputChange} required className="mt-1 w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm">
+                                    <option value="" disabled>Select a Batch...</option>
+                                    {batches.map(b => <option key={b} value={b}>{b}</option>)}
+                                </select>
+                            </div>
                         </div>
                         <fieldset className="p-4 border rounded-lg bg-white/50 border-gray-200"><legend className="text-sm font-bold text-gray-700 px-2 flex items-center gap-2"><Code2 size={16} /> Coding Handles</legend><div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                             <div><label className="text-xs font-semibold text-gray-600">LeetCode</label><input type="text" name="leetcode" value={studentData.handles.leetcode} onChange={handleHandleChange} className="mt-1 w-full p-2 bg-white border border-gray-300 rounded-lg text-sm" placeholder="username" /></div>
@@ -569,7 +591,7 @@ const ManageStudentPage = () => {
             const response = await fetch(`${API_BASE_URL}/api/Admin/ResetPassword`, {
                 method: 'PATCH', 
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: username, role: 'student' }), 
+                body: JSON.stringify({ username: username, role: 'admin' }), 
                 credentials: "include"
             });
 

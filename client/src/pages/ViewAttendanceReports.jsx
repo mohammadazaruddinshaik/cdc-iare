@@ -18,6 +18,7 @@ const batchOptions = [
     { value: "attendance_skillbridge-3", label: "SKILLBRIDGE BATCH-3" },
     { value: "attendance_skillbridge-4", label: "SKILLBRIDGE BATCH-4" },
     { value: "attendance_skillbridge-5", label: "SKILLBRIDGE BATCH-5" },
+    { value: "attendance_skillbridge-6", label: "SKILLBRIDGE BATCH-6" },
 ];
 
 const getShortBatchName = (fullBatchName) => {

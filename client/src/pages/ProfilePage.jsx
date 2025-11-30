@@ -1,11 +1,3 @@
-/**
- * @file ProfilePage.jsx
- * @author Shaik Mohammad Azaruddin
- * @date 07 Sep 2025
- * @description A fully responsive student profile page with conditional loading and robust error handling. QR codes are non-draggable and right-click is disabled.
- * @version 3.5.0 - Updated "Change Password" button color.
- */
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -411,7 +403,7 @@ const ProfilePage = () => {
                                     <div>
                                         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2">{userData.name}</h1>
                                         <div className="flex items-center justify-center lg:justify-start gap-2 mb-4">
-                                            <BadgeCheck className="w-5 h-5 text-blue-300" />
+                                            <Users className="w-5 h-5 text-blue-300" />
                                             <p className="text-blue-300 font-mono text-lg sm:text-xl">{userData.rollNo}</p>
                                         </div>
                                     </div>
@@ -443,7 +435,7 @@ const ProfilePage = () => {
                                 <div className="max-w-xs">
                                     <h4 className="font-semibold text-lg">Digital ID Card</h4>
                                     <p className="text-xs text-gray-400 mt-1">
-                                        Please note: This QR code is dynamic and refreshes daily for enhanced security.
+                                        👉 Note: This QR code updates in real time for maximum security.
                                     </p>
                                 </div>
                                 <button onClick={() => setIsFullScreenQrOpen(true)} className="mt-2 flex items-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm justify-center shadow-lg shadow-blue-600/30">
@@ -461,15 +453,14 @@ const ProfilePage = () => {
                     <section>
                         <div className="mb-8">
                             <h2 className="text-3xl font-bold text-gray-800 mb-2">Personal Information</h2>
-                            <p className="text-gray-600">Your academic and contact details as registered with the institution.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ProfileDetailCard icon={<User />} label="Full Name" value={userData.name} description="Your official registered name" variant="primary" />
-                            <ProfileDetailCard icon={<BadgeCheck />} label="Roll Number" value={userData.rollNo} description="Your unique student identifier" />
-                            <ProfileDetailCard icon={<Mail />} label="Email Address" value={userData.email} description="Your institutional email for communications" />
-                            <ProfileDetailCard icon={<GraduationCap />} label="Branch" value={userData.branch} description="Your field of study" variant="secondary" />
-                            <ProfileDetailCard icon={<Users />} label="Batch" value={userData.batch} description="Your academic year group" />
-                            <ProfileDetailCard icon={<CheckCircle />} label="Academic Status" value="Active" description="Current enrollment status" variant="primary" />
+                            <ProfileDetailCard icon={<User />} label="Full Name" value={userData.name}  variant="primary" />
+                            <ProfileDetailCard icon={<Users />} label="Roll Number" value={userData.rollNo} />
+                            <ProfileDetailCard icon={<Mail />} label="Email Address" value={userData.email}  />
+                            <ProfileDetailCard icon={<GraduationCap />} label="Branch" value={userData.branch}  variant="secondary" />
+                            <ProfileDetailCard icon={<Users />} label="Batch" value={userData.batch} />
+                            <ProfileDetailCard icon={<CheckCircle />} label="Academic Status" value="Active"  variant="primary" />
                         </div>
                     </section>
                 </div>
