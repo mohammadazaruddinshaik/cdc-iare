@@ -106,7 +106,7 @@ const BatchWiseReport = () => {
 
             const shortBatch = getShortBatchName(selectedBatch);
             const formattedDate = formatDateForFilename(date);
-            const filename = `IIISEM-${formattedDate}-AttendanceReport.${fileExtension}`;
+            const filename = `CDC-VISEM-${formattedDate}-AttendanceReport.${fileExtension}`;
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);

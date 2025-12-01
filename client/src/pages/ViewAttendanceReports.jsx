@@ -28,7 +28,7 @@ const getShortBatchName = (fullBatchName) => {
     if (type === "SKILLUP") code = "SU";
     else if (type === "SKILLNEXT") code = "SN";
     else if (type === "SKILLBRIDGE") code = "SB";
-    return `V-${code}${number}`;
+    return `CDC-VISEM-${code}${number}`;
 };
 
 // --- Main Component ---

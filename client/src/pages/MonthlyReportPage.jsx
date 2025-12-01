@@ -131,7 +131,7 @@ const MonthlyReport = () => {
                 throw new Error("Invalid file format received. The server may have sent an error.");
             }
             const blobUrl = URL.createObjectURL(blob);
-            const filename = `MonthlyReport_${format(fromDate, 'dd-MM-yyyy')}_to_${format(toDate, 'dd-MM-yyyy')}.xlsx`;
+            const filename = `CDC-MonthlyReport_${format(fromDate, 'dd-MM-yyyy')}_to_${format(toDate, 'dd-MM-yyyy')}.xlsx`;
             const a = document.createElement("a");
             a.href = blobUrl;
             a.download = filename;

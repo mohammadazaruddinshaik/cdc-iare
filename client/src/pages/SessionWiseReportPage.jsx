@@ -182,7 +182,7 @@ const SessionReport = () => {
             }
             
             const formattedDate = formatDateForFilename(date);
-            const filename = `IIISEM_${session}-${formattedDate}-AttendanceReport.${fileExtension}`;
+            const filename = `CDC-VISEM_${session}-${formattedDate}-AttendanceReport.${fileExtension}`;
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
