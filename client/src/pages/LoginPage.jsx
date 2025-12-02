@@ -30,15 +30,12 @@ const teamDevelopers = [
 const DeveloperCard = ({ dev, isMentor = false }) => (
     <motion.div 
         whileHover={{ y: -5 }}
-        // MODIFIED: Increased max-w to 350px, added h-full for equal height
         className={`relative bg-white rounded-[2rem] p-1 z-10 overflow-hidden group shadow-lg hover:shadow-2xl transition-all duration-300 w-full max-w-[350px] mx-auto h-full flex flex-col`}
     >
         <div className={`absolute inset-0 bg-gradient-to-br ${isMentor ? 'from-amber-400 to-orange-500' : 'from-blue-500 to-purple-600'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[2rem]`}></div>
-        {/* MODIFIED: Added flex-1 to make inner container fill height */}
         <div className="bg-white rounded-[1.8rem] p-6 h-full flex flex-col items-center text-center relative z-10 border border-gray-100 flex-1">
             <div className="relative mb-4">
                 <div className={`absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${isMentor ? 'bg-amber-500' : 'bg-blue-600'}`}></div>
-                {/* MODIFIED: Slightly larger image */}
                 <img src={dev.image} alt={dev.name} className="relative w-28 h-28 rounded-full object-cover border-4 border-gray-50 shadow-md group-hover:scale-105 transition-transform duration-300" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1">{dev.name}</h3>
@@ -102,7 +99,6 @@ const CyberMascot = ({ mode }) => {
 };
 
 const MockPhoneScreen = ({ activeField }) => {
-    // MODIFIED: Logic for Dynamic 12-hour IST Time
     const [currentTime, setCurrentTime] = useState('');
 
     useEffect(() => {
@@ -117,15 +113,14 @@ const MockPhoneScreen = ({ activeField }) => {
             setCurrentTime(timeString);
         };
         
-        updateTime(); // Initial call
-        const interval = setInterval(updateTime, 1000); // Update every second
+        updateTime();
+        const interval = setInterval(updateTime, 1000);
         return () => clearInterval(interval);
     }, []);
 
     return (
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-[#0a0a0a] to-black font-sans w-full h-full overflow-hidden">
             <div className="px-5 pt-4 flex justify-between items-center z-50 absolute top-0 left-0 right-0">
-                {/* MODIFIED: Displaying dynamic time */}
                 <span className="text-[9px] text-white font-semibold tracking-wider">{currentTime}</span>
                 <div className="flex gap-1 items-center"><Signal size={9} className="text-white"/><Wifi size={9} className="text-white"/><Battery size={12} className="text-white"/></div>
             </div>
@@ -155,7 +150,7 @@ const MockPhoneScreen = ({ activeField }) => {
                     ) : (
                         <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="flex-1 flex flex-col p-4 pt-12 h-full justify-between">
                             <div className="flex justify-between items-center">
-                                <div><h2 className="text-white text-lg font-bold tracking-tight">Hi, Student</h2><p className="text-gray-400 text-[10px] font-medium mt-0.5">CSE (AI & ML) • Sem 6</p></div>
+                                <div><h2 className="text-white text-lg font-bold tracking-tight">Hi, User</h2><p className="text-gray-400 text-[10px] font-medium mt-0.5">CSE (AI & ML) • Sem 6</p></div>
                                 <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-md shadow-lg"><User size={14} className="text-white"/></div>
                             </div>
                             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl p-3 flex items-center justify-between shadow-xl shadow-blue-900/30 cursor-pointer hover:scale-[1.02] transition-transform mt-2">
@@ -262,7 +257,7 @@ const LoginPage = () => {
         <div 
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="h-screen overflow-y-auto bg-[#0B0F19] font-inter text-gray-800 selection:bg-blue-200"
+            className="h-screen overflow-y-auto bg-[#F8FAFC] lg:bg-[#0B0F19] font-inter text-gray-800 selection:bg-blue-200"
         >
             <style>{`html { scroll-behavior: smooth; }`}</style>
             
@@ -271,7 +266,7 @@ const LoginPage = () => {
             {/* SECTION 1: FULL SCREEN LOGIN & HERO */}
             <div className="flex flex-col lg:flex-row min-h-screen w-full relative">
                 
-                {/* LEFT SIDE: 60% Width */}
+                {/* LEFT SIDE: 60% Width - STRICTLY HIDDEN ON MOBILE */}
                 <div className="hidden lg:flex lg:w-[60%] relative flex-col justify-center items-center text-white p-6 bg-[#0B0F19]">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-[#0B0F19] to-[#0B0F19] z-0"></div>
                     <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]"></div>
@@ -285,29 +280,60 @@ const LoginPage = () => {
 Track every moment. Transform every outcome — with seamless QR attendance, live analytics, and smart campus management.</p>                        </div>
 
                         <div className="relative w-full max-w-[260px] h-[50vh] max-h-[580px] min-h-[380px]" style={{ perspective: '1200px' }}>
+                            {/* MODIFIED: Minimal Tilt Animation */}
                             <motion.div 
-                                initial={{ y: 100, opacity: 0, rotateX: -10 }} 
-                                animate={{ y: [0, -10, 0], opacity: 1, rotateX: 5, rotateY: 12 }}
-                                transition={{ opacity: { duration: 0.8 }, rotateX: { duration: 0.8 }, y: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 } }}
-                                className="w-full h-full bg-[#121212] rounded-[2.5rem] p-2 shadow-[30px_20px_60px_-15px_rgba(0,0,0,0.7)] border-[6px] border-[#1f1f1f] ring-1 ring-white/20 relative"
+                                initial={{ y: 200, opacity: 0, rotateY: -90, scale: 0.8 }} 
+                                animate={{ 
+                                    y: 0, 
+                                    opacity: 1, 
+                                    scale: 1,
+                                    rotateX: 5,   // Minimal vertical tilt
+                                    rotateY: 12,  // Tilted gently towards the login form (right)
+                                }}
+                                transition={{ 
+                                    duration: 1.5,
+                                    ease: "easeOut",
+                                    delay: 0.2
+                                }}
+                                whileHover={{ 
+                                    scale: 1.02, 
+                                    rotateY: 10,
+                                    transition: { duration: 0.4 } 
+                                }}
+                                className="w-full h-full bg-[#121212] rounded-[2.5rem] p-2 shadow-[30px_20px_60px_-15px_rgba(0,0,0,0.7)] border-[6px] border-[#1f1f1f] ring-1 ring-white/20 relative cursor-pointer"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
                                 <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-50 pointer-events-none border border-gray-800/50 shadow-md"></div>
                                 <div className="w-full h-full rounded-[2.0rem] overflow-hidden relative bg-black shadow-inner"><MockPhoneScreen activeField={activeField} /></div>
                                 <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-tr from-white/10 via-transparent to-transparent pointer-events-none z-50"></div>
                             </motion.div>
+                            
+                            {/* Static Shadow (Removed pulsing) */}
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 0.4, scale: 1 }}
+                                transition={{ duration: 1.5, delay: 0.2 }}
+                                className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-40 h-10 bg-black/40 blur-2xl rounded-full"
+                            />
                         </div>
                     </div>
                 </div>
 
                 {/* RIGHT SIDE: 40% Width - Form Only */}
-                <div className={`w-full lg:w-[40%] bg-[#F8FAFC] relative z-20 shadow-2xl flex flex-col justify-center transition-all duration-500 ease-in-out ${isScrolled ? 'lg:rounded-none' : 'lg:rounded-l-[4rem]'}`}>
+                <div className={`w-full lg:w-[40%] bg-[#F8FAFC] relative z-20 shadow-2xl flex flex-col justify-center transition-all duration-500 ease-in-out min-h-screen lg:min-h-0 rounded-none ${isScrolled ? 'lg:rounded-none' : 'lg:rounded-l-[4rem]'}`}>
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none"></div>
 
                     <div className="flex flex-col justify-center items-center p-6 lg:p-10 w-full h-full">
                         <div className="w-full max-w-xs sm:max-w-sm relative z-10">
                             <div className="mb-8 flex justify-center lg:justify-start">
-                                <motion.img initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} src={IARELogo} alt="IARE" className="h-12 w-auto drop-shadow-xl" />
+                                {/* MODIFIED: Increased Logo Size significantly */}
+                                <motion.img 
+                                    initial={{ y: -10, opacity: 0 }} 
+                                    animate={{ y: 0, opacity: 1 }} 
+                                    src={IARELogo} 
+                                    alt="IARE" 
+                                    className="h-16 md:h-24 w-auto drop-shadow-xl" 
+                                />
                             </div>
 
                             <div className="mb-6 text-center lg:text-left">
@@ -359,8 +385,7 @@ Track every moment. Transform every outcome — with seamless QR attendance, liv
             </div>
 
             {/* SECTION 2: MEET THE TEAM */}
-            {/* MODIFIED: Increased max-width of container for bigger boxes */}
-            <div id="meet-team" className="w-full bg-[#F8FAFC] py-16 px-6 border-t border-gray-200 flex items-center justify-center min-h-[80vh]">
+            <div id="meet-team" className="w-full bg-[#F8FAFC] py-16 px-6 border-t border-gray-200 flex items-center justify-center min-h-auto lg:min-h-[80vh]">
                 <div className="max-w-7xl w-full"> 
                     <div className="text-center mb-10">
                         <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">MEET THE TEAM</h2>
@@ -370,7 +395,6 @@ Track every moment. Transform every outcome — with seamless QR attendance, liv
                     <div className="flex flex-col gap-10 items-center">
                         <div className="w-full max-w-[350px]"><DeveloperCard dev={teamMentor} isMentor={true} /></div>
 
-                        {/* MODIFIED: Added items-stretch and increased gap */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full place-items-center items-stretch">
                             {teamDevelopers.map((dev, index) => (
                                 <DeveloperCard key={index} dev={dev} />
