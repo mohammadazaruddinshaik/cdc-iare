@@ -379,6 +379,7 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
         
         const method = initialData ? 'PATCH' : 'POST';
 
+        
         try {
             const res = await fetch(endpoint, {
                 method: method, 
