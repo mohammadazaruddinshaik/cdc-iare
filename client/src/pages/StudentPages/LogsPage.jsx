@@ -1,6 +1,6 @@
 /**
  * @file LogsPage.jsx
- * @description Dark-themed Attendance Logs with bold typography and enhanced visuals.
+ * @description Dark-themed Attendance Logs with API Integration and Smart Empty States.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -9,7 +9,7 @@ import {
     Search, Calendar, BookOpen, ChevronLeft, ChevronRight, X,
     CheckCircle2, XCircle, PieChart as PieChartIcon,
     CalendarDays, BarChart2, Filter, Terminal, Cloud, Database, Coffee, Server,
-    Clock, ArrowUpRight, Sparkles, Layers
+    Clock, ArrowUpRight, Sparkles, Layers, FileQuestion, FolderOpen
 } from 'lucide-react';
 import { 
     ResponsiveContainer, PieChart, Pie, Cell, Tooltip 
@@ -17,40 +17,18 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
+import Loader from '../../components/Loader';
 
-// --- DUMMY DATA ---
-const DUMMY_DATA = {
-    attendance: {
-        overallAttendance: {
-            totalDays: 45,
-            presentDays: 38
-        },
-        courseAttendance: {
-            "CP": { "totalDays": 12, "presentDays": 10, "_id": "69558fc48ef190d9e65e045a" },
-            "JFS": { "totalDays": 15, "presentDays": 12, "_id": "695574b7dbc5c7e1a6d10033" },
-            "DBS": { "totalDays": 10, "presentDays": 9, "_id": "695574b7dbc5c7e1a6d10034" },
-            "AWS": { "totalDays": 8, "presentDays": 7, "_id": "695574b7dbc5c7e1a6d10035" }
-        },
-        dailyLogs: [
-            { date: "2025-12-31T14:00:00.000Z", course: "JFS", status: "Present", _id: "1" },
-            { date: "2025-12-31T09:00:00.000Z", course: "CP", status: "Present", _id: "2" },
-            { date: "2025-12-30T10:00:00.000Z", course: "AWS", status: "Absent", _id: "3" },
-            { date: "2025-12-29T11:00:00.000Z", course: "DBS", status: "Present", _id: "4" },
-            { date: "2025-12-28T09:00:00.000Z", course: "CP", status: "Present", _id: "5" },
-            { date: "2025-12-27T14:00:00.000Z", course: "JFS", status: "Present", _id: "6" },
-            { date: "2025-12-26T10:00:00.000Z", course: "AWS", status: "Present", _id: "7" },
-        ]
-    }
-};
+const API_URL = import.meta.env.VITE_BASE_URL;
 
-// --- STYLING CONFIGURATION (FIXED: Passing Components, not Elements) ---
+// --- STYLING CONFIGURATION ---
 const COURSE_STYLES = {
     'CP': { 
         label: 'Competitive Programming', 
         gradient: 'from-violet-500/20 to-purple-500/5',
         text: 'text-violet-300',
         border: 'border-violet-500/30',
-        icon: Terminal // Pass the component function, NOT <Terminal />
+        icon: Terminal 
     },
     'AWS': { 
         label: 'Amazon Web Services', 
@@ -102,7 +80,7 @@ const CalendarModal = ({ logs, onClose }) => {
         const daily = {};
         logs.forEach(log => {
             const key = getDateKey(log.date);
-            if (!daily[key] || daily[key] === 'Present') {
+            if (!daily[key] || log.status === 'Present') {
                 daily[key] = log.status; 
             }
         });
@@ -184,49 +162,57 @@ const StatsModal = ({ data, onClose }) => {
                 </div>
 
                 <div className="flex flex-col md:flex-row items-center p-8 gap-10">
-                    <div className="w-full md:w-1/2 h-64 relative">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={data}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    stroke="none"
-                                >
-                                    {data.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip 
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontWeight: 'bold' }}
-                                    itemStyle={{ color: '#fff' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-4xl font-black text-white">{data.reduce((acc, c) => acc + c.value, 0)}</span>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Classes</span>
-                        </div>
-                    </div>
-
-                    <div className="w-full md:w-1/2 space-y-3">
-                        {data.map((entry, index) => (
-                            <div key={entry.name} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.3)]" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                                    <span className="font-bold text-slate-200 text-sm">{entry.name}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-black text-white">{entry.value}</span>
-                                    <span className="text-[10px] font-bold text-slate-400 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">{entry.percentage}%</span>
+                    {data.length > 0 ? (
+                        <>
+                            <div className="w-full md:w-1/2 h-64 relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={data}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            stroke="none"
+                                        >
+                                            {data.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontWeight: 'bold' }}
+                                            itemStyle={{ color: '#fff' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-4xl font-black text-white">{data.reduce((acc, c) => acc + c.value, 0)}</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Classes</span>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+
+                            <div className="w-full md:w-1/2 space-y-3">
+                                {data.map((entry, index) => (
+                                    <div key={entry.name} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.3)]" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                            <span className="font-bold text-slate-200 text-sm">{entry.name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-black text-white">{entry.value}</span>
+                                            <span className="text-[10px] font-bold text-slate-400 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">{entry.percentage}%</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="w-full text-center py-10">
+                            <p className="text-slate-400 font-bold">No data available for analytics.</p>
+                        </div>
+                    )}
                 </div>
             </motion.div>
         </motion.div>
@@ -237,7 +223,7 @@ const StatsModal = ({ data, onClose }) => {
 // --- MAIN PAGE COMPONENT ---
 // ----------------------------------
 const LogsPage = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const [logs, setLogs] = useState([]);
@@ -245,44 +231,70 @@ const LogsPage = () => {
     const [overallStats, setOverallStats] = useState({ total: 0, present: 0, percentage: 0 });
     const [searchTerm, setSearchTerm] = useState('');
     const [animate, setAnimate] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isChartOpen, setIsChartOpen] = useState(false);
 
     useEffect(() => {
         if (!user) { navigate('/'); return; }
-        
-        // --- USING DUMMY DATA ---
-        const data = DUMMY_DATA; 
 
-        if (data?.attendance) {
-            const processedLogs = (data.attendance.dailyLogs || []).map((log, index) => ({
-                id: log._id || index,
-                date: new Date(log.date),
-                courseName: log.course,
-                status: log.status
-            }));
-            setLogs(processedLogs);
+        const fetchLogsData = async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/student/get-log-data`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
 
-            const groups = processedLogs.filter(l => l.status === 'Present').reduce((acc, l) => {
-                acc[l.courseName] = (acc[l.courseName] || 0) + 1;
-                return acc;
-            }, {});
-            const stats = Object.entries(groups).map(([name, value]) => ({
-                name, value, 
-                percentage: processedLogs.length > 0 ? Math.round((value / processedLogs.length) * 100) : 0
-            })).sort((a,b) => b.value - a.value);
-            setCourseStats(stats);
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
 
-            const { totalDays, presentDays } = data.attendance.overallAttendance || { totalDays: 0, presentDays: 0 };
-            setOverallStats({
-                total: totalDays,
-                present: presentDays,
-                percentage: totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0
-            });
-        }
+                if (!response.ok) throw new Error("Failed to fetch logs");
 
-        setTimeout(() => setAnimate(true), 100);
-    }, [user, navigate]);
+                const data = await response.json();
+                
+                if (data.attendance) {
+                    const daily = (data.attendance.dailyLogs || []).map((log, index) => ({
+                        id: log._id || index,
+                        date: new Date(log.date),
+                        courseName: log.course,
+                        status: log.status.charAt(0).toUpperCase() + log.status.slice(1) 
+                    }));
+                    daily.sort((a, b) => b.date - a.date);
+                    setLogs(daily);
+
+                    const cStats = Object.entries(data.attendance.courseAttendance || {}).map(([key, val]) => {
+                        const total = val.totalDays || 0;
+                        const present = val.presentDays || 0;
+                        return {
+                            name: key,
+                            value: present,
+                            totalClasses: total,
+                            percentage: total > 0 ? Math.round((present / total) * 100) : 0
+                        };
+                    }).filter(item => item.value > 0).sort((a,b) => b.value - a.value);
+                    setCourseStats(cStats);
+
+                    const oStats = data.attendance.overallAttendance || { totalDays: 0, presentDays: 0 };
+                    setOverallStats({
+                        total: oStats.totalDays,
+                        present: oStats.presentDays,
+                        percentage: oStats.totalDays > 0 ? Math.round((oStats.presentDays / oStats.totalDays) * 100) : 0
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error fetching logs:", error);
+            } finally {
+                setIsLoading(false);
+                setTimeout(() => setAnimate(true), 100);
+            }
+        };
+
+        fetchLogsData();
+    }, [user, navigate, logout]);
 
     const groupedLogs = useMemo(() => {
         const filtered = logs.filter(log => 
@@ -296,47 +308,41 @@ const LogsPage = () => {
         }, {});
     }, [logs, searchTerm]);
 
+    if (isLoading) return <Loader />;
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-[#071225] text-white font-sans pb-20 relative overflow-hidden selection:bg-blue-500/30">
+        <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-32 relative overflow-hidden selection:bg-blue-500/30">
             
-            {/* Ambient Background Glows */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] opacity-40 animate-pulse"></div>
-                <div className="absolute bottom-[10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] opacity-30"></div>
-            </div>
-
-            {/* Header */}
-            <div className="px-4 sm:px-6 relative z-20">
+            <div className="relative px-4 sm:px-6 lg:px-8 pt-4 pb-6 z-20">
                 <Header animate={animate} />
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent my-4"></div>
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
             </div>
 
-            <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 relative z-10">
+            {/* Main Content Area */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 relative z-10">
                 
                 {/* --- TITLE & CONTROLS --- */}
                 <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div>
-    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
-        {/* Added 'pb-2' to prevent the descender of 'g' from being cut off */}
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
-            Attendance Logs
-        </span>
-    </h1>
-</div>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
+                                Attendance Logs
+                            </span>
+                        </h1>
+                    </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative group w-full md:w-64">
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-20 group-focus-within:opacity-60 transition duration-500 blur-sm"></div>
-                            <div className="relative flex items-center bg-[#0F172A] border border-white/10 rounded-xl shadow-xl">
-                                <Search className="absolute left-3 w-4 h-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
+                        <div className="relative w-full md:w-64 group">
+                            {/* Curved Search Bar */}
+                            <div className="relative flex items-center bg-[#0F172A] border border-white/10 rounded-full shadow-xl">
+                                <Search className="absolute left-4 w-4 h-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
                                 <input
                                     type="text"
                                     placeholder="Search course..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none rounded-xl font-medium"
+                                    className="w-full pl-12 pr-4 py-2.5 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none rounded-full font-medium"
                                 />
                             </div>
                         </div>
@@ -386,7 +392,7 @@ const LogsPage = () => {
                     </div>
                 </div>
 
-                {/* --- LOGS LIST --- */}
+                {/* --- LOGS LIST / EMPTY STATE --- */}
                 <div className="space-y-8">
                     {Object.keys(groupedLogs).length > 0 ? (
                         Object.keys(groupedLogs).map((monthYear, idx) => (
@@ -397,7 +403,6 @@ const LogsPage = () => {
                                 transition={{ delay: idx * 0.1 + 0.2 }}
                                 className="bg-[#0F172A]/40 backdrop-blur-md rounded-[1.5rem] border border-white/5 overflow-hidden"
                             >
-                                {/* Sticky Month Header */}
                                 <div className="bg-[#0F172A]/80 backdrop-blur-md sticky top-0 z-10 px-6 py-4 border-b border-white/5 flex items-center justify-between">
                                     <h2 className="font-black text-white text-lg flex items-center gap-2">
                                         <CalendarDays className="text-blue-400" size={20}/> {monthYear}
@@ -415,7 +420,6 @@ const LogsPage = () => {
                                         return (
                                             <div key={log.id} className="p-5 hover:bg-white/5 transition-colors flex items-center justify-between group">
                                                 <div className="flex items-center gap-5">
-                                                    {/* Date Box */}
                                                     <div className="flex flex-col items-center justify-center bg-white/5 w-14 h-14 rounded-2xl border border-white/10 shadow-sm group-hover:border-white/20 transition-all">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                                             {log.date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -425,7 +429,6 @@ const LogsPage = () => {
                                                         </span>
                                                     </div>
                                                     
-                                                    {/* Details */}
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1.5">
                                                             <div className={`p-1.5 rounded-lg border flex items-center justify-center bg-gradient-to-br ${style.gradient} ${style.border} ${style.text}`}>
@@ -439,7 +442,6 @@ const LogsPage = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Status Badge */}
                                                 <div className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider border flex items-center gap-2 shadow-sm ${
                                                     isPresent
                                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
@@ -455,12 +457,31 @@ const LogsPage = () => {
                             </motion.section>
                         ))
                     ) : (
+                        // --- UPDATED EMPTY STATE ---
                         <div className="flex flex-col items-center justify-center py-24 text-center bg-[#0F172A]/40 rounded-[2rem] border-2 border-dashed border-white/10 backdrop-blur-sm">
-                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                <Layers className="text-slate-500" size={40} />
+                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-white/10">
+                                {searchTerm ? (
+                                    <FileQuestion className="text-slate-500" size={40} />
+                                ) : (
+                                    <FolderOpen className="text-slate-500" size={40} />
+                                )}
                             </div>
-                            <h3 className="text-xl font-black text-white">No Logs Found</h3>
-                            <p className="text-slate-400 font-medium text-sm mt-1 max-w-xs">We couldn't find any attendance records for your search.</p>
+                            <h3 className="text-xl font-black text-white mb-2">
+                                {searchTerm ? 'No Search Results' : 'No Data Available'}
+                            </h3>
+                            <p className="text-slate-400 font-medium text-sm max-w-xs mx-auto">
+                                {searchTerm 
+                                    ? `We couldn't find any courses matching "${searchTerm}".` 
+                                    : "You have no attendance records yet. Once classes start, they'll appear here."}
+                            </p>
+                            {searchTerm && (
+                                <button 
+                                    onClick={() => setSearchTerm('')}
+                                    className="mt-6 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-full transition-colors"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

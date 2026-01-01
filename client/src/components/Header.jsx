@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, LogOut, Menu, X, ChevronDown, ShieldCheck, GraduationCap, Briefcase } from 'lucide-react';
+import { 
+    User, LogOut, Menu, X, ChevronDown, ShieldCheck, GraduationCap, Briefcase, 
+    // New Icons imported for NavLinks
+    LayoutDashboard, Trophy, CalendarDays, ClipboardCheck, FileClock, 
+    Inbox as InboxIcon, Megaphone, CalendarRange 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import IARELogo from '../assets/logo.png';
 
 /**
  * @file Header.jsx
- * @description A responsive, high-priority header with role-based navigation and enhanced profile management.
+ * @description A responsive header with role-based navigation and curated icons.
  */
 const Header = ({ animate }) => {
     const { user, logout } = useAuth();
@@ -60,39 +65,42 @@ const Header = ({ animate }) => {
         setDisplayUser({ name: identifier, roleLabel: label, roleIcon: icon });
     }, [user]);
 
-    // --- NAVIGATION LOGIC ---
+    // --- NAVIGATION LOGIC WITH ICONS ---
     let navLinks = [];
     let dashboardPath = '/';
     let profilePath = '/profile';
+    
+    // Icon configuration for consistency
+    const iconSize = 18; 
 
     if (user?.role === 'faculty') {
         dashboardPath = '/faculty/dashboard';
         profilePath = '/faculty/profile';
         navLinks = [
-            { path: dashboardPath, label: 'Dashboard' },
-            { path: '/leaderboard', label: 'Leaderboard' },
-            { path: '/faculty/timetable', label: 'Schedule' },
-            { path: '/faculty/students', label: 'Attendance' },
+            { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
+            { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
+            { path: '/faculty/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
+            { path: '/faculty/students', label: 'Attendance', icon: <ClipboardCheck size={iconSize} /> },
         ];
     } else if (user?.role === 'student') {
         dashboardPath = '/student/dashboard';
         profilePath = '/student/profile';
         navLinks = [
-            { path: dashboardPath, label: 'Dashboard' },
-            { path: '/leaderboard', label: 'Leaderboard' },
-            { path: '/timetable', label: 'Schedule' },
-            { path: '/logs', label: 'Logs' },
-            { path: '/inbox', label: 'Inbox' }, 
+            { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
+            { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
+            { path: '/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
+            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, // FileClock implies history/time-logs
+            { path: '/inbox', label: 'Inbox', icon: <InboxIcon size={iconSize} /> }, 
         ];
     } else if (user?.role === 'admin') {
         dashboardPath = '/admin/dashboard';
         profilePath = '/admin/profile';
         navLinks = [
-            { path: dashboardPath, label: 'Dashboard' },
-            { path: '/leaderboard', label: 'Leaderboard' },
-            { path: '/admin/timetable', label: 'Schedules' },
-            { path: '/admin/attendance', label: 'Attendance' },
-            { path: '/admin/announcements', label: 'Announcements'}
+            { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
+            { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
+            { path: '/admin/timetable', label: 'Schedules', icon: <CalendarRange size={iconSize} /> },
+            { path: '/admin/attendance', label: 'Attendance', icon: <ClipboardCheck size={iconSize} /> },
+            { path: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={iconSize} /> }
         ];
     }
 
@@ -112,7 +120,8 @@ const Header = ({ animate }) => {
         const isActive = location.pathname === path;
         return {
             container: isActive ? 'text-white font-bold' : 'text-gray-400 hover:text-white font-medium',
-            indicator: isActive ? 'w-full' : 'w-0 group-hover:w-full'
+            indicator: isActive ? 'w-full' : 'w-0 group-hover:w-full',
+            icon: isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-blue-400' // Added icon specific color transition
         };
     };
 
@@ -122,7 +131,6 @@ const Header = ({ animate }) => {
         : null;
 
     return (
-        // Header Container: High Z-Index to stay on top
         <header className="relative z-[100] py-4 w-full">
             <div className="flex items-center justify-between px-4 lg:px-0">
                 
@@ -156,7 +164,12 @@ const Header = ({ animate }) => {
                                     to={link.path}
                                     className={`relative group py-2 text-sm tracking-wide transition-colors ${styles.container}`}
                                 >
-                                    {link.label}
+                                    <span className="flex items-center gap-2">
+                                        <span className={`transition-colors duration-300 ${styles.icon}`}>
+                                            {link.icon}
+                                        </span>
+                                        {link.label}
+                                    </span>
                                     <span className={`absolute bottom-0 left-0 h-0.5 bg-blue-400 transition-all duration-300 ${styles.indicator}`}></span>
                                 </Link>
                             );
@@ -249,16 +262,19 @@ const Header = ({ animate }) => {
             </div>
 
             {/* --- MOBILE MENU OVERLAY --- */}
-            {/* Background: Solid dark blue with slight opacity for readability */}
-            <div className={`lg:hidden absolute top-full left-0 w-full bg-[#071225]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl transition-all duration-300 ease-in-out overflow-hidden z-50 ${isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`lg:hidden absolute top-full left-0 w-full bg-[#071225]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl transition-all duration-300 ease-in-out overflow-hidden z-50 ${isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
                 <nav className="flex flex-col p-4 space-y-2">
                     {navLinks.map((navLink) => (
                         <Link
                             key={navLink.path}
                             to={navLink.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className={`block py-3 px-4 rounded-xl text-base font-medium transition-all ${location.pathname === navLink.path ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                            className={`flex items-center gap-3 py-3 px-4 rounded-xl text-base font-medium transition-all ${location.pathname === navLink.path ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
                         >
+                            {/* Mobile Icon */}
+                            <span className={location.pathname === navLink.path ? 'text-white' : 'text-blue-400/80'}>
+                                {navLink.icon}
+                            </span>
                             {navLink.label}
                         </Link>
                     ))}
@@ -270,7 +286,8 @@ const Header = ({ animate }) => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex items-center gap-3 py-3 px-4 rounded-xl text-base font-medium transition-all ${location.pathname === profilePath ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
                     >
-                        <User size={18} /> My Profile
+                        <User size={18} className={location.pathname === profilePath ? 'text-white' : 'text-blue-400/80'} /> 
+                        My Profile
                     </Link>
                     
                     <button

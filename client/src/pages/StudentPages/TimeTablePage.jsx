@@ -1,8 +1,14 @@
+/**
+ * @file TimetablePage.jsx
+ * @description Ultra-minimalist dark theme. Borders & Accents only.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    Calendar, Clock, Terminal, CloudLightning, Database, MapPin, 
-    ChevronRight, ChevronLeft, CalendarDays, Coffee, Layers
+    Calendar, Clock, Terminal, Cloud, Database, Coffee, MapPin, 
+    ChevronRight, ChevronLeft, CalendarDays, Layers, Zap,
+    BookOpen, User
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext';
@@ -10,73 +16,56 @@ import Loader from '../../components/Loader';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 
-// --- 1. COLORFUL THEMES (For Upcoming Sessions) ---
-const subjectDetails = {
+// --- 1. MINIMALIST BORDER THEMES ---
+const SUBJECT_THEMES = {
   'CP': { 
       title: 'Competitive Programming', 
-      // Cyan/Blue Theme
-      gradient: 'from-cyan-500 to-blue-500',
-      glass: 'bg-cyan-500/10 border-cyan-500/20 hover:border-cyan-500/50',
-      text: 'text-cyan-200',
-      iconBg: 'bg-cyan-500/20 text-cyan-100',
-      icon: <Terminal className="w-full h-full" /> 
+      borderColor: 'border-cyan-500/40 group-hover:border-cyan-500/80',
+      textColor: 'text-cyan-400',
+      icon: Terminal 
   },
   'JFS': { 
       title: 'Java Full Stack', 
-      // Orange/Amber Theme
-      gradient: 'from-orange-500 to-amber-500',
-      glass: 'bg-orange-500/10 border-orange-500/20 hover:border-orange-500/50',
-      text: 'text-orange-200',
-      iconBg: 'bg-orange-500/20 text-orange-100',
-      icon: <Coffee className="w-full h-full" /> 
+      borderColor: 'border-orange-500/40 group-hover:border-orange-500/80',
+      textColor: 'text-orange-400',
+      icon: Coffee 
   },
   'DBS': { 
       title: 'Database Solutions', 
-      // Emerald/Teal Theme
-      gradient: 'from-emerald-500 to-teal-500',
-      glass: 'bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/50',
-      text: 'text-emerald-200',
-      iconBg: 'bg-emerald-500/20 text-emerald-100',
-      icon: <Database className="w-full h-full" /> 
+      borderColor: 'border-emerald-500/40 group-hover:border-emerald-500/80',
+      textColor: 'text-emerald-400',
+      icon: Database 
   },
   'AWS': { 
       title: 'Cloud Computing (AWS)', 
-      // Purple/Pink Theme
-      gradient: 'from-violet-600 to-fuchsia-500',
-      glass: 'bg-violet-500/10 border-violet-500/20 hover:border-violet-500/50',
-      text: 'text-violet-200',
-      iconBg: 'bg-violet-500/20 text-violet-100',
-      icon: <CloudLightning className="w-full h-full" /> 
+      borderColor: 'border-violet-500/40 group-hover:border-violet-500/80',
+      textColor: 'text-violet-400',
+      icon: Cloud 
   },
   'DEFAULT': {
-      title: 'Course Session',
-      // Slate/Gray Theme
-      gradient: 'from-slate-600 to-slate-500',
-      glass: 'bg-slate-500/10 border-slate-500/20 hover:border-slate-500/50',
-      text: 'text-slate-200',
-      iconBg: 'bg-slate-500/20 text-slate-100',
-      icon: <Layers className="w-full h-full" />
+      title: 'Course Session', 
+      borderColor: 'border-slate-700 group-hover:border-slate-500',
+      textColor: 'text-slate-400',
+      icon: BookOpen 
   }
 };
 
-// --- 2. FIXED BLUE THEME (Strictly for Today's Hero Card) ---
-const HERO_BLUE_THEME = {
-    gradient: 'from-blue-600 via-blue-500 to-indigo-600',
-    iconBg: 'bg-blue-400/20 text-white',
-    border: 'border-blue-400/30'
-};
-
-// Helper: Map Short Codes to Config Keys
-const getSubjectStyleKey = (subjectName) => {
-    if (!subjectName) return 'DEFAULT';
+const getSubjectTheme = (subjectName) => {
+    if (!subjectName) return SUBJECT_THEMES['DEFAULT'];
     const upper = subjectName.toUpperCase().trim();
     
-    if (upper === 'CP' || upper.includes('COMPETITIVE')) return 'CP';
-    if (upper === 'JFS' || upper.includes('JAVA')) return 'JFS';
-    if (upper === 'DBS' || upper.includes('DATA')) return 'DBS';
-    if (upper === 'AWS' || upper.includes('CLOUD')) return 'AWS';
+    if (upper.includes('COMPETITIVE') || upper.includes('CDC001')) return SUBJECT_THEMES['CP'];
+    if (upper.includes('JAVA') || upper.includes('CDC005')) return SUBJECT_THEMES['JFS'];
+    if (upper.includes('DATABASE') || upper.includes('CDC002')) return SUBJECT_THEMES['DBS'];
+    if (upper.includes('CLOUD') || upper.includes('AWS')) return SUBJECT_THEMES['AWS'];
     
-    return 'DEFAULT';
+    return SUBJECT_THEMES['DEFAULT'];
+};
+
+// Fixed Blue Theme for Today's Hero Card
+const HERO_THEME = {
+    gradient: 'from-blue-600/80 to-indigo-600/80', 
+    border: 'border-blue-500/30'
 };
 
 const TimetablePage = () => {
@@ -98,10 +87,7 @@ const TimetablePage = () => {
 
   // --- Fetch Data ---
   useEffect(() => {
-    if (!user) {
-        navigate('/');
-        return;
-    }
+    if (!user) { navigate('/'); return; }
 
     const fetchTimetableData = async () => {
         try {
@@ -119,18 +105,20 @@ const TimetablePage = () => {
             if (!response.ok) throw new Error("Failed to fetch timetable");
 
             const rawData = await response.json();
-            const primaryData = Array.isArray(rawData) ? rawData[0] : rawData;
+            // Handle if response is array or object based on backend structure
+            const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
-            if (primaryData) {
-                setUserBatch(primaryData.batch);
-                setSemester(primaryData.sem);
+            if (data) {
+                setUserBatch(data.batch);
+                setSemester(data.sem);
 
                 const map = {};
-                if (primaryData.weekSchedule && Array.isArray(primaryData.weekSchedule)) {
-                    primaryData.weekSchedule.forEach(dayObj => {
+                if (data.weekSchedule && Array.isArray(data.weekSchedule)) {
+                    data.weekSchedule.forEach(dayObj => {
+                        // Extract faculty name array and join them
                         map[dayObj.day] = dayObj.periods.map(p => ({
                             time: `${p.startTime} - ${p.endTime}`,
-                            subject: p.subject,
+                            subject: p.subject, // e.g., "CDC001 - Competitive Programming"
                             room: p.roomNo,
                             faculty: p.faculty ? p.faculty.map(f => f.name).join(', ') : 'Faculty'
                         }));
@@ -153,53 +141,40 @@ const TimetablePage = () => {
   useEffect(() => {
     const allDates = [];
     let currentDate = new Date();
-    let safetyCounter = 0;
     
     // Add Today + Next 12 days
-    allDates.push(new Date(currentDate)); 
-    currentDate.setDate(currentDate.getDate() + 1); 
-
-    while (allDates.length < 13 && safetyCounter < 30) {
-        allDates.push(new Date(currentDate)); 
+    for(let i=0; i<13; i++) {
+        allDates.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
-        safetyCounter++;
     }
 
     const processedData = allDates.map((date, index) => {
         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-        const displayDate = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        const displayDay = date.toLocaleDateString('en-US', { weekday: 'short' });
         const isToday = index === 0;
 
         const dailyClasses = scheduleMap[dayName] || [];
+        // Assuming 1 major class per day for this view, or taking the first one
         const primaryClass = dailyClasses.length > 0 ? dailyClasses[0] : null;
         
-        let classDetails = null;
-        
-        if (primaryClass) {
-            const styleKey = getSubjectStyleKey(primaryClass.subject);
-            // Get the specific colorful style for this subject
-            const style = subjectDetails[styleKey];
+        let theme = SUBJECT_THEMES['DEFAULT'];
+        let cleanSubjectName = "No Class";
 
-            classDetails = {
-                ...primaryClass,
-                fullTitle: style.title,
-                shortSubject: primaryClass.subject,
-                icon: style.icon,
-                // Assign colorful properties here (used for Upcoming)
-                gradient: style.gradient,
-                glass: style.glass,
-                textColor: style.text,
-                iconBg: style.iconBg
-            };
+        if (primaryClass) {
+            theme = getSubjectTheme(primaryClass.subject);
+            // Optional: Clean up subject string if it contains code (e.g., "CDC001 - Subject" -> "Subject")
+            const parts = primaryClass.subject.split(' - ');
+            cleanSubjectName = parts.length > 1 ? parts[1] : primaryClass.subject;
         }
 
         return { 
-            date: displayDate, 
-            day: displayDay, 
-            fullDay: dayName, 
-            hasClass: !!classDetails,
-            classInfo: classDetails,
+            dateObj: date,
+            dayName: dayName,
+            hasClass: !!primaryClass,
+            classInfo: primaryClass ? {
+                ...primaryClass,
+                cleanSubject: cleanSubjectName,
+                ...theme
+            } : null,
             isToday 
         };
     });
@@ -208,185 +183,185 @@ const TimetablePage = () => {
     setUpcomingSchedule(processedData.slice(1)); 
   }, [scheduleMap, isLoading]);
 
-  const ITEMS_PER_PAGE = 6;
+  const ITEMS_PER_PAGE = 6; 
   const currentViewSchedule = upcomingSchedule.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   if (isLoading) return <Loader />;
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-32">
+    <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-32 relative overflow-hidden selection:bg-blue-500/30">
       
-      {/* --- HEADER --- */}
+      {/* Header */}
       <div className="relative px-4 sm:px-6 lg:px-8 pt-4 pb-6 z-20">
          <Header animate={animate} />
          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
       </div>
 
-      <main className="px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto space-y-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 relative z-10">
         
-        {/* --- SECTION 1: TODAY'S SCHEDULE (STRICTLY BLUE HERO CARD) --- */}
-        <section className={`transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                        Today's Schedule
-                    </h1>
-                    <p className="text-gray-400 text-sm mt-1 font-medium flex items-center gap-2">
-                        <span>{todaySchedule?.fullDay}, {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}</span>
-                    </p>
-                </div>
-                
-                {/* Batch Badge */}
-                {userBatch && (
-                    <div className="hidden sm:flex items-center gap-3">
-                        <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
-                             <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mr-2">SEM</span>
-                             <span className="text-sm font-bold text-blue-200">{semester}</span>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
-                            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mr-2">BATCH</span>
-                            <span className="text-sm font-bold text-blue-200">{userBatch}</span>
-                        </div>
-                    </div>
-                )}
+        {/* --- TITLE & CONTROLS --- */}
+        <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div>
+                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
+                        Course Schedule
+                    </span>
+                </h1>
             </div>
 
-            {/* HERO CARD - HARDCODED BLUE THEME (Ignores subject colors) */}
+            {/* Minimal Batch Indicators */}
+            {userBatch && (
+                <div className="flex items-center gap-3">
+                    <div className="bg-[#0F172A] border border-white/10 px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
+                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Semester</span>
+                        <span className="text-sm font-bold text-blue-200">{semester}</span>
+                    </div>
+                    <div className="bg-[#0F172A] border border-white/10 px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
+                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Batch</span>
+                        <span className="text-sm font-bold text-blue-200">{userBatch}</span>
+                    </div>
+                </div>
+            )}
+        </div>
+
+        {/* --- SECTION 1: TODAY'S SESSION (Hero) --- */}
+        <section className={`mb-10 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Zap className="text-blue-400 fill-blue-400/20" size={18} /> Today's Session
+            </h2>
+            
             {todaySchedule?.hasClass ? (
                 <div className={`
-                    relative rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden border border-white/10
-                    bg-gradient-to-br ${HERO_BLUE_THEME.gradient} 
+                    relative rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden
+                    bg-[#0F172A]/80 backdrop-blur-xl border border-blue-500/40
                 `}>
-                    {/* Abstract Background Shapes */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 mix-blend-overlay"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-3xl -ml-16 -mb-16 mix-blend-multiply"></div>
-
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] -mr-20 -mt-20 pointer-events-none"></div>
+                    
                     <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-                        
-                        {/* Left: Icon & Title */}
                         <div className="flex items-center gap-6">
-                            {/* Force Blue Icon Background */}
-                            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-3xl flex items-center justify-center backdrop-blur-md shadow-inner ${HERO_BLUE_THEME.border} ${HERO_BLUE_THEME.iconBg} p-5`}>
-                                {todaySchedule.classInfo.icon}
-                            </div>
-                            <div>
-                                <span className="inline-block px-3 py-1 rounded-full bg-black/20 text-white font-bold text-xs uppercase tracking-widest border border-white/10 mb-2 shadow-sm">
-                                    Ongoing Session
+                            {/* Date Box */}
+                            <div className="flex flex-col items-center justify-center w-20 h-20 rounded-3xl bg-white/5 border border-white/10 shadow-inner backdrop-blur-md">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    {todaySchedule.dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
                                 </span>
-                                <h2 className="text-3xl md:text-5xl font-black text-white leading-tight drop-shadow-md">
-                                    {todaySchedule.classInfo.shortSubject}
-                                </h2>
-                                <p className="text-white/90 text-xl mt-1 font-semibold">
-                                    {todaySchedule.classInfo.fullTitle}
+                                <span className="text-3xl font-black text-white leading-none mt-1">
+                                    {todaySchedule.dateObj.getDate()}
+                                </span>
+                            </div>
+
+                            <div>
+                                <span className="inline-block px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold text-[10px] uppercase tracking-widest border border-blue-500/20 mb-2 shadow-sm">
+                                    Happening Now
+                                </span>
+                                <h3 className="text-3xl md:text-5xl font-black text-white leading-tight">
+                                    {todaySchedule.classInfo.cleanSubject}
+                                </h3>
+                                {/* Faculty Display in Hero */}
+                                <p className="text-blue-200/80 text-lg mt-2 font-medium flex items-center gap-2">
+                                    <User size={18} className="text-blue-400"/>
+                                    {todaySchedule.classInfo.faculty}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Right: Time & Details */}
-                        <div className="flex flex-col items-start md:items-end gap-3 bg-black/10 p-5 rounded-2xl border border-white/10 backdrop-blur-md w-full md:w-auto shadow-lg">
+                        <div className="flex flex-col items-start md:items-end gap-3 bg-black/20 p-5 rounded-2xl border border-white/5 backdrop-blur-md w-full md:w-auto">
                             <div className="flex items-center gap-3">
-                                <Clock className="text-white w-6 h-6" />
+                                <Clock className="text-blue-400 w-6 h-6" />
                                 <span className="text-3xl font-bold text-white tracking-tight">
                                     {todaySchedule.classInfo.time.split(' - ')[0]}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2 text-white/90 text-sm font-bold bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                            <div className="flex items-center gap-2 text-slate-300 text-sm font-bold bg-white/5 px-3 py-1 rounded-lg border border-white/5">
                                 <MapPin size={14} />
                                 <span>Room {todaySchedule.classInfo.room}</span>
-                            </div>
-                            <div className="text-white/80 text-sm font-medium">
-                                {todaySchedule.classInfo.faculty}
                             </div>
                         </div>
                     </div>
                 </div>
             ) : (
-                <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-center relative overflow-hidden backdrop-blur-md">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
-                    <div className="relative z-10 flex flex-col items-center">
-                        <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
-                            <CalendarDays className="w-10 h-10 text-green-400" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-white">No classes scheduled today</h3>
-                        <p className="text-gray-400 mt-2">Enjoy your day off!</p>
+                <div className="bg-[#0F172A]/40 backdrop-blur-md border border-white/5 p-8 rounded-[2rem] text-center">
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                        <CalendarDays className="text-slate-500" size={24} />
                     </div>
+                    <h3 className="text-xl font-bold text-white">No classes today</h3>
+                    <p className="text-slate-500 text-sm mt-1">Take a break and recharge!</p>
                 </div>
             )}
         </section>
 
-        {/* --- SECTION 2: UPCOMING SCHEDULE (COLORFUL THEMES) --- */}
-        <section className={`transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <div className="flex items-center gap-3 mb-6">
-                <div className="p-1.5 bg-white/10 rounded-lg border border-white/10">
-                    <Calendar className="w-5 h-5 text-gray-300" />
-                </div>
-                <h2 className="text-2xl font-bold text-white">Upcoming Sessions</h2>
+        {/* --- SECTION 2: UPCOMING SESSIONS (Border & Accent Only) --- */}
+        <section className={`transition-all duration-700 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+             <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Calendar className="text-slate-400" size={18} /> Upcoming Schedule
+                </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {currentViewSchedule.map((dayData, index) => (
+            {/* GRID LAYOUT */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentViewSchedule.map((item, idx) => (
                     <div 
-                        key={index}
+                        key={idx}
                         className={`
-                            relative rounded-2xl border transition-all duration-300 overflow-hidden group
-                            ${dayData.hasClass 
-                                ? `${dayData.classInfo.glass}` // Uses the Colorful Glass Effect
-                                : 'bg-white/5 border-white/5 opacity-60'}
+                            relative rounded-[2rem] p-6 border transition-all duration-300 overflow-hidden group h-full flex flex-col justify-between
+                            bg-[#0F172A]/40 backdrop-blur-md
+                            ${item.hasClass 
+                                ? `${item.classInfo.borderColor} hover:shadow-[0_0_20px_-10px_rgba(255,255,255,0.1)]` 
+                                : 'border-white/5 opacity-50'}
                         `}
                     >
-                        {/* Date Header */}
-                        <div className="px-5 py-4 border-b border-white/5 flex justify-between items-center bg-black/20">
-                            <div className="flex items-center gap-3">
-                                <div className="text-center">
-                                    <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider">{dayData.day}</span>
-                                    <span className="block text-lg font-bold text-white leading-none mt-0.5">{dayData.date.split(' ')[0]}</span>
-                                </div>
-                                <div className="h-8 w-px bg-white/10"></div>
-                                <span className="text-sm font-medium text-gray-300">{dayData.date.split(' ')[1]}</span>
+                        {/* Header: Date Box & Subject Icon */}
+                        <div className="flex items-start justify-between mb-6">
+                             {/* Date Box: Neutral */}
+                             <div className={`
+                                flex flex-col items-center justify-center w-14 h-14 rounded-2xl border shadow-sm transition-all
+                                bg-white/5 border-white/5 group-hover:border-white/10
+                            `}>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    {item.dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                                </span>
+                                <span className="text-xl font-black text-white leading-none mt-0.5">
+                                    {item.dateObj.getDate()}
+                                </span>
                             </div>
+
+                            {/* Icon */}
+                            {item.hasClass && (
+                                <div className={`p-2 rounded-xl border border-white/5 bg-white/5 ${item.classInfo.textColor}`}>
+                                    <item.classInfo.icon size={20} />
+                                </div>
+                            )}
                         </div>
 
-                        {/* Content */}
-                        <div className="p-5 min-h-[140px] flex flex-col justify-center relative">
-                            {dayData.hasClass ? (
+                        {/* Body Info */}
+                        <div>
+                            {item.hasClass ? (
                                 <>
-                                    {/* Colorful Glow based on subject */}
-                                    <div className={`absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-gradient-to-br ${dayData.classInfo.gradient} opacity-20 blur-xl group-hover:opacity-30 transition-opacity`}></div>
+                                    <h4 className="text-xl font-black text-white leading-tight mb-2 group-hover:text-white transition-colors line-clamp-2">
+                                        {item.classInfo.cleanSubject}
+                                    </h4>
                                     
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            {/* Colorful Icon Background */}
-                                            <div className={`p-2 rounded-lg backdrop-blur-sm shadow-sm ${dayData.classInfo.iconBg}`}>
-                                                {React.cloneElement(dayData.classInfo.icon, { className: "w-5 h-5" })}
-                                            </div>
-                                            {/* Colorful Text */}
-                                            <span className={`text-xs font-bold uppercase tracking-wider ${dayData.classInfo.textColor}`}>
-                                                {dayData.classInfo.shortSubject}
-                                            </span>
+                                    {/* Faculty Name Display */}
+                                    <p className="text-xs font-bold text-slate-500 mb-5 flex items-center gap-2">
+                                        <User size={12} className={item.classInfo.textColor.replace('text-', 'text-opacity-70 text-')} />
+                                        {item.classInfo.faculty}
+                                    </p>
+                                    
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-2 text-slate-400 font-bold text-xs">
+                                            <Clock size={12} strokeWidth={2.5}/>
+                                            {item.classInfo.time.split(' - ')[0]}
                                         </div>
-                                        
-                                        <h3 className="text-base font-bold text-white leading-tight mb-1 line-clamp-2">
-                                            {dayData.classInfo.fullTitle}
-                                        </h3>
-                                        <p className="text-xs text-gray-400 mb-3">{dayData.classInfo.faculty}</p>
-
-                                        <div className="flex items-center justify-between text-xs text-gray-300 border-t border-white/5 pt-3">
-                                            <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded">
-                                                <Clock size={12} /> {dayData.classInfo.time.split(' - ')[0]}
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <MapPin size={12} /> {dayData.classInfo.room}
-                                            </span>
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/20 border border-white/5 text-xs font-bold text-slate-400">
+                                            <MapPin size={12} strokeWidth={2.5}/> {item.classInfo.room}
                                         </div>
                                     </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center">
-                                    <div className="p-2 rounded-full bg-white/5 mb-2">
-                                        <CalendarDays size={20} className="text-gray-500" />
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-500">No classes</span>
+                                <div className="flex flex-col items-center justify-center py-8 text-center opacity-40">
+                                    <CalendarDays size={24} className="mb-2 text-slate-500"/>
+                                    <span className="text-sm font-bold text-slate-500">No Class</span>
                                 </div>
                             )}
                         </div>
@@ -394,9 +369,10 @@ const TimetablePage = () => {
                 ))}
             </div>
         </section>
-        </main>
 
-      {/* --- PAGINATION --- */}
+      </main>
+
+      {/* --- PAGINATION (Fixed Bottom) --- */}
       <div className="fixed bottom-6 left-0 right-0 z-30 px-4 pointer-events-none flex justify-center">
         <div className="bg-[#0F172A]/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full p-1.5 flex items-center gap-2 pointer-events-auto ring-1 ring-white/5">
             <button 
