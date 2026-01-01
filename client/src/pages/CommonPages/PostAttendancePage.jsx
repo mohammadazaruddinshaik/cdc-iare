@@ -89,10 +89,10 @@ const NetworkIndicator = ({ isOnline }) => {
         : { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600', label: 'Offline' };
 
     return (
-        <div className={`${style.bg} ${style.border} border p-4 rounded-2xl flex flex-col items-center justify-center transition-colors duration-300`}>
-            {isOnline ? <Signal className={`w-6 h-6 ${style.text}`} /> : <WifiOff className={`w-6 h-6 ${style.text}`} />}
-            <span className={`text-xs font-bold uppercase mt-2 ${style.text}`}>Signal</span>
-            <span className={`text-sm font-semibold ${style.text}`}>{style.label}</span>
+        <div className={`${style.bg} ${style.border} border p-3 rounded-2xl flex flex-col items-center justify-center transition-colors duration-300`}>
+            {isOnline ? <Signal className={`w-5 h-5 ${style.text}`} /> : <WifiOff className={`w-5 h-5 ${style.text}`} />}
+            <span className={`text-[10px] font-bold uppercase mt-1 ${style.text}`}>Signal</span>
+            <span className={`text-xs font-semibold ${style.text}`}>{style.label}</span>
         </div>
     );
 };
@@ -141,42 +141,54 @@ export default function AttendanceScanner() {
     // ========================================================================
     useEffect(() => {
         if (view === 'scanner') {
-            // 1. CSS Level Block: Prevents Swipe Gestures on Mobile
+            // 1. Prevent Swipe Gestures
             document.body.style.overscrollBehavior = 'none';
             document.body.style.touchAction = 'none';
             document.body.style.overflow = 'hidden';
 
-            // 2. History API Block: Traps the "Back" Button
-            // Push a dummy state so the back button has something to pop
+            // 2. Trap "Back" Button
             window.history.pushState({ page: 'scanner' }, document.title, window.location.href);
 
             const handlePopState = (event) => {
-                // Prevent navigation
                 event.preventDefault();
-                // Push state again immediately to re-trap the user
+                // Push state again to keep them trapped
                 window.history.pushState({ page: 'scanner' }, document.title, window.location.href);
-                // Trigger the EXIT modal
+                // Force Modal
                 setShowExitModal(true); 
             };
 
-            // 3. Reload/Close Tab Block
+            // 3. Detect Native Fullscreen Exit (Esc / Gestures)
+            const handleFullScreenChange = () => {
+                const isFullScreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                if (!isFullScreen && view === 'scanner') {
+                    // User broke out of fullscreen -> Prompt Exit or Force back
+                    setShowExitModal(true);
+                }
+            };
+
+            // 4. Prevent Reload
             const handleBeforeUnload = (e) => {
-                // This triggers the browser's native "Leave site?" dialog.
-                // Security policies prevent custom modals here.
                 e.preventDefault();
                 e.returnValue = ''; 
             };
 
             window.addEventListener('popstate', handlePopState);
             window.addEventListener('beforeunload', handleBeforeUnload);
+            document.addEventListener('fullscreenchange', handleFullScreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullScreenChange);
+            document.addEventListener('msfullscreenchange', handleFullScreenChange);
 
             return () => {
-                // Clean up styles and listeners on unmount
                 document.body.style.overscrollBehavior = '';
                 document.body.style.touchAction = '';
                 document.body.style.overflow = '';
                 window.removeEventListener('popstate', handlePopState);
                 window.removeEventListener('beforeunload', handleBeforeUnload);
+                document.removeEventListener('fullscreenchange', handleFullScreenChange);
+                document.removeEventListener('webkitfullscreenchange', handleFullScreenChange);
+                document.removeEventListener('mozfullscreenchange', handleFullScreenChange);
+                document.removeEventListener('msfullscreenchange', handleFullScreenChange);
             };
         }
     }, [view]);
@@ -185,7 +197,6 @@ export default function AttendanceScanner() {
     // OTHER EFFECTS
     // ========================================================================
 
-    // Cooldown Timer
     useEffect(() => {
         let timer;
         if (cooldown > 0) {
@@ -197,7 +208,6 @@ export default function AttendanceScanner() {
         return () => clearInterval(timer);
     }, [cooldown, isPaused, scanResult.type]);
 
-    // Fetch Config
     useEffect(() => {
         setSemesterConfig([]); setAvailableBatches([]); setAvailableCourses([]); setBatch(''); setCourse('');
         if (!semester) return;
@@ -216,7 +226,6 @@ export default function AttendanceScanner() {
         fetchConfig();
     }, [semester]);
 
-    // Update Courses
     useEffect(() => {
         if (!batch || semesterConfig.length === 0) { setAvailableCourses([]); setCourse(''); return; }
         const batchConfig = semesterConfig.find(item => item.name === batch);
@@ -224,7 +233,6 @@ export default function AttendanceScanner() {
         setCourse('');
     }, [batch, semesterConfig]);
 
-    // Initialize Scanner
     useEffect(() => {
         if (view !== 'scanner') return;
         setCameraError(null);
@@ -262,16 +270,23 @@ export default function AttendanceScanner() {
     };
 
     const handleStartScanning = () => {
+        // TRIGGER FULLSCREEN
         toggleFullScreen('enter');
         setSessionStartTime(new Date());
         setView('scanner');
     };
 
     const handleExitSession = () => {
+        // EXIT FULLSCREEN ON CONFIRMED EXIT
         toggleFullScreen('exit');
-        // Clear history manipulation when properly exiting
         const destination = user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard';
         navigate(destination, { replace: true });
+    };
+
+    const handleCancelExit = () => {
+        setShowExitModal(false);
+        // If user cancels exit, Force Fullscreen Again
+        toggleFullScreen('enter');
     };
 
     const handleScan = useCallback((text) => {
@@ -437,35 +452,36 @@ export default function AttendanceScanner() {
     );
 
     const renderPreview = () => (
-        <div className="w-full max-w-2xl mx-auto p-4 animate-fade-in flex flex-col justify-center min-h-[80vh]">
+        // Minimal Pre-Flight Container (h-auto my-auto max-w-lg)
+        <div className="w-full max-w-lg mx-auto p-4 animate-fade-in flex flex-col justify-center h-auto my-auto">
              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-                <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                    <h2 className="text-3xl font-bold relative z-10">Pre-Flight Check</h2>
-                    <p className="text-slate-400 relative z-10 mt-1">{validStudentSet.size} students loaded for {batch}.</p>
+                <div className="bg-slate-900 p-5 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <h2 className="text-xl font-bold relative z-10">Pre-Flight Check</h2>
+                    <p className="text-slate-400 relative z-10 mt-1 text-xs">{validStudentSet.size} students loaded</p>
                 </div>
-                <div className="p-6 sm:p-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div className="p-5">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
                         <NetworkIndicator isOnline={isOnline} />
-                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
-                            <Clock className="text-blue-600 mb-2 w-6 h-6" />
-                            <span className="text-xs font-bold text-blue-800 uppercase tracking-wide">System Time</span>
-                            <span className="text-lg font-bold text-blue-900 mt-1">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                        <div className="bg-blue-50 border border-blue-100 p-2 rounded-xl flex flex-col items-center justify-center text-center">
+                            <Clock className="text-blue-600 mb-1 w-4 h-4" />
+                            <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wide">Time</span>
+                            <span className="text-sm font-bold text-blue-900">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                         </div>
                     </div>
-                    <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8">
-                        <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                            <span className="text-slate-500 font-medium">Batch</span>
-                            <span className="text-slate-900 font-bold text-lg">{batch} <span className="text-slate-400 text-sm font-normal">({semester})</span></span>
+                    <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                            <span className="text-slate-500 font-medium text-xs">Batch</span>
+                            <span className="text-slate-900 font-bold text-sm">{batch} <span className="text-slate-400 text-[10px] font-normal">({semester})</span></span>
                         </div>
                         <div className="flex justify-between items-center pt-1">
-                            <span className="text-slate-500 font-medium">Course</span>
-                            <span className="text-slate-900 font-bold text-lg">{course}</span>
+                            <span className="text-slate-500 font-medium text-xs">Course</span>
+                            <span className="text-slate-900 font-bold text-sm truncate max-w-[120px]">{course}</span>
                         </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <button onClick={() => setView('selection')} className="flex-1 py-4 bg-white border-2 border-slate-200 font-bold text-slate-600 rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition text-lg">Back</button>
-                        <button onClick={handleStartScanning} className="flex-[2] py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-200 flex items-center justify-center gap-3 transition active:scale-95 text-lg"><ShieldCheck className="w-6 h-6" /> Start Safe Mode</button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <button onClick={() => setView('selection')} className="flex-1 py-3 bg-white border-2 border-slate-200 font-bold text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition text-sm">Back</button>
+                        <button onClick={handleStartScanning} className="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-xl shadow-blue-200 flex items-center justify-center gap-2 transition active:scale-95 text-sm"><ShieldCheck className="w-4 h-4" /> Start Safe Mode</button>
                     </div>
                 </div>
             </div>
@@ -503,8 +519,9 @@ export default function AttendanceScanner() {
                     )}
                 </div>
                 <div className="w-full max-w-xl mt-2 pb-4">
+                    {/* BUTTON: "Finish" */}
                     <button onClick={() => setShowFinishConfirm(true)} className="w-full bg-blue-600 text-white py-3 md:py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:scale-100" disabled={scanCount === 0 || isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin w-5 h-5"/> : <><CheckCircle2 className="w-5 h-5"/> Finish & Submit Attendance ({scanCount})</>}
+                        {isSubmitting ? <Loader2 className="animate-spin w-5 h-5"/> : <><CheckCircle2 className="w-5 h-5"/> Finish ({scanCount})</>}
                     </button>
                 </div>
             </div>
@@ -553,9 +570,10 @@ export default function AttendanceScanner() {
 
     const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping }) => {
         const [confirmInput, setConfirmInput] = useState('');
-        // NOTE: Strictly require typing "EXIT" as requested
+        // NOTE: Strictly require typing "EXIT" on exit attempts
         const requiredText = requireTyping ? "EXIT" : user?.username || user?.name || "CONFIRM";
-        const isMatch = confirmInput.trim() === requiredText;
+        const isMatch = confirmInput.trim().toUpperCase() === requiredText.toUpperCase();
+        
         return (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[999] p-4 animate-in fade-in duration-200">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in scale-95 duration-200">
@@ -566,7 +584,7 @@ export default function AttendanceScanner() {
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{requireTyping ? "Type EXIT to confirm" : "Type your username to confirm"}</label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input type="text" placeholder={requireTyping ? "EXIT" : "Enter your username"} className="w-full p-3 pl-10 border-2 border-slate-200 rounded-xl font-mono text-center font-bold tracking-widest focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all" value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} autoFocus />
+                            <input type="text" placeholder={requireTyping ? "EXIT" : "Enter your username"} className="w-full p-3 pl-10 border-2 border-slate-200 rounded-xl font-mono text-center font-bold tracking-widest focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all uppercase" value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} autoFocus />
                         </div>
                     </div>
                     <div className="flex gap-3">
@@ -590,7 +608,7 @@ export default function AttendanceScanner() {
                 {view === 'summary' && renderSummary()}
             </div>
             {/* FORCE 'EXIT' TYPING WHEN EXITING SESSION */}
-            {showExitModal && <ConfirmModal message="Are you sure you want to end this session? All unsaved data will be lost." requireTyping={true} onConfirm={handleExitSession} onCancel={() => setShowExitModal(false)} />}
+            {showExitModal && <ConfirmModal message="Are you sure you want to end this session? All unsaved data will be lost." requireTyping={true} onConfirm={handleExitSession} onCancel={handleCancelExit} />}
             {showFinishConfirm && <ConfirmModal message="Finish scanning and submit attendance?" requireTyping={false} onConfirm={submitAttendance} onCancel={() => setShowFinishConfirm(false)} />}
             {userMsg.text && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-xl z-50 flex items-center gap-3 animate-fade-in border border-slate-200">{userMsg.type === 'error' ? <AlertTriangle className="text-red-500"/> : <Info className="text-blue-500"/>}<p className="font-medium text-slate-800">{userMsg.text}</p><button onClick={() => setUserMsg({text: null})}><XCircle className="w-5 h-5 text-slate-400"/></button></div>}
         </div>

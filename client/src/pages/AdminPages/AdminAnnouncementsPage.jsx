@@ -6,8 +6,7 @@ import {
     Clock, Layers, ArrowLeft, Loader2, 
     ExternalLink, CalendarClock, Target, Plus, X, Globe,
     FileSpreadsheet, Share2, Bookmark, Link as LinkIcon, BarChart3,
-    CheckSquare, AlertTriangle, ShieldAlert, Trash2, MapPin, Info,
-    Link, Edit3, Save, Eye, Send
+    ShieldAlert, Trash2, Edit3, Send, Eye, Link
 } from 'lucide-react';
 import Header from '../../components/Header'; 
 import { useAuth } from '../../context/AuthContext'; 
@@ -23,7 +22,6 @@ const CATEGORIES = [
     { id: 'REGISTRATIONS', label: 'Registrations', icon: Share2 }
 ];
 
-// Updated Priorities with distinct colors for selection
 const PRIORITIES = [
     { 
         value: 1, 
@@ -135,7 +133,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
     );
 };
 
-// --- ANNOUNCEMENT CARD (Redesigned) ---
+// --- ANNOUNCEMENT CARD ---
 const AnnouncementCard = ({ item, theme, index, onDeleteClick, onEditClick, isPreview = false }) => {
     return (
         <div 
@@ -202,7 +200,7 @@ const AnnouncementCard = ({ item, theme, index, onDeleteClick, onEditClick, isPr
                         <div className="text-xs font-bold text-gray-700 truncate" title={item.isGlobal ? "Global" : "Specific"}>
                             {item.isGlobal 
                                 ? <span className="flex items-center gap-1.5 text-slate-900"><Globe size={12}/> Global</span> 
-                                : <span className="flex items-center gap-1.5"><Layers size={12}/> {item.targetSemesters[0] || 'N/A'} • {item.targetBatches.join(', ') || 'All'}</span>
+                                : <span className="flex items-center gap-1.5"><Layers size={12}/> {item.targetSemesters?.[0] || 'N/A'} • {item.targetBatches?.join(', ') || 'All'}</span>
                             }
                         </div>
                     </div>
@@ -229,23 +227,29 @@ const AnnouncementCard = ({ item, theme, index, onDeleteClick, onEditClick, isPr
                             <span className="text-[10px] font-medium text-gray-400">{timeAgo(item.createdAt)}</span>
                         </div>
                     </div>
-                    {item.googleSheetUrl && (
-                        <div className={`flex items-center gap-2 text-[10px] font-bold px-4 py-2 rounded-xl transition-all ${theme.bg} ${theme.text} hover:opacity-80`}>
-                            Open Link <ExternalLink size={12} />
-                        </div>
-                    )}
+                    {/* Updated Link Display Logic */}
+                    <div className="flex gap-2">
+                        {item.linkUrl && (
+                            <a href={item.linkUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-[10px] font-bold px-3 py-2 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200`}>
+                                Link <LinkIcon size={12} />
+                            </a>
+                        )}
+                        {item.googleSheetUrl && (
+                            <a href={item.googleSheetUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-[10px] font-bold px-3 py-2 rounded-xl transition-all ${theme.bg} ${theme.text} hover:opacity-80`}>
+                                Form <ExternalLink size={12} />
+                            </a>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-// --- MODAL: ANNOUNCEMENT FORM (CREATE & EDIT & PREVIEW) ---
+// --- MODAL: ANNOUNCEMENT FORM ---
 const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null }) => {
     const [loading, setLoading] = useState(false);
     const [fetchingBatches, setFetchingBatches] = useState(false);
-    
-    // View State: 'form' or 'preview'
     const [viewMode, setViewMode] = useState('form');
 
     // Form State
@@ -256,8 +260,8 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
     const [priority, setPriority] = useState(1); 
     
     // Links & Config
-    const [submissionLink, setSubmissionLink] = useState(''); 
-    const [responseLink, setResponseLink] = useState('');     
+    const [linkUrl, setLinkUrl] = useState(''); 
+    const [googleSheetUrl, setGoogleSheetUrl] = useState('');     
     const [isMandatory, setIsMandatory] = useState(false);
 
     // Targeting State
@@ -270,24 +274,20 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
     // Initialize or Reset
     useEffect(() => {
         if (isOpen) {
-            setViewMode('form'); // Always start in form mode
+            setViewMode('form');
             if (initialData) {
                 // --- EDIT MODE ---
                 setTitle(initialData.title || '');
-                
-                // Parse Description
-                let desc = initialData.description || '';
-                const responseLinkMatch = desc.match(/\n\n📄 Response Link: (.*)/);
-                const mandatoryMatch = desc.includes('⚠️ **MANDATORY SUBMISSION REQUIRED**');
-                desc = desc.replace(/\n\n📄 Response Link: (.*)/, '').replace(/\n\n⚠️ \*\*MANDATORY SUBMISSION REQUIRED\*\*/, '');
-                
-                setDescription(desc);
-                setResponseLink(responseLinkMatch ? responseLinkMatch[1] : '');
-                setIsMandatory(mandatoryMatch);
+                setDescription(initialData.description || '');
                 setCategory(initialData.category || 'GENERAL');
                 setDeadline(initialData.deadline ? new Date(initialData.deadline).toISOString().slice(0, 16) : getDefaultDeadline());
                 setPriority(initialData.priority || 1);
-                setSubmissionLink(initialData.googleSheetUrl || '');
+                
+                // Set URLs correctly based on backend response keys
+                setLinkUrl(initialData.linkUrl || '');
+                setGoogleSheetUrl(initialData.googleSheetUrl || '');
+                
+                setIsMandatory(initialData.isMandatory || false);
                 setIsGlobal(initialData.isGlobal);
                 
                 if (!initialData.isGlobal) {
@@ -304,7 +304,7 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
                 // --- CREATE MODE ---
                 setTitle(''); setDescription(''); setCategory('GENERAL');
                 setDeadline(getDefaultDeadline()); setPriority(1);
-                setSubmissionLink(''); setResponseLink(''); setIsMandatory(false);
+                setLinkUrl(''); setGoogleSheetUrl(''); setIsMandatory(false);
                 setIsGlobal(true); setSelectedSemester(''); setAvailableBatches([]); setSelectedBatches([]);
             }
         }
@@ -340,14 +340,12 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
     };
 
     const constructPayload = () => {
-        let finalDescription = description;
-        if (responseLink) finalDescription += `\n\n📄 Response Link: ${responseLink}`;
-        if (isMandatory) finalDescription += `\n\n⚠️ **MANDATORY SUBMISSION REQUIRED**`;
-
         return {
-            title, description: finalDescription, category, priority, isGlobal,
+            id: initialData?._id, // Required for Modify endpoint
+            title, description, category, priority, isGlobal, isMandatory,
             deadline: deadline ? new Date(deadline).toISOString() : null,
-            googleSheetUrl: submissionLink,
+            linkUrl: linkUrl,
+            googleSheetUrl: googleSheetUrl,
             targetSemesters: isGlobal ? [] : [selectedSemester],
             targetBatches: isGlobal ? [] : selectedBatches,
             postedby: 'Admin', // Preview placeholder
@@ -372,12 +370,14 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
         // Remove preview-only fields before sending
         delete payload.postedby;
         delete payload.createdAt;
+        delete payload.filledStudents;
 
+        // Determine Endpoint and Method
         const endpoint = initialData 
-            ? `${API_URL}/api/edit-announcements/${initialData._id}` 
+            ? `${API_URL}/api/modify-announcements` 
             : `${API_URL}/api/post-announcements`;
         
-        const method = initialData ? 'PUT' : 'POST';
+        const method = initialData ? 'PATCH' : 'POST';
 
         try {
             const res = await fetch(endpoint, {
@@ -390,9 +390,9 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
             if (res.ok) {
                 onSuccess({ type: 'success', message: initialData ? 'Updated successfully!' : 'Posted successfully!' });
                 onClose();
-            } else throw new Error(data.message);
+            } else throw new Error(data.message || "Failed to process request");
         } catch (error) {
-            onSuccess({ type: 'error', message: "Operation failed. Please try again." });
+            onSuccess({ type: 'error', message: error.message });
         } finally {
             setLoading(false);
         }
@@ -490,17 +490,17 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">Submission URL</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">Link URL (Optional)</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><Link size={16} className="text-blue-500" /></div>
-                                            <input value={submissionLink} onChange={(e) => setSubmissionLink(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all placeholder:text-slate-300" placeholder="https://..." />
+                                            <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all placeholder:text-slate-300" placeholder="https://..." />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">Response URL</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">Google Sheet/Form URL (Optional)</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><FileSpreadsheet size={16} className="text-emerald-500" /></div>
-                                            <input value={responseLink} onChange={(e) => setResponseLink(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-emerald-600 focus:ring-2 focus:ring-emerald-50 focus:border-emerald-400 outline-none transition-all placeholder:text-slate-300" placeholder="https://..." />
+                                            <input value={googleSheetUrl} onChange={(e) => setGoogleSheetUrl(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-emerald-600 focus:ring-2 focus:ring-emerald-50 focus:border-emerald-400 outline-none transition-all placeholder:text-slate-300" placeholder="https://..." />
                                         </div>
                                     </div>
                                 </div>
@@ -533,7 +533,7 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
                                             <div className="space-y-2">
                                                 <label className="text-xs font-bold text-slate-400 uppercase">Select Semester</label>
                                                 <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                                                    {SEMESTER_OPTIONS.map((sem) => (
+                                                    {SEMESTERS.map((sem) => (
                                                         <button key={sem} type="button" onClick={() => handleSemesterChange(sem)} className={`py-2 text-xs font-bold rounded-lg border transition-all ${selectedSemester === sem ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}>
                                                             {sem}
                                                         </button>

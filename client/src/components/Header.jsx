@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     User, LogOut, Menu, X, ChevronDown, ShieldCheck, GraduationCap, Briefcase, 
-    // New Icons imported for NavLinks
     LayoutDashboard, Trophy, CalendarDays, ClipboardCheck, FileClock, 
     Inbox as InboxIcon, Megaphone, CalendarRange 
 } from 'lucide-react';
@@ -89,7 +88,7 @@ const Header = ({ animate }) => {
             { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
             { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
             { path: '/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
-            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, // FileClock implies history/time-logs
+            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 
             { path: '/inbox', label: 'Inbox', icon: <InboxIcon size={iconSize} /> }, 
         ];
     } else if (user?.role === 'admin') {
@@ -121,7 +120,7 @@ const Header = ({ animate }) => {
         return {
             container: isActive ? 'text-white font-bold' : 'text-gray-400 hover:text-white font-medium',
             indicator: isActive ? 'w-full' : 'w-0 group-hover:w-full',
-            icon: isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-blue-400' // Added icon specific color transition
+            icon: isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-blue-400' 
         };
     };
 
@@ -165,7 +164,8 @@ const Header = ({ animate }) => {
                                     className={`relative group py-2 text-sm tracking-wide transition-colors ${styles.container}`}
                                 >
                                     <span className="flex items-center gap-2">
-                                        <span className={`transition-colors duration-300 ${styles.icon}`}>
+                                        {/* FIXED: Added flex, items-center, justify-center, and shrink-0 to prevent SVG collapse */}
+                                        <span className={`transition-colors duration-300 flex items-center justify-center shrink-0 ${styles.icon}`}>
                                             {link.icon}
                                         </span>
                                         {link.label}
@@ -220,7 +220,6 @@ const Header = ({ animate }) => {
                         {/* Enhanced Dropdown Menu */}
                         <div className={`absolute top-full right-0 pt-2 w-64 origin-top-right transition-all duration-200 ${isProfileDropdownOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-2 invisible'}`}>
                             <div className="bg-[#0f172a] rounded-xl shadow-2xl border border-white/10 overflow-hidden ring-1 ring-black/50">
-                                {/* Header in Dropdown (Visible on Mobile mostly) */}
                                 <div className="px-5 py-4 border-b border-white/5 bg-white/5">
                                     <p className="text-sm font-bold text-white truncate">{displayUser.name}</p>
                                     <div className="flex items-center gap-1.5 mt-1 text-xs text-blue-400 font-medium">
@@ -271,8 +270,8 @@ const Header = ({ animate }) => {
                             onClick={() => setIsMobileMenuOpen(false)}
                             className={`flex items-center gap-3 py-3 px-4 rounded-xl text-base font-medium transition-all ${location.pathname === navLink.path ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
                         >
-                            {/* Mobile Icon */}
-                            <span className={location.pathname === navLink.path ? 'text-white' : 'text-blue-400/80'}>
+                            {/* FIXED: Added shrink-0 to prevent SVG collapse on mobile */}
+                            <span className={`flex shrink-0 ${location.pathname === navLink.path ? 'text-white' : 'text-blue-400/80'}`}>
                                 {navLink.icon}
                             </span>
                             {navLink.label}

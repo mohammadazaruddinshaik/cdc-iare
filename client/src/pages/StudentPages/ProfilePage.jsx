@@ -13,38 +13,12 @@ import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
 import Loader from '../../components/Loader'; 
 
-// Import CryptoJS for encryption
-import CryptoJS from 'crypto-js';
-
 import lcImg from '../../assets/leetcode.webp';
 import gfgImg from '../../assets/gfg.png';
 import ccImg from '../../assets/codechef.png';
 import ghImg from '../../assets/github.png';
 
 const backendUrl = import.meta.env.VITE_BASE_URL;
-const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "YOUR_FALLBACK_SECRET_KEY";
-
-// --- ENCRYPTION UTILS ---
-const encryptData = (data) => {
-    try {
-        const jsonString = JSON.stringify(data);
-        return CryptoJS.AES.encrypt(jsonString, SECRET_KEY).toString();
-    } catch (error) {
-        console.error("Encryption error:", error);
-        return null;
-    }
-};
-
-const decryptData = (ciphertext) => {
-    try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
-        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-        return JSON.parse(decryptedString);
-    } catch (error) {
-        console.error("Decryption error:", error);
-        return null;
-    }
-};
 
 // --- SUB-COMPONENTS ---
 
@@ -313,7 +287,7 @@ const ChangePasswordModal = ({ isOpen, onClose, rollNo, sem }) => {
         
         setIsLoading(true);
         try {
-            const rawPayload = {
+            const payload = {
                 semname: sem || "VI", 
                 username: rollNo,
                 role: "student",
@@ -321,18 +295,10 @@ const ChangePasswordModal = ({ isOpen, onClose, rollNo, sem }) => {
                 newPassword: passwords.newPassword
             };
 
-            const encryptedPayload = encryptData(rawPayload);
-
-            if (!encryptedPayload) {
-                setApiMessage({ type: 'error', text: 'Encryption failed. Please contact support.' });
-                setIsLoading(false);
-                return;
-            }
-
             const response = await fetch(`${backendUrl}/api/auth/change-password`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payload: encryptedPayload }), 
+                body: JSON.stringify(payload), // Send plain payload
                 credentials: "include",
             });
             

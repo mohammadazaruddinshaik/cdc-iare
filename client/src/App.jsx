@@ -23,7 +23,6 @@ import AnnouncementsPage from './pages/StudentPages/AnnouncementsPage';
 import UpdateStudentPage from './pages/FacultyPages/UpdateStudentPage';
 import PostAttendance from './pages/CommonPages/PostAttendancePage';
 import ViewAttendance from './pages/CommonPages/ViewAttendancePage';
-import ViewAttendanceReports from './pages/FacultyPages/ViewAttendanceReports';
 import FacultyActionPage from './pages/CommonPages/FacultyActionPage';
 import FacultyMarkAttendancePage from './pages/FacultyPages/FacultyMarkAttendancePage';
 import MultiBatchAttendancePage from './pages/CommonPages/MultiBatchAttendancePage';
@@ -86,6 +85,7 @@ const AppRoutes = () => {
             <Route path="/faculty/action" element={<FacultyActionPage />} />
             <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
             <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
+            <Route path="/batch-report" element={<BatchWiseReport />} />
           </Route>
 
           {/* 2. EXCLUSIVE ADMIN ROUTES */}
@@ -101,7 +101,6 @@ const AppRoutes = () => {
             <Route path="/admin/create-timetable" element={<CreateTimetablePage />} />
             <Route path="/admin/system-admin" element={<SystemAdministrationPage />} />
             <Route path="/session-report" element={<SessionWiseReportPage />} />
-            <Route path="/batch-report" element={<BatchWiseReport />} />
             <Route path="/monthly-report" element={<MonthlyReport />} />
             <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
           </Route>
@@ -112,7 +111,6 @@ const AppRoutes = () => {
             <Route path="/faculty/profile" element={<FacultyProfilePage />} />
             <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
             <Route path="/faculty/students" element={<ViewAttendance />} />
-            <Route path="/faculty/reports" element={<ViewAttendanceReports />} />
             <Route path="/faculty/timetable" element={<FacultyTimetablePage />} />
           </Route>
 

@@ -293,7 +293,7 @@ const FacultyDashboard = () => {
                                     </div>
                                     <p className="text-xs text-gray-500 mt-auto">Mark student attendance for classes.</p>
                                 </div>
-                                <div onClick={() => navigate('/faculty/reports')} className="bg-gradient-to-br from-green-100 via-green-50 to-teal-50 rounded-2xl p-5 text-gray-800 shadow-lg transition-all hover:-translate-y-1 hover:scale-105 flex flex-col border border-white/20 relative cursor-pointer overflow-hidden group">
+                                <div onClick={() => navigate('/batch-report')} className="bg-gradient-to-br from-green-100 via-green-50 to-teal-50 rounded-2xl p-5 text-gray-800 shadow-lg transition-all hover:-translate-y-1 hover:scale-105 flex flex-col border border-white/20 relative cursor-pointer overflow-hidden group">
                                     <div className="flex items-start justify-between mb-3">
                                         <h3 className="font-bold text-sm leading-tight pr-2">Download Reports</h3>
                                         <div className="w-9 h-9 bg-white/30 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-sm transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0"><Download className="w-5 h-5 text-green-600" /></div>

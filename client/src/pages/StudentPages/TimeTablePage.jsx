@@ -1,13 +1,13 @@
 /**
  * @file TimetablePage.jsx
- * @description Ultra-minimalist dark theme. Borders & Accents only.
+ * @description Student Timetable with Ultra-Minimalist Border Themes and specific JSON parsing.
  */
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     Calendar, Clock, Terminal, Cloud, Database, Coffee, MapPin, 
-    ChevronRight, ChevronLeft, CalendarDays, Layers, Zap,
+    ChevronRight, ChevronLeft, CalendarDays, Zap,
     BookOpen, User
 } from 'lucide-react';
 import Header from '../../components/Header';
@@ -16,56 +16,54 @@ import Loader from '../../components/Loader';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 
-// --- 1. MINIMALIST BORDER THEMES ---
-const SUBJECT_THEMES = {
+// --- 1. MINIMALIST BORDER & ICON THEMES ---
+const SUBJECT_STYLES = {
   'CP': { 
-      title: 'Competitive Programming', 
-      borderColor: 'border-cyan-500/40 group-hover:border-cyan-500/80',
+      fullTitle: 'Competitive Programming',
+      borderColor: 'border-cyan-500/50 hover:border-cyan-400',
       textColor: 'text-cyan-400',
+      iconColor: 'text-cyan-400',
+      glow: 'hover:shadow-[0_0_20px_-10px_rgba(34,211,238,0.3)]',
       icon: Terminal 
   },
   'JFS': { 
-      title: 'Java Full Stack', 
-      borderColor: 'border-orange-500/40 group-hover:border-orange-500/80',
+      fullTitle: 'Java Full Stack',
+      borderColor: 'border-orange-500/50 hover:border-orange-400',
       textColor: 'text-orange-400',
+      iconColor: 'text-orange-400',
+      glow: 'hover:shadow-[0_0_20px_-10px_rgba(249,115,22,0.3)]',
       icon: Coffee 
   },
   'DBS': { 
-      title: 'Database Solutions', 
-      borderColor: 'border-emerald-500/40 group-hover:border-emerald-500/80',
+      fullTitle: 'Database Solutions',
+      borderColor: 'border-emerald-500/50 hover:border-emerald-400',
       textColor: 'text-emerald-400',
+      iconColor: 'text-emerald-400',
+      glow: 'hover:shadow-[0_0_20px_-10px_rgba(16,185,129,0.3)]',
       icon: Database 
   },
   'AWS': { 
-      title: 'Cloud Computing (AWS)', 
-      borderColor: 'border-violet-500/40 group-hover:border-violet-500/80',
+      fullTitle: 'Cloud Computing (AWS)',
+      borderColor: 'border-violet-500/50 hover:border-violet-400',
       textColor: 'text-violet-400',
+      iconColor: 'text-violet-400',
+      glow: 'hover:shadow-[0_0_20px_-10px_rgba(139,92,246,0.3)]',
       icon: Cloud 
   },
   'DEFAULT': {
-      title: 'Course Session', 
-      borderColor: 'border-slate-700 group-hover:border-slate-500',
+      fullTitle: 'Course Session',
+      borderColor: 'border-slate-600/50 hover:border-slate-400',
       textColor: 'text-slate-400',
+      iconColor: 'text-slate-400',
+      glow: 'hover:shadow-[0_0_20px_-10px_rgba(148,163,184,0.1)]',
       icon: BookOpen 
   }
 };
 
-const getSubjectTheme = (subjectName) => {
-    if (!subjectName) return SUBJECT_THEMES['DEFAULT'];
-    const upper = subjectName.toUpperCase().trim();
-    
-    if (upper.includes('COMPETITIVE') || upper.includes('CDC001')) return SUBJECT_THEMES['CP'];
-    if (upper.includes('JAVA') || upper.includes('CDC005')) return SUBJECT_THEMES['JFS'];
-    if (upper.includes('DATABASE') || upper.includes('CDC002')) return SUBJECT_THEMES['DBS'];
-    if (upper.includes('CLOUD') || upper.includes('AWS')) return SUBJECT_THEMES['AWS'];
-    
-    return SUBJECT_THEMES['DEFAULT'];
-};
-
-// Fixed Blue Theme for Today's Hero Card
-const HERO_THEME = {
-    gradient: 'from-blue-600/80 to-indigo-600/80', 
-    border: 'border-blue-500/30'
+const getSubjectTheme = (subjectCode) => {
+    if (!subjectCode) return SUBJECT_STYLES['DEFAULT'];
+    const code = subjectCode.toUpperCase().trim();
+    return SUBJECT_STYLES[code] || SUBJECT_STYLES['DEFAULT'];
 };
 
 const TimetablePage = () => {
@@ -105,7 +103,8 @@ const TimetablePage = () => {
             if (!response.ok) throw new Error("Failed to fetch timetable");
 
             const rawData = await response.json();
-            // Handle if response is array or object based on backend structure
+            // JSON structure is a direct object { sem: "VI", batch: "SU2", weekSchedule: [...] }
+            // or sometimes wrapped in an array depending on backend. Handling both:
             const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
             if (data) {
@@ -113,13 +112,14 @@ const TimetablePage = () => {
                 setSemester(data.sem);
 
                 const map = {};
+                // Parse weekSchedule array: [ { day: "Monday", periods: [...] }, ... ]
                 if (data.weekSchedule && Array.isArray(data.weekSchedule)) {
                     data.weekSchedule.forEach(dayObj => {
-                        // Extract faculty name array and join them
                         map[dayObj.day] = dayObj.periods.map(p => ({
                             time: `${p.startTime} - ${p.endTime}`,
-                            subject: p.subject, // e.g., "CDC001 - Competitive Programming"
+                            subject: p.subject, // e.g., "CP", "JFS"
                             room: p.roomNo,
+                            // Map faculty array to string
                             faculty: p.faculty ? p.faculty.map(f => f.name).join(', ') : 'Faculty'
                         }));
                     });
@@ -153,17 +153,12 @@ const TimetablePage = () => {
         const isToday = index === 0;
 
         const dailyClasses = scheduleMap[dayName] || [];
-        // Assuming 1 major class per day for this view, or taking the first one
         const primaryClass = dailyClasses.length > 0 ? dailyClasses[0] : null;
         
-        let theme = SUBJECT_THEMES['DEFAULT'];
-        let cleanSubjectName = "No Class";
-
+        let theme = SUBJECT_STYLES['DEFAULT'];
+        
         if (primaryClass) {
             theme = getSubjectTheme(primaryClass.subject);
-            // Optional: Clean up subject string if it contains code (e.g., "CDC001 - Subject" -> "Subject")
-            const parts = primaryClass.subject.split(' - ');
-            cleanSubjectName = parts.length > 1 ? parts[1] : primaryClass.subject;
         }
 
         return { 
@@ -172,7 +167,6 @@ const TimetablePage = () => {
             hasClass: !!primaryClass,
             classInfo: primaryClass ? {
                 ...primaryClass,
-                cleanSubject: cleanSubjectName,
                 ...theme
             } : null,
             isToday 
@@ -210,7 +204,7 @@ const TimetablePage = () => {
                 </h1>
             </div>
 
-            {/* Minimal Batch Indicators */}
+            {/* Batch Indicators */}
             {userBatch && (
                 <div className="flex items-center gap-3">
                     <div className="bg-[#0F172A] border border-white/10 px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
@@ -233,8 +227,8 @@ const TimetablePage = () => {
             
             {todaySchedule?.hasClass ? (
                 <div className={`
-                    relative rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden
-                    bg-[#0F172A]/80 backdrop-blur-xl border border-blue-500/40
+                    relative rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden border transition-all duration-300
+                    bg-[#0F172A]/80 backdrop-blur-xl ${todaySchedule.classInfo.borderColor} ${todaySchedule.classInfo.glow}
                 `}>
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] -mr-20 -mt-20 pointer-events-none"></div>
                     
@@ -251,15 +245,14 @@ const TimetablePage = () => {
                             </div>
 
                             <div>
-                                <span className="inline-block px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold text-[10px] uppercase tracking-widest border border-blue-500/20 mb-2 shadow-sm">
+                                <span className={`inline-block px-3 py-1 rounded-full bg-white/5 font-bold text-[10px] uppercase tracking-widest border border-white/10 mb-2 shadow-sm ${todaySchedule.classInfo.textColor}`}>
                                     Happening Now
                                 </span>
                                 <h3 className="text-3xl md:text-5xl font-black text-white leading-tight">
-                                    {todaySchedule.classInfo.cleanSubject}
+                                    {todaySchedule.classInfo.fullTitle}
                                 </h3>
-                                {/* Faculty Display in Hero */}
-                                <p className="text-blue-200/80 text-lg mt-2 font-medium flex items-center gap-2">
-                                    <User size={18} className="text-blue-400"/>
+                                <p className={`text-lg mt-2 font-medium flex items-center gap-2 ${todaySchedule.classInfo.textColor}`}>
+                                    <User size={18} />
                                     {todaySchedule.classInfo.faculty}
                                 </p>
                             </div>
@@ -267,7 +260,7 @@ const TimetablePage = () => {
 
                         <div className="flex flex-col items-start md:items-end gap-3 bg-black/20 p-5 rounded-2xl border border-white/5 backdrop-blur-md w-full md:w-auto">
                             <div className="flex items-center gap-3">
-                                <Clock className="text-blue-400 w-6 h-6" />
+                                <Clock className={`w-6 h-6 ${todaySchedule.classInfo.textColor}`} />
                                 <span className="text-3xl font-bold text-white tracking-tight">
                                     {todaySchedule.classInfo.time.split(' - ')[0]}
                                 </span>
@@ -290,7 +283,7 @@ const TimetablePage = () => {
             )}
         </section>
 
-        {/* --- SECTION 2: UPCOMING SESSIONS (Border & Accent Only) --- */}
+        {/* --- SECTION 2: UPCOMING SESSIONS (Grid) --- */}
         <section className={`transition-all duration-700 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -298,7 +291,6 @@ const TimetablePage = () => {
                 </h2>
             </div>
 
-            {/* GRID LAYOUT */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentViewSchedule.map((item, idx) => (
                     <div 
@@ -307,13 +299,12 @@ const TimetablePage = () => {
                             relative rounded-[2rem] p-6 border transition-all duration-300 overflow-hidden group h-full flex flex-col justify-between
                             bg-[#0F172A]/40 backdrop-blur-md
                             ${item.hasClass 
-                                ? `${item.classInfo.borderColor} hover:shadow-[0_0_20px_-10px_rgba(255,255,255,0.1)]` 
+                                ? `${item.classInfo.borderColor} ${item.classInfo.glow}` 
                                 : 'border-white/5 opacity-50'}
                         `}
                     >
-                        {/* Header: Date Box & Subject Icon */}
+                        {/* HEADER: Date & Icon */}
                         <div className="flex items-start justify-between mb-6">
-                             {/* Date Box: Neutral */}
                              <div className={`
                                 flex flex-col items-center justify-center w-14 h-14 rounded-2xl border shadow-sm transition-all
                                 bg-white/5 border-white/5 group-hover:border-white/10
@@ -326,25 +317,24 @@ const TimetablePage = () => {
                                 </span>
                             </div>
 
-                            {/* Icon */}
                             {item.hasClass && (
-                                <div className={`p-2 rounded-xl border border-white/5 bg-white/5 ${item.classInfo.textColor}`}>
+                                <div className={`p-3 rounded-2xl border bg-white/5 ${item.classInfo.borderColor} ${item.classInfo.textColor}`}>
                                     <item.classInfo.icon size={20} />
                                 </div>
                             )}
                         </div>
 
-                        {/* Body Info */}
+                        {/* BODY */}
                         <div>
                             {item.hasClass ? (
                                 <>
                                     <h4 className="text-xl font-black text-white leading-tight mb-2 group-hover:text-white transition-colors line-clamp-2">
-                                        {item.classInfo.cleanSubject}
+                                        {item.classInfo.fullTitle}
                                     </h4>
                                     
-                                    {/* Faculty Name Display */}
-                                    <p className="text-xs font-bold text-slate-500 mb-5 flex items-center gap-2">
-                                        <User size={12} className={item.classInfo.textColor.replace('text-', 'text-opacity-70 text-')} />
+                                    {/* Faculty Name */}
+                                    <p className={`text-xs font-bold mb-5 flex items-center gap-2 ${item.classInfo.textColor}`}>
+                                        <User size={12} />
                                         {item.classInfo.faculty}
                                     </p>
                                     
@@ -372,7 +362,7 @@ const TimetablePage = () => {
 
       </main>
 
-      {/* --- PAGINATION (Fixed Bottom) --- */}
+      {/* --- PAGINATION --- */}
       <div className="fixed bottom-6 left-0 right-0 z-30 px-4 pointer-events-none flex justify-center">
         <div className="bg-[#0F172A]/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full p-1.5 flex items-center gap-2 pointer-events-auto ring-1 ring-white/5">
             <button 
