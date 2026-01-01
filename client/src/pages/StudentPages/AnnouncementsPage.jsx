@@ -224,11 +224,9 @@ const InboxPage = () => {
                     <div>
                         <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
                             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
-                                Campus Inbox
+                                Inbox
                             </span>
-                            <Sparkles className="w-6 h-6 text-blue-400 animate-pulse mb-2" />
                         </h1>
-                        <p className="text-slate-400 font-medium text-base mt-2">Important updates and announcements.</p>
                     </div>
 
                     <div className="relative group w-full md:w-96">
