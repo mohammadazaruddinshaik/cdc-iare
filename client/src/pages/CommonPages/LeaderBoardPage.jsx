@@ -1,697 +1,3 @@
-// import React, { useState, useMemo, useEffect } from 'react';
-// import { 
-//     Search, LayoutGrid, List, 
-//     ChevronLeft, ChevronRight, X, User, Filter,
-//     Sparkles, Trophy, Monitor, Smartphone,
-//     Flag, Target, Users // Icons
-// } from 'lucide-react';
-// import Header from '../../components/Header';
-// import { useAuth } from '../../context/AuthContext'; 
-
-// // --- ASSET IMPORTS ---
-// import lcImg from '../../assets/leetcode.webp';
-// import gfgImg from '../../assets/gfg.png';
-// import ccImg from '../../assets/codechef.png';
-// import ghImg from '../../assets/github.png';
-
-// const ASSETS = {
-//     leetcode: lcImg,
-//     gfg: gfgImg,
-//     codechef: ccImg,
-//     github: ghImg,
-//     hackerrank: null
-// };
-
-// // --- CONFIGURATION ---
-// const PODIUM_STYLES = {
-//     1: {
-//         wrapper: 'order-2 z-20 -mt-6 lg:-mt-8 xl:-mt-10 scale-100 lg:scale-110', 
-//         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
-//         border: 'border-yellow-500/50',
-//         rankCircle: 'border-yellow-400 text-yellow-400 bg-[#0F172A] shadow-[0_0_25px_rgba(250,204,21,0.5)]',
-//         text: 'text-yellow-100',
-//         shadow: 'shadow-[0_0_50px_-10px_rgba(234,179,8,0.2)]'
-//     },
-//     2: {
-//         wrapper: 'order-1 z-10 mt-4 scale-95 lg:scale-100', 
-//         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
-//         border: 'border-slate-400/30',
-//         rankCircle: 'border-slate-300 text-slate-300 bg-[#0F172A] shadow-[0_0_25px_rgba(203,213,225,0.3)]',
-//         text: 'text-slate-200',
-//         shadow: 'shadow-[0_0_50px_-10px_rgba(148,163,184,0.1)]'
-//     },
-//     3: {
-//         wrapper: 'order-3 z-10 mt-4 scale-95 lg:scale-100', 
-//         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
-//         border: 'border-orange-500/30',
-//         rankCircle: 'border-orange-400 text-orange-400 bg-[#0F172A] shadow-[0_0_25px_rgba(251,146,60,0.3)]',
-//         text: 'text-orange-100',
-//         shadow: 'shadow-[0_0_50px_-10px_rgba(249,115,22,0.1)]'
-//     }
-// };
-
-// const BRAND_STYLES = {
-//     leetcode: { border: 'border-[#ffa116]/40', bg: 'bg-[#ffa116]/5 hover:bg-[#ffa116]/10', text: 'text-[#ffa116]' },
-//     gfg: { border: 'border-[#2f8d46]/40', bg: 'bg-[#2f8d46]/5 hover:bg-[#2f8d46]/10', text: 'text-[#4ade80]' },
-//     codechef: { border: 'border-[#d4a485]/40', bg: 'bg-[#5b4638]/10 hover:bg-[#5b4638]/20', text: 'text-[#e6c0a6]' },
-//     github: { border: 'border-white/20', bg: 'bg-white/5 hover:bg-white/10', text: 'text-slate-200' },
-// };
-
-// // --- SKELETON LOADER ---
-// const SkeletonList = () => (
-//     <div className="space-y-4 animate-pulse">
-//         <div className="hidden lg:grid grid-cols-12 gap-6 px-8 py-4 bg-white/5 rounded-xl border border-white/5">
-//             <div className="col-span-1 h-3 bg-slate-700/50 rounded mx-auto w-8"></div>
-//             <div className="col-span-4 h-3 bg-slate-700/50 rounded w-32"></div>
-//             <div className="col-span-5 h-3 bg-slate-700/50 rounded mx-auto w-48"></div>
-//             <div className="col-span-2 h-3 bg-slate-700/50 rounded ml-auto w-16"></div>
-//         </div>
-//         {[...Array(8)].map((_, i) => (
-//             <div key={i} className="h-20 bg-[#0F172A]/60 border border-white/5 rounded-2xl flex items-center px-4 lg:px-8 gap-6">
-//                 <div className="w-8 h-8 rounded-full bg-slate-700/30"></div>
-//                 <div className="w-12 h-12 rounded-full bg-slate-700/30 shrink-0"></div>
-//                 <div className="flex-1 space-y-2">
-//                     <div className="h-4 bg-slate-700/30 rounded w-48"></div>
-//                     <div className="h-3 bg-slate-700/30 rounded w-24"></div>
-//                 </div>
-//                 <div className="hidden lg:flex gap-3">
-//                     {[...Array(4)].map((_, j) => <div key={j} className="w-24 h-8 bg-slate-700/30 rounded-lg"></div>)}
-//                 </div>
-//                 <div className="w-20 h-8 bg-slate-700/30 rounded ml-auto"></div>
-//             </div>
-//         ))}
-//     </div>
-// );
-
-// // --- SUB-COMPONENTS ---
-
-// const MobileBlocker = ({ onUnlock }) => (
-//     <div className="fixed inset-0 z-[100] bg-[#020617] flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-//         <div className="relative mb-8">
-//             <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full"></div>
-//             <Monitor size={64} className="text-blue-400 relative z-10" />
-//             <Smartphone size={24} className="text-slate-500 absolute -bottom-2 -right-2 z-20 bg-[#020617] rounded-full p-1 border border-slate-700" />
-//         </div>
-//         <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Desktop Experience Recommended</h2>
-//         <p className="text-slate-400 mb-8 max-w-xs mx-auto leading-relaxed">
-//             The leaderboard contains detailed statistics that are best viewed on a larger screen.
-//         </p>
-//         <button 
-//             onClick={onUnlock}
-//             className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
-//         >
-//             <span className="text-sm font-bold text-slate-300 group-hover:text-white">View Minimal Version</span>
-//         </button>
-//     </div>
-// );
-
-// const ListRankBadge = ({ rank }) => {
-//     if (rank > 3) return <span className="text-sm font-mono font-bold text-slate-500 w-8 text-center">#{rank}</span>;
-//     const colors = {
-//         1: 'border-yellow-500 text-yellow-400 bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.4)]',
-//         2: 'border-slate-400 text-slate-300 bg-slate-400/10 shadow-[0_0_15px_rgba(148,163,184,0.3)]',
-//         3: 'border-orange-500 text-orange-400 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
-//     };
-//     return (
-//         <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm ${colors[rank]} transform hover:scale-110 transition-transform`}>
-//             {rank}
-//         </div>
-//     );
-// };
-
-// const StudentAvatar = ({ rollNo, size = "md", rank }) => {
-//     const [imgLoaded, setImgLoaded] = useState(false);
-//     const [error, setError] = useState(false);
-    
-//     useEffect(() => {
-//         setImgLoaded(false);
-//         setError(false);
-//     }, [rollNo]);
-
-//     const formattedRoll = rollNo ? rollNo.toUpperCase() : '';
-//     const imgSrc = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${formattedRoll}/${formattedRoll}.jpg`;
-    
-//     const sizeClasses = { 
-//         sm: "w-9 h-9", 
-//         md: "w-12 h-12 lg:w-12 lg:h-12 xl:w-14 xl:h-14", 
-//         lg: "w-16 h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24", 
-//         xl: "w-24 h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32" 
-//     };
-    
-//     const isPodium = rank <= 3 && size === 'xl'; 
-//     const ringColor = isPodium 
-//         ? (rank === 1 ? 'ring-yellow-500' : rank === 2 ? 'ring-slate-400' : 'ring-orange-500') 
-//         : 'ring-white/10 group-hover:ring-blue-400/50';
-
-//     return (
-//         <div className={`relative ${sizeClasses[size]} flex-shrink-0 transition-all duration-500`}>
-//             <div className={`relative w-full h-full rounded-full p-[3px] ring-2 ${ringColor} bg-[#071225] overflow-hidden shadow-2xl z-10`}>
-//                 {!error ? (
-//                     <>
-//                         <div className={`absolute inset-0 bg-slate-800 transition-opacity duration-500 ${imgLoaded ? 'opacity-0' : 'opacity-100'}`} />
-//                         <img 
-//                             src={imgSrc} 
-//                             alt="Student" 
-//                             loading="lazy"
-//                             onLoad={() => setImgLoaded(true)}
-//                             onError={() => setError(true)} 
-//                             className={`w-full h-full object-cover rounded-full transition-opacity duration-700 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
-//                         />
-//                     </>
-//                 ) : (
-//                     <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-//                         <User size={size === 'xl' ? 40 : 16} />
-//                     </div>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// };
-
-// const BrandTile = ({ type, score, url, compact = false }) => {
-//     const style = BRAND_STYLES[type] || BRAND_STYLES.github;
-//     const assetSrc = ASSETS[type];
-//     const numericScore = score ? parseInt(score, 10) : 0;
-//     const displayScore = isNaN(numericScore) ? 0 : numericScore;
-//     const Container = url ? 'a' : 'div';
-//     const containerProps = url 
-//         ? { href: url, target: "_blank", rel: "noopener noreferrer", className: "block h-full hover:-translate-y-0.5 transition-transform cursor-pointer" }
-//         : { className: "block h-full cursor-default" };
-
-//     return (
-//         <Container {...containerProps}>
-//              <div className={`
-//                 flex items-center justify-between rounded-xl border backdrop-blur-md 
-//                 transition-all duration-300 group w-full h-full
-//                 ${style.border} ${style.bg} hover:border-opacity-100 border-opacity-30
-//                 ${compact ? 'px-2 py-1' : 'px-3 py-2'}
-//             `}>
-//                 <div className="shrink-0 flex items-center justify-center">
-//                     {assetSrc ? (
-//                         <img src={assetSrc} alt={type} loading="lazy" className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4 lg:w-5 lg:h-5'} object-contain opacity-90 group-hover:opacity-100 transition-opacity`} />
-//                     ) : (
-//                         <div className={`${compact ? 'w-3.5 h-3.5 text-[8px]' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center font-black border border-white/20 text-slate-400 bg-white/10`}>
-//                             {type.substring(0,1).toUpperCase()}
-//                         </div>
-//                     )}
-//                 </div>
-//                 <div className="flex items-center ml-2 min-w-0">
-//                     <span className={`font-mono font-bold tracking-tight ${url ? 'group-hover:text-white' : ''} transition-colors truncate ${style.text} ${compact ? 'text-xs' : 'text-sm'}`}>
-//                         {displayScore}
-//                     </span>
-//                 </div>
-//             </div>
-//         </Container>
-//     );
-// };
-
-// // --- HERO CARD (PODIUM) ---
-// const HeroCard = ({ coder, rank }) => {
-//     if (!coder) return null;
-//     const styles = PODIUM_STYLES[rank];
-    
-//     return (
-//         <div className={`relative group transition-all duration-700 ease-out flex-1 lg:min-w-[200px] lg:max-w-[260px] xl:min-w-[260px] xl:max-w-[340px] ${styles.wrapper}`}>
-//             <div className={`
-//                 relative rounded-[2rem] 
-//                 p-4 lg:p-4 xl:p-6 
-//                 ${styles.bg} ${styles.border} ${styles.shadow} border-2
-//                 hover:-translate-y-3 hover:shadow-2xl transition-all duration-500
-//                 flex flex-col items-center h-full justify-between animate-fade-in-up
-//             `}>
-//                 <div className="relative z-10 flex flex-col items-center w-full">
-//                     <div className="relative mb-4 lg:mb-4 xl:mb-6 transform group-hover:scale-105 transition-transform duration-500">
-//                         <StudentAvatar rollNo={coder.displayId} rank={rank} size={rank === 1 ? "xl" : "lg"} />
-//                         <div className={`absolute -bottom-2 -right-1 w-8 h-8 lg:w-8 lg:h-8 xl:w-10 xl:h-10 rounded-full border-[3px] flex items-center justify-center z-20 font-black text-base lg:text-base xl:text-lg shadow-xl ${styles.rankCircle}`}>
-//                             {rank}
-//                         </div>
-//                     </div>
-                    
-//                     <div className="mt-1 text-center w-full space-y-1">
-//                         <h3 className={`text-lg lg:text-lg xl:text-xl font-bold truncate px-2 leading-tight tracking-tight ${styles.text} drop-shadow-md`}>{coder.displayName}</h3>
-//                         <div className="flex justify-center gap-2">
-//                             <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg bg-black/40 text-slate-400 border border-white/5">{coder.displayId}</span>
-//                             <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20">{coder.batch}</span>
-//                         </div>
-//                     </div>
-                    
-//                     <div className="my-4 lg:my-3 xl:my-5 w-full bg-black/30 rounded-xl py-2 lg:py-2 xl:py-3 border border-white/5 text-center shadow-inner group-hover:border-white/10 transition-colors">
-//                         <span className="text-[9px] text-slate-500 uppercase font-bold tracking-[0.25em] mb-0.5 block">Total Score</span>
-//                         <div className="text-2xl lg:text-2xl xl:text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-//                             {(coder.totalScore || 0).toLocaleString()}
-//                         </div>
-//                     </div>
-                    
-//                     <div className="grid grid-cols-2 gap-2 w-full">
-//                         <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} compact={false} />
-//                         <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} compact={false} />
-//                         <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} compact={false} />
-//                         <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} compact={false} />
-//                     </div>
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// };
-
-// // --- UPDATED FOOTER (Detailed UI + Hide/Show Logic) ---
-// const StudentStickyFooter = ({ myData }) => {
-//     const [isVisible, setIsVisible] = useState(false);
-
-//     // Scroll Logic to Toggle Visibility
-//     useEffect(() => {
-//         const handleScroll = () => {
-//             if (window.scrollY > 100) {
-//                 setIsVisible(true);
-//             } else {
-//                 setIsVisible(false);
-//             }
-//         };
-
-//         window.addEventListener('scroll', handleScroll);
-//         return () => window.removeEventListener('scroll', handleScroll);
-//     }, []);
-
-//     if (!myData) return null;
-
-//     return (
-//         <div className={`fixed bottom-2 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${
-//             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0'
-//         }`}>
-//             {/* Main Content Box */}
-//             <div className="pointer-events-auto w-full max-w-5xl bg-[#0F172A]/90 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.5)] p-2 sm:p-3 pr-4 sm:pr-6 flex items-center justify-between ring-1 ring-white/10 relative overflow-hidden">
-                
-//                 {/* Background Glow */}
-//                 <div className="absolute top-0 left-1/4 w-1/2 h-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
-                
-//                 {/* Left: Avatar, ID, Rank */}
-//                 <div className="flex items-center gap-3 sm:gap-4 relative z-10 shrink-0">
-//                     <div className="relative group cursor-pointer">
-//                         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/10 shadow-lg group-hover:border-blue-500/50 transition-colors">
-//                             <img 
-//                                 src={`https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${myData.displayId}/${myData.displayId}.jpg`} 
-//                                 onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/150'; }}
-//                                 alt="Me" 
-//                                 className="w-full h-full object-cover"
-//                             />
-//                         </div>
-//                     </div>
-                    
-//                    <div className="flex flex-col justify-center items-start gap-1"> 
-//                         <span className="text-[10px] sm:text-xs font-mono font-semibold text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 w-fit">{myData.displayId}</span>
-//                         <div className="flex items-center gap-2">
-//                             {/* Replaced Trophy with Flag (Race Icon) for "Your Position" context */}
-//                             <Flag size={14} className="text-yellow-500 fill-yellow-500/20" />
-//                             <span className="text-sm sm:text-base font-bold text-white leading-tight">Rank #{myData.rank}</span>
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 {/* Middle: Platform Stats (Hidden on small mobile) */}
-//                 <div className="hidden sm:block flex-1 mx-3 sm:mx-6 overflow-x-auto no-scrollbar">
-//                     <div className="flex items-center gap-2 sm:gap-3 w-max sm:mx-auto">
-//                         <div className="w-[110px] h-9"><BrandTile type="leetcode" score={myData.scores?.leetcode} compact={true} /></div>
-//                         <div className="w-[110px] h-9"><BrandTile type="gfg" score={myData.scores?.gfg} compact={true} /></div>
-//                         <div className="w-[110px] h-9"><BrandTile type="codechef" score={myData.scores?.codechef} compact={true} /></div>
-//                         <div className="w-[110px] h-9"><BrandTile type="github" score={myData.scores?.github} compact={true} /></div>
-//                     </div>
-//                 </div>
-
-//                 {/* Right: Total Score */}
-//                 <div className="flex flex-col items-end border-l border-white/10 pl-3 sm:pl-5 shrink-0 relative z-10 min-w-[80px]">
-//                     <span className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-bold mb-0.5">Total</span>
-//                     <span className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-300 leading-none drop-shadow-lg">
-//                         {(myData.totalScore || 0).toLocaleString()}
-//                     </span>
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// };
-
-// // --- MAIN PAGE COMPONENT ---
-// const LeaderBoardPage = () => {
-//     const { user, logout } = useAuth();
-    
-//     const [allCoders, setAllCoders] = useState([]);
-//     const [availableBatches, setAvailableBatches] = useState(['All']);
-//     const [loading, setLoading] = useState(true);
-//     const [animate, setAnimate] = useState(false);
-    
-//     const [myData, setMyData] = useState(null);
-//     const [viewMode, setViewMode] = useState('list');
-//     const [searchTerm, setSearchTerm] = useState('');
-//     const [selectedBatch, setSelectedBatch] = useState('All');
-//     const [currentPage, setCurrentPage] = useState(1);
-    
-//     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
-//     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-//     const [showMobileList, setShowMobileList] = useState(false);
-
-//     const itemsPerPage = viewMode === 'list' ? 12 : 8;
-
-//     const stats = useMemo(() => {
-//         if (!allCoders.length) return { active: 0, benchmark: 0, average: 0 };
-//         const active = allCoders.length;
-//         const benchmark = allCoders[0]?.totalScore || 0;
-//         return { active, benchmark };
-//     }, [allCoders]);
-
-//     useEffect(() => {
-//         const handleResize = () => {
-//             const width = window.innerWidth;
-//             setIsDesktop(width >= 1024);
-//             setIsMobile(width < 768);
-//         };
-//         window.addEventListener('resize', handleResize);
-//         return () => window.removeEventListener('resize', handleResize);
-//     }, []);
-
-//     useEffect(() => {
-//         window.scrollTo({ top: 0, behavior: 'smooth' });
-//     }, [currentPage]);
-
-//     useEffect(() => {
-//         if (!user) return; 
-
-//         const fetchData = async () => {
-//             try {
-//                 const start = Date.now();
-//                 const url = `${import.meta.env.VITE_BASE_URL}/api/leaderboard`;
-//                 const res = await fetch(url, { method: 'GET', credentials: 'include' });
-
-//                 if (res.status === 401 || res.status === 403) { logout(); return; }
-//                 if (!res.ok) throw new Error('Failed to fetch leaderboard');
-                
-//                 const data = await res.json();
-                
-//                 if (data.batches) setAvailableBatches(['All', ...data.batches.sort()]);
-
-//                 const toTitleCase = (str) => str?.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'Student';
-                
-//                 const parsed = (data.AllCoders || []).map(c => ({
-//                     ...c,
-//                     displayName: toTitleCase(c.name),
-//                     displayId: c.rollno,
-//                     batch: c.batch,
-//                     totalScore: c.totalScore ? parseInt(c.totalScore, 10) : 0,
-//                     scores: c.scores || {},
-//                     handles: c.handles || {}
-//                 }))
-//                 .sort((a,b) => b.totalScore - a.totalScore)
-//                 .map((c, i) => ({...c, rank: i + 1}));
-
-//                 const delta = Date.now() - start;
-//                 if (delta < 800) await new Promise(r => setTimeout(r, 800 - delta));
-
-//                 setAllCoders(parsed);
-//                 if (data.myPosition) setMyData(parsed.find(c => c.rank === data.myPosition));
-
-//             } catch (e) { console.error("Leaderboard fetch error:", e); } finally {
-//                 setLoading(false);
-//                 setTimeout(() => setAnimate(true), 100);
-//             }
-//         };
-//         fetchData();
-//     }, [user, logout]);
-
-//     const filteredData = useMemo(() => {
-//         const lowerSearch = searchTerm.toLowerCase();
-//         return allCoders.filter(c => 
-//             (selectedBatch === 'All' || c.batch === selectedBatch) &&
-//             (c.displayName.toLowerCase().includes(lowerSearch) || c.displayId.toLowerCase().includes(lowerSearch))
-//         );
-//     }, [allCoders, searchTerm, selectedBatch]);
-
-//     const showHeroSection = isDesktop && currentPage === 1 && !searchTerm && selectedBatch === 'All' && filteredData.length > 0;
-//     const effectiveData = (showHeroSection && !isMobile) ? filteredData.slice(3) : filteredData;
-    
-//     const paginatedData = useMemo(() => {
-//         const start = (currentPage - 1) * itemsPerPage;
-//         return effectiveData.slice(start, start + itemsPerPage);
-//     }, [effectiveData, currentPage, itemsPerPage]);
-
-//     const totalPages = Math.ceil(effectiveData.length / itemsPerPage);
-
-//     if (isMobile && !showMobileList) {
-//         return <MobileBlocker onUnlock={() => setShowMobileList(true)} />;
-//     }
-
-//     return (
-//         <div className={`min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans ${myData ? 'pb-28 sm:pb-36' : 'pb-10'}`}>
-            
-//             <div className="relative px-4 pt-4 pb-6 z-20">
-//                 <Header animate={animate} />
-//                 <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
-//             </div>
-
-//             <main className="px-4 sm:px-6 lg:px-12 xl:px-20 max-w-[95%] 2xl:max-w-[1600px] mx-auto py-4 space-y-8 lg:space-y-12">
-                
-//                 {/* --- HEADER --- */}
-//                 <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 transition-all duration-700 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-//                     <div className="flex-1">
-//                         <div className="flex items-center gap-4 mb-2">
-//                             <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white tracking-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-//                                 Leaderboard
-//                             </h1>
-//                             <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-pulse">
-//                                 <Sparkles size={20} />
-//                             </div>
-//                         </div>
-//                     </div>
-
-//                     {/* BOXED STATS (Right Side) */}
-//                     <div className="hidden md:flex gap-4 self-end md:self-auto">
-//                         {/* Box 1: Total Students */}
-//                         <div className="bg-[#0F172A]/80 backdrop-blur-md p-3 px-5 rounded-xl border border-white/10 flex items-center gap-4 shadow-lg min-w-[180px]">
-//                             <div className="p-2.5 bg-blue-500/20 rounded-lg text-blue-400">
-//                                 <Users size={20} />
-//                             </div>
-//                             <div>
-//                                 <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Total Students</p>
-//                                 <p className="text-xl font-black text-white">{loading ? '...' : stats.active}</p>
-//                             </div>
-//                         </div>
-
-//                         {/* Box 2: Top Score */}
-//                         <div className="bg-[#0F172A]/80 backdrop-blur-md p-3 px-5 rounded-xl border border-white/10 flex items-center gap-4 shadow-lg min-w-[180px]">
-//                             <div className="p-2.5 bg-yellow-500/20 rounded-lg text-yellow-400">
-//                                 <Trophy size={20} />
-//                             </div>
-//                             <div>
-//                                 <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Top Score</p>
-//                                 <p className="text-xl font-black text-white">{loading ? '...' : (stats.benchmark || 0).toLocaleString()}</p>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 {/* --- LOADING SKELETON --- */}
-//                 {loading ? (
-//                     <div className="animate-fade-in"><SkeletonList /></div>
-//                 ) : (
-//                     <>
-//                         {/* Hero Section */}
-//                         {showHeroSection && (
-//                             <div className="hidden lg:flex flex-row justify-center items-end gap-2 lg:gap-4 xl:gap-10 mb-16 lg:mb-16 xl:mb-20 min-h-[300px] lg:min-h-[360px] xl:min-h-[400px] animate-fade-in-up">
-//                                 {filteredData[1] && <HeroCard coder={filteredData[1]} rank={2} />}
-//                                 {filteredData[0] && <HeroCard coder={filteredData[0]} rank={1} />}
-//                                 {filteredData[2] && <HeroCard coder={filteredData[2]} rank={3} />}
-//                             </div>
-//                         )}
-
-//                         {/* Sticky Toolbar: Search + Filter + View + Pagination */}
-//                         <div className="sticky top-6 z-40 mb-8 flex justify-center">
-//                             <div className={`
-//                                 bg-[#0F172A]/90 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center gap-2 ring-1 ring-white/5 transition-all duration-300
-//                                 ${isMobile ? 'w-full justify-between px-3' : ''}
-//                             `}>
-//                                 {/* SEARCH BAR */}
-//                                 <div className={`relative flex items-center transition-all duration-500 rounded-full h-10 border border-transparent bg-white/5 hover:bg-white/10 ${isMobile ? 'flex-1 mr-2' : 'w-64 focus-within:w-80 px-4'}`}>
-//                                     <div className={`text-slate-400 pointer-events-none ${isMobile ? 'ml-3' : ''}`}><Search size={16} /></div>
-//                                     <input 
-//                                         type="text" 
-//                                         placeholder={isMobile ? "Search..." : "Search student..."}
-//                                         value={searchTerm}
-//                                         onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-//                                         className="bg-transparent text-white text-sm font-bold placeholder-slate-500 focus:outline-none ml-2 w-full h-full rounded-full"
-//                                     />
-//                                     {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-500 hover:text-white mr-3"><X size={14} /></button>}
-//                                 </div>
-
-//                                 {!isMobile && <div className="w-px h-6 bg-white/10"></div>}
-
-//                                 <div className="flex gap-2 shrink-0">
-//                                     <div className="relative group">
-//                                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"><Filter size={14} /></div>
-//                                         <select 
-//                                             value={selectedBatch}
-//                                             onChange={(e) => { setSelectedBatch(e.target.value); setCurrentPage(1); }}
-//                                             className="appearance-none bg-white/5 hover:bg-white/10 text-white rounded-full py-2 pl-9 pr-8 text-sm font-bold border border-transparent cursor-pointer transition-colors focus:outline-none h-10"
-//                                         >
-//                                             {availableBatches.map(b => <option key={b} value={b} className="bg-[#0F172A] text-white">{b === 'All' ? 'All' : b}</option>)}
-//                                         </select>
-//                                     </div>
-
-//                                     {!isMobile && (
-//                                         <div className="flex bg-white/5 rounded-full p-1 gap-1 border border-white/5 h-10 items-center">
-//                                             <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-all duration-300 ${viewMode === 'list' ? 'bg-[#1E293B] text-white shadow-md' : 'text-slate-500 hover:text-white'}`}><List size={16} /></button>
-//                                             <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-all duration-300 ${viewMode === 'grid' ? 'bg-[#1E293B] text-white shadow-md' : 'text-slate-500 hover:text-white'}`}><LayoutGrid size={16} /></button>
-//                                         </div>
-//                                     )}
-//                                 </div>
-
-//                                 {totalPages > 1 && !isMobile && (
-//                                     <>
-//                                         <div className="w-px h-6 bg-white/10"></div>
-//                                         <div className="flex items-center gap-1 px-2">
-//                                             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronLeft size={16} /></button>
-//                                             <span className="text-xs font-mono font-bold text-slate-400 select-none">{currentPage}/{totalPages}</span>
-//                                             <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronRight size={16} /></button>
-//                                         </div>
-//                                     </>
-//                                 )}
-//                             </div>
-//                         </div>
-
-//                         {/* --- LIST / GRID CONTENT --- */}
-//                         <div key={`${currentPage}-${selectedBatch}-${searchTerm}`} className="animate-slide-up-fade">
-//                             {paginatedData.length === 0 ? (
-//                                 <div className="text-center py-24 bg-white/5 rounded-[2rem] border border-white/10 border-dashed max-w-2xl mx-auto">
-//                                     <Sparkles className="mx-auto text-slate-500 mb-4" size={40} />
-//                                     <h3 className="text-xl font-bold text-white mb-1">No students found</h3>
-//                                 </div>
-//                             ) : (
-//                                 <div className={viewMode === 'list' || isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
-                                    
-//                                     {!isMobile && viewMode === 'list' && (
-//                                         <div className="grid grid-cols-12 gap-6 px-10 py-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 rounded-xl border border-white/5 items-center select-none">
-//                                             <div className="col-span-1 text-center">Rank</div>
-//                                             <div className="col-span-4 pl-2">Student Profile</div>
-//                                             <div className="col-span-5 text-center">Platform Stats</div>
-//                                             <div className="col-span-2 text-right pr-4">Total Score</div>
-//                                         </div>
-//                                     )}
-
-//                                     {paginatedData.map((coder) => (
-//                                         <div key={coder.displayId} 
-//                                             className={`
-//                                                 relative bg-[#0F172A]/60 border border-white/5 rounded-2xl transition-all duration-300 group
-//                                                 ${viewMode === 'grid' && !isMobile ? 'p-6 flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl hover:border-blue-500/30' : 'p-3 lg:px-10 lg:py-4 hover:bg-[#1E293B]/50 hover:border-white/10'}
-//                                                 ${myData?.displayId === coder.displayId ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''}
-//                                             `}
-//                                         >
-//                                             {isMobile ? (
-//                                                 <div className="flex items-center justify-between gap-3 p-1">
-//                                                     {/* LEFT: Rank, Avatar, Name */}
-//                                                     <div className="flex items-center gap-3 overflow-hidden">
-//                                                         <span className="font-mono font-bold text-slate-500 text-sm w-6 text-center">#{coder.rank}</span>
-//                                                         <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="sm" />
-//                                                         <div className="min-w-0">
-//                                                             <div className="font-bold text-white text-sm truncate">{coder.displayName}</div>
-//                                                             <div className="text-[10px] text-slate-500 font-mono">{coder.displayId}</div>
-//                                                         </div>
-//                                                     </div>
-//                                                     {/* RIGHT: Just Total Score */}
-//                                                     <div className="shrink-0 text-right pl-2">
-//                                                         <div className="font-black text-white text-base tracking-tight">
-//                                                             {coder.totalScore.toLocaleString()}
-//                                                         </div>
-//                                                     </div>
-//                                                 </div>
-//                                             ) : (
-//                                                 viewMode === 'list' ? (
-//                                                     <div className="grid grid-cols-12 gap-6 items-center">
-//                                                         <div className="col-span-1 flex justify-center"><ListRankBadge rank={coder.rank} /></div>
-//                                                         <div className="col-span-4 flex items-center gap-5 pl-2">
-//                                                             <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="md" />
-//                                                             <div className="min-w-0">
-//                                                                 <h4 className="font-bold text-white text-lg truncate group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
-//                                                                 <div className="flex items-center gap-2 mt-1.5">
-//                                                                     <span className="text-xs font-mono font-bold text-slate-400">{coder.displayId}</span>
-//                                                                     <span className="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-blue-200 border border-white/10">{coder.batch}</span>
-//                                                                 </div>
-//                                                             </div>
-//                                                         </div>
-//                                                         <div className="col-span-5 flex justify-center">
-//                                                             <div className="grid grid-cols-4 gap-3 w-full max-w-xl">
-//                                                                 <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
-//                                                                 <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
-//                                                                 <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
-//                                                                 <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
-//                                                             </div>
-//                                                         </div>
-//                                                         <div className="col-span-2 text-right pr-4">
-//                                                             <span className="text-2xl font-black text-white tracking-tighter tabular-nums drop-shadow-md">{(coder.totalScore || 0).toLocaleString()}</span>
-//                                                         </div>
-//                                                     </div>
-//                                                 ) : (
-//                                                     <>
-//                                                         <div className="absolute top-5 left-5"><ListRankBadge rank={coder.rank} /></div>
-//                                                         <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="lg" />
-//                                                         <div className="mt-5 text-center w-full">
-//                                                             <h4 className="font-bold text-white text-xl truncate px-2 group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
-//                                                             <div className="flex justify-center gap-2 mt-2">
-//                                                                 <span className="text-[10px] font-mono font-bold text-slate-400 bg-black/30 px-2 py-1 rounded border border-white/10">{coder.displayId}</span>
-//                                                                 <span className="text-[10px] font-mono font-bold text-blue-300 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">{coder.batch}</span>
-//                                                             </div>
-//                                                         </div>
-//                                                         <div className="w-full mt-6 space-y-3">
-//                                                             <div className="grid grid-cols-2 gap-2">
-//                                                                 <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
-//                                                                 <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
-//                                                                 <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
-//                                                                 <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
-//                                                             </div>
-//                                                             <div className="flex justify-between items-center pt-4 border-t border-white/10">
-//                                                                 <span className="text-[10px] text-slate-400 font-bold uppercase">Total Score</span>
-//                                                                 <span className="text-2xl font-black text-white">{(coder.totalScore || 0).toLocaleString()}</span>
-//                                                             </div>
-//                                                         </div>
-//                                                     </>
-//                                                 )
-//                                             )}
-//                                         </div>
-//                                     ))}
-//                                 </div>
-//                             )}
-//                         </div>
-
-//                         {/* Bottom Pagination */}
-//                         {totalPages > 1 && (
-//                             <div className="mt-12 flex justify-center pb-8">
-//                                 <div className="inline-flex bg-[#0F172A] rounded-full p-2 border border-white/10 shadow-2xl ring-1 ring-white/5 gap-4 items-center">
-//                                     <button 
-//                                         onClick={() => { setCurrentPage(p => Math.max(1, p-1)); }}
-//                                         disabled={currentPage === 1}
-//                                         className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
-//                                     >
-//                                         <ChevronLeft size={20} />
-//                                     </button>
-//                                     <div className="flex items-center px-4 font-mono text-sm text-slate-400 border-x border-white/5 h-5">
-//                                         <span className="text-white font-bold mr-2">{currentPage}</span> / <span className="ml-2">{totalPages}</span>
-//                                     </div>
-//                                     <button 
-//                                         onClick={() => { setCurrentPage(p => Math.min(totalPages, p+1)); }}
-//                                         disabled={currentPage >= totalPages}
-//                                         className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
-//                                     >
-//                                         <ChevronRight size={20} />
-//                                     </button>
-//                                 </div>
-//                             </div>
-//                         )}
-//                     </>
-//                 )}
-//             </main>
-
-//             {myData && <StudentStickyFooter myData={myData} />}
-//         </div>
-//     );
-// };
-
-// export default LeaderBoardPage;
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
     Search, LayoutGrid, List, 
@@ -701,7 +7,6 @@ import {
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
-import CryptoJS from 'crypto-js'; // Import CryptoJS
 
 // --- ASSET IMPORTS ---
 import lcImg from '../../assets/leetcode.webp';
@@ -718,40 +23,6 @@ const ASSETS = {
 };
 
 // --- CONFIGURATION ---
-const backendUrl = import.meta.env.VITE_BASE_URL;
-const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_SECRET_KEY; // Get Secret Key
-
-// --- ENCRYPTION / DECRYPTION UTILS ---
-
-const encryptData = (data) => {
-    try {
-        if (!data) return null;
-        const strData = typeof data === 'object' ? JSON.stringify(data) : String(data);
-        return CryptoJS.AES.encrypt(strData, EncDec_SECRET_KEY).toString();
-    } catch (err) {
-        console.error("Encryption Error:", err);
-        return null;
-    }
-};
-
-const decryptData = (ciphertext) => {
-    try {
-        if (!ciphertext) return null;
-        const bytes = CryptoJS.AES.decrypt(ciphertext, EncDec_SECRET_KEY);
-        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-        if (!decryptedString) return null;
-        try {
-            return JSON.parse(decryptedString);
-        } catch (e) {
-            return decryptedString;
-        }
-    } catch (err) {
-        console.error("Decryption Error:", err);
-        return null;
-    }
-};
-
-// --- STYLING CONFIGURATION ---
 const PODIUM_STYLES = {
     1: {
         wrapper: 'order-2 z-20 -mt-6 lg:-mt-8 xl:-mt-10 scale-100 lg:scale-110', 
@@ -1106,17 +377,13 @@ const LeaderBoardPage = () => {
         const fetchData = async () => {
             try {
                 const start = Date.now();
-                const url = `${backendUrl}/api/leaderboard`;
-                // GET REQUEST: Plain Params
+                const url = `${import.meta.env.VITE_BASE_URL}/api/leaderboard`;
                 const res = await fetch(url, { method: 'GET', credentials: 'include' });
 
                 if (res.status === 401 || res.status === 403) { logout(); return; }
                 if (!res.ok) throw new Error('Failed to fetch leaderboard');
                 
-                const rawJson = await res.json();
-                
-                // DECRYPTION LOGIC
-                const data = rawJson.data ? decryptData(rawJson.data) : rawJson;
+                const data = await res.json();
                 
                 if (data.batches) setAvailableBatches(['All', ...data.batches.sort()]);
 
@@ -1424,3 +691,736 @@ const LeaderBoardPage = () => {
 };
 
 export default LeaderBoardPage;
+
+// import React, { useState, useMemo, useEffect } from 'react';
+// import { 
+//     Search, LayoutGrid, List, 
+//     ChevronLeft, ChevronRight, X, User, Filter,
+//     Sparkles, Trophy, Monitor, Smartphone,
+//     Flag, Target, Users // Icons
+// } from 'lucide-react';
+// import Header from '../../components/Header';
+// import { useAuth } from '../../context/AuthContext'; 
+// import CryptoJS from 'crypto-js'; // Import CryptoJS
+
+// // --- ASSET IMPORTS ---
+// import lcImg from '../../assets/leetcode.webp';
+// import gfgImg from '../../assets/gfg.png';
+// import ccImg from '../../assets/codechef.png';
+// import ghImg from '../../assets/github.png';
+
+// const ASSETS = {
+//     leetcode: lcImg,
+//     gfg: gfgImg,
+//     codechef: ccImg,
+//     github: ghImg,
+//     hackerrank: null
+// };
+
+// // --- CONFIGURATION ---
+// const backendUrl = import.meta.env.VITE_BASE_URL;
+// const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_SECRET_KEY; // Get Secret Key
+
+// // --- ENCRYPTION / DECRYPTION UTILS ---
+
+// const encryptData = (data) => {
+//     try {
+//         if (!data) return null;
+//         const strData = typeof data === 'object' ? JSON.stringify(data) : String(data);
+//         return CryptoJS.AES.encrypt(strData, EncDec_SECRET_KEY).toString();
+//     } catch (err) {
+//         console.error("Encryption Error:", err);
+//         return null;
+//     }
+// };
+
+// const decryptData = (ciphertext) => {
+//     try {
+//         if (!ciphertext) return null;
+//         const bytes = CryptoJS.AES.decrypt(ciphertext, EncDec_SECRET_KEY);
+//         const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+//         if (!decryptedString) return null;
+//         try {
+//             return JSON.parse(decryptedString);
+//         } catch (e) {
+//             return decryptedString;
+//         }
+//     } catch (err) {
+//         console.error("Decryption Error:", err);
+//         return null;
+//     }
+// };
+
+// // --- STYLING CONFIGURATION ---
+// const PODIUM_STYLES = {
+//     1: {
+//         wrapper: 'order-2 z-20 -mt-6 lg:-mt-8 xl:-mt-10 scale-100 lg:scale-110', 
+//         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
+//         border: 'border-yellow-500/50',
+//         rankCircle: 'border-yellow-400 text-yellow-400 bg-[#0F172A] shadow-[0_0_25px_rgba(250,204,21,0.5)]',
+//         text: 'text-yellow-100',
+//         shadow: 'shadow-[0_0_50px_-10px_rgba(234,179,8,0.2)]'
+//     },
+//     2: {
+//         wrapper: 'order-1 z-10 mt-4 scale-95 lg:scale-100', 
+//         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
+//         border: 'border-slate-400/30',
+//         rankCircle: 'border-slate-300 text-slate-300 bg-[#0F172A] shadow-[0_0_25px_rgba(203,213,225,0.3)]',
+//         text: 'text-slate-200',
+//         shadow: 'shadow-[0_0_50px_-10px_rgba(148,163,184,0.1)]'
+//     },
+//     3: {
+//         wrapper: 'order-3 z-10 mt-4 scale-95 lg:scale-100', 
+//         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
+//         border: 'border-orange-500/30',
+//         rankCircle: 'border-orange-400 text-orange-400 bg-[#0F172A] shadow-[0_0_25px_rgba(251,146,60,0.3)]',
+//         text: 'text-orange-100',
+//         shadow: 'shadow-[0_0_50px_-10px_rgba(249,115,22,0.1)]'
+//     }
+// };
+
+// const BRAND_STYLES = {
+//     leetcode: { border: 'border-[#ffa116]/40', bg: 'bg-[#ffa116]/5 hover:bg-[#ffa116]/10', text: 'text-[#ffa116]' },
+//     gfg: { border: 'border-[#2f8d46]/40', bg: 'bg-[#2f8d46]/5 hover:bg-[#2f8d46]/10', text: 'text-[#4ade80]' },
+//     codechef: { border: 'border-[#d4a485]/40', bg: 'bg-[#5b4638]/10 hover:bg-[#5b4638]/20', text: 'text-[#e6c0a6]' },
+//     github: { border: 'border-white/20', bg: 'bg-white/5 hover:bg-white/10', text: 'text-slate-200' },
+// };
+
+// // --- SKELETON LOADER ---
+// const SkeletonList = () => (
+//     <div className="space-y-4 animate-pulse">
+//         <div className="hidden lg:grid grid-cols-12 gap-6 px-8 py-4 bg-white/5 rounded-xl border border-white/5">
+//             <div className="col-span-1 h-3 bg-slate-700/50 rounded mx-auto w-8"></div>
+//             <div className="col-span-4 h-3 bg-slate-700/50 rounded w-32"></div>
+//             <div className="col-span-5 h-3 bg-slate-700/50 rounded mx-auto w-48"></div>
+//             <div className="col-span-2 h-3 bg-slate-700/50 rounded ml-auto w-16"></div>
+//         </div>
+//         {[...Array(8)].map((_, i) => (
+//             <div key={i} className="h-20 bg-[#0F172A]/60 border border-white/5 rounded-2xl flex items-center px-4 lg:px-8 gap-6">
+//                 <div className="w-8 h-8 rounded-full bg-slate-700/30"></div>
+//                 <div className="w-12 h-12 rounded-full bg-slate-700/30 shrink-0"></div>
+//                 <div className="flex-1 space-y-2">
+//                     <div className="h-4 bg-slate-700/30 rounded w-48"></div>
+//                     <div className="h-3 bg-slate-700/30 rounded w-24"></div>
+//                 </div>
+//                 <div className="hidden lg:flex gap-3">
+//                     {[...Array(4)].map((_, j) => <div key={j} className="w-24 h-8 bg-slate-700/30 rounded-lg"></div>)}
+//                 </div>
+//                 <div className="w-20 h-8 bg-slate-700/30 rounded ml-auto"></div>
+//             </div>
+//         ))}
+//     </div>
+// );
+
+// // --- SUB-COMPONENTS ---
+
+// const MobileBlocker = ({ onUnlock }) => (
+//     <div className="fixed inset-0 z-[100] bg-[#020617] flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+//         <div className="relative mb-8">
+//             <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full"></div>
+//             <Monitor size={64} className="text-blue-400 relative z-10" />
+//             <Smartphone size={24} className="text-slate-500 absolute -bottom-2 -right-2 z-20 bg-[#020617] rounded-full p-1 border border-slate-700" />
+//         </div>
+//         <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Desktop Experience Recommended</h2>
+//         <p className="text-slate-400 mb-8 max-w-xs mx-auto leading-relaxed">
+//             The leaderboard contains detailed statistics that are best viewed on a larger screen.
+//         </p>
+//         <button 
+//             onClick={onUnlock}
+//             className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
+//         >
+//             <span className="text-sm font-bold text-slate-300 group-hover:text-white">View Minimal Version</span>
+//         </button>
+//     </div>
+// );
+
+// const ListRankBadge = ({ rank }) => {
+//     if (rank > 3) return <span className="text-sm font-mono font-bold text-slate-500 w-8 text-center">#{rank}</span>;
+//     const colors = {
+//         1: 'border-yellow-500 text-yellow-400 bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.4)]',
+//         2: 'border-slate-400 text-slate-300 bg-slate-400/10 shadow-[0_0_15px_rgba(148,163,184,0.3)]',
+//         3: 'border-orange-500 text-orange-400 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
+//     };
+//     return (
+//         <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm ${colors[rank]} transform hover:scale-110 transition-transform`}>
+//             {rank}
+//         </div>
+//     );
+// };
+
+// const StudentAvatar = ({ rollNo, size = "md", rank }) => {
+//     const [imgLoaded, setImgLoaded] = useState(false);
+//     const [error, setError] = useState(false);
+    
+//     useEffect(() => {
+//         setImgLoaded(false);
+//         setError(false);
+//     }, [rollNo]);
+
+//     const formattedRoll = rollNo ? rollNo.toUpperCase() : '';
+//     const imgSrc = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${formattedRoll}/${formattedRoll}.jpg`;
+    
+//     const sizeClasses = { 
+//         sm: "w-9 h-9", 
+//         md: "w-12 h-12 lg:w-12 lg:h-12 xl:w-14 xl:h-14", 
+//         lg: "w-16 h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24", 
+//         xl: "w-24 h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32" 
+//     };
+    
+//     const isPodium = rank <= 3 && size === 'xl'; 
+//     const ringColor = isPodium 
+//         ? (rank === 1 ? 'ring-yellow-500' : rank === 2 ? 'ring-slate-400' : 'ring-orange-500') 
+//         : 'ring-white/10 group-hover:ring-blue-400/50';
+
+//     return (
+//         <div className={`relative ${sizeClasses[size]} flex-shrink-0 transition-all duration-500`}>
+//             <div className={`relative w-full h-full rounded-full p-[3px] ring-2 ${ringColor} bg-[#071225] overflow-hidden shadow-2xl z-10`}>
+//                 {!error ? (
+//                     <>
+//                         <div className={`absolute inset-0 bg-slate-800 transition-opacity duration-500 ${imgLoaded ? 'opacity-0' : 'opacity-100'}`} />
+//                         <img 
+//                             src={imgSrc} 
+//                             alt="Student" 
+//                             loading="lazy"
+//                             onLoad={() => setImgLoaded(true)}
+//                             onError={() => setError(true)} 
+//                             className={`w-full h-full object-cover rounded-full transition-opacity duration-700 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
+//                         />
+//                     </>
+//                 ) : (
+//                     <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+//                         <User size={size === 'xl' ? 40 : 16} />
+//                     </div>
+//                 )}
+//             </div>
+//         </div>
+//     );
+// };
+
+// const BrandTile = ({ type, score, url, compact = false }) => {
+//     const style = BRAND_STYLES[type] || BRAND_STYLES.github;
+//     const assetSrc = ASSETS[type];
+//     const numericScore = score ? parseInt(score, 10) : 0;
+//     const displayScore = isNaN(numericScore) ? 0 : numericScore;
+//     const Container = url ? 'a' : 'div';
+//     const containerProps = url 
+//         ? { href: url, target: "_blank", rel: "noopener noreferrer", className: "block h-full hover:-translate-y-0.5 transition-transform cursor-pointer" }
+//         : { className: "block h-full cursor-default" };
+
+//     return (
+//         <Container {...containerProps}>
+//              <div className={`
+//                 flex items-center justify-between rounded-xl border backdrop-blur-md 
+//                 transition-all duration-300 group w-full h-full
+//                 ${style.border} ${style.bg} hover:border-opacity-100 border-opacity-30
+//                 ${compact ? 'px-2 py-1' : 'px-3 py-2'}
+//             `}>
+//                 <div className="shrink-0 flex items-center justify-center">
+//                     {assetSrc ? (
+//                         <img src={assetSrc} alt={type} loading="lazy" className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4 lg:w-5 lg:h-5'} object-contain opacity-90 group-hover:opacity-100 transition-opacity`} />
+//                     ) : (
+//                         <div className={`${compact ? 'w-3.5 h-3.5 text-[8px]' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center font-black border border-white/20 text-slate-400 bg-white/10`}>
+//                             {type.substring(0,1).toUpperCase()}
+//                         </div>
+//                     )}
+//                 </div>
+//                 <div className="flex items-center ml-2 min-w-0">
+//                     <span className={`font-mono font-bold tracking-tight ${url ? 'group-hover:text-white' : ''} transition-colors truncate ${style.text} ${compact ? 'text-xs' : 'text-sm'}`}>
+//                         {displayScore}
+//                     </span>
+//                 </div>
+//             </div>
+//         </Container>
+//     );
+// };
+
+// // --- HERO CARD (PODIUM) ---
+// const HeroCard = ({ coder, rank }) => {
+//     if (!coder) return null;
+//     const styles = PODIUM_STYLES[rank];
+    
+//     return (
+//         <div className={`relative group transition-all duration-700 ease-out flex-1 lg:min-w-[200px] lg:max-w-[260px] xl:min-w-[260px] xl:max-w-[340px] ${styles.wrapper}`}>
+//             <div className={`
+//                 relative rounded-[2rem] 
+//                 p-4 lg:p-4 xl:p-6 
+//                 ${styles.bg} ${styles.border} ${styles.shadow} border-2
+//                 hover:-translate-y-3 hover:shadow-2xl transition-all duration-500
+//                 flex flex-col items-center h-full justify-between animate-fade-in-up
+//             `}>
+//                 <div className="relative z-10 flex flex-col items-center w-full">
+//                     <div className="relative mb-4 lg:mb-4 xl:mb-6 transform group-hover:scale-105 transition-transform duration-500">
+//                         <StudentAvatar rollNo={coder.displayId} rank={rank} size={rank === 1 ? "xl" : "lg"} />
+//                         <div className={`absolute -bottom-2 -right-1 w-8 h-8 lg:w-8 lg:h-8 xl:w-10 xl:h-10 rounded-full border-[3px] flex items-center justify-center z-20 font-black text-base lg:text-base xl:text-lg shadow-xl ${styles.rankCircle}`}>
+//                             {rank}
+//                         </div>
+//                     </div>
+                    
+//                     <div className="mt-1 text-center w-full space-y-1">
+//                         <h3 className={`text-lg lg:text-lg xl:text-xl font-bold truncate px-2 leading-tight tracking-tight ${styles.text} drop-shadow-md`}>{coder.displayName}</h3>
+//                         <div className="flex justify-center gap-2">
+//                             <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg bg-black/40 text-slate-400 border border-white/5">{coder.displayId}</span>
+//                             <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20">{coder.batch}</span>
+//                         </div>
+//                     </div>
+                    
+//                     <div className="my-4 lg:my-3 xl:my-5 w-full bg-black/30 rounded-xl py-2 lg:py-2 xl:py-3 border border-white/5 text-center shadow-inner group-hover:border-white/10 transition-colors">
+//                         <span className="text-[9px] text-slate-500 uppercase font-bold tracking-[0.25em] mb-0.5 block">Total Score</span>
+//                         <div className="text-2xl lg:text-2xl xl:text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+//                             {(coder.totalScore || 0).toLocaleString()}
+//                         </div>
+//                     </div>
+                    
+//                     <div className="grid grid-cols-2 gap-2 w-full">
+//                         <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} compact={false} />
+//                         <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} compact={false} />
+//                         <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} compact={false} />
+//                         <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} compact={false} />
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// // --- UPDATED FOOTER (Detailed UI + Hide/Show Logic) ---
+// const StudentStickyFooter = ({ myData }) => {
+//     const [isVisible, setIsVisible] = useState(false);
+
+//     // Scroll Logic to Toggle Visibility
+//     useEffect(() => {
+//         const handleScroll = () => {
+//             if (window.scrollY > 100) {
+//                 setIsVisible(true);
+//             } else {
+//                 setIsVisible(false);
+//             }
+//         };
+
+//         window.addEventListener('scroll', handleScroll);
+//         return () => window.removeEventListener('scroll', handleScroll);
+//     }, []);
+
+//     if (!myData) return null;
+
+//     return (
+//         <div className={`fixed bottom-2 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${
+//             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0'
+//         }`}>
+//             {/* Main Content Box */}
+//             <div className="pointer-events-auto w-full max-w-5xl bg-[#0F172A]/90 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.5)] p-2 sm:p-3 pr-4 sm:pr-6 flex items-center justify-between ring-1 ring-white/10 relative overflow-hidden">
+                
+//                 {/* Background Glow */}
+//                 <div className="absolute top-0 left-1/4 w-1/2 h-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+                
+//                 {/* Left: Avatar, ID, Rank */}
+//                 <div className="flex items-center gap-3 sm:gap-4 relative z-10 shrink-0">
+//                     <div className="relative group cursor-pointer">
+//                         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/10 shadow-lg group-hover:border-blue-500/50 transition-colors">
+//                             <img 
+//                                 src={`https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${myData.displayId}/${myData.displayId}.jpg`} 
+//                                 onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/150'; }}
+//                                 alt="Me" 
+//                                 className="w-full h-full object-cover"
+//                             />
+//                         </div>
+//                     </div>
+                    
+//                    <div className="flex flex-col justify-center items-start gap-1"> 
+//                         <span className="text-[10px] sm:text-xs font-mono font-semibold text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 w-fit">{myData.displayId}</span>
+//                         <div className="flex items-center gap-2">
+//                             {/* Replaced Trophy with Flag (Race Icon) for "Your Position" context */}
+//                             <Flag size={14} className="text-yellow-500 fill-yellow-500/20" />
+//                             <span className="text-sm sm:text-base font-bold text-white leading-tight">Rank #{myData.rank}</span>
+//                         </div>
+//                     </div>
+//                 </div>
+
+//                 {/* Middle: Platform Stats (Hidden on small mobile) */}
+//                 <div className="hidden sm:block flex-1 mx-3 sm:mx-6 overflow-x-auto no-scrollbar">
+//                     <div className="flex items-center gap-2 sm:gap-3 w-max sm:mx-auto">
+//                         <div className="w-[110px] h-9"><BrandTile type="leetcode" score={myData.scores?.leetcode} compact={true} /></div>
+//                         <div className="w-[110px] h-9"><BrandTile type="gfg" score={myData.scores?.gfg} compact={true} /></div>
+//                         <div className="w-[110px] h-9"><BrandTile type="codechef" score={myData.scores?.codechef} compact={true} /></div>
+//                         <div className="w-[110px] h-9"><BrandTile type="github" score={myData.scores?.github} compact={true} /></div>
+//                     </div>
+//                 </div>
+
+//                 {/* Right: Total Score */}
+//                 <div className="flex flex-col items-end border-l border-white/10 pl-3 sm:pl-5 shrink-0 relative z-10 min-w-[80px]">
+//                     <span className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-bold mb-0.5">Total</span>
+//                     <span className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-300 leading-none drop-shadow-lg">
+//                         {(myData.totalScore || 0).toLocaleString()}
+//                     </span>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// // --- MAIN PAGE COMPONENT ---
+// const LeaderBoardPage = () => {
+//     const { user, logout } = useAuth();
+    
+//     const [allCoders, setAllCoders] = useState([]);
+//     const [availableBatches, setAvailableBatches] = useState(['All']);
+//     const [loading, setLoading] = useState(true);
+//     const [animate, setAnimate] = useState(false);
+    
+//     const [myData, setMyData] = useState(null);
+//     const [viewMode, setViewMode] = useState('list');
+//     const [searchTerm, setSearchTerm] = useState('');
+//     const [selectedBatch, setSelectedBatch] = useState('All');
+//     const [currentPage, setCurrentPage] = useState(1);
+    
+//     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+//     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+//     const [showMobileList, setShowMobileList] = useState(false);
+
+//     const itemsPerPage = viewMode === 'list' ? 12 : 8;
+
+//     const stats = useMemo(() => {
+//         if (!allCoders.length) return { active: 0, benchmark: 0, average: 0 };
+//         const active = allCoders.length;
+//         const benchmark = allCoders[0]?.totalScore || 0;
+//         return { active, benchmark };
+//     }, [allCoders]);
+
+//     useEffect(() => {
+//         const handleResize = () => {
+//             const width = window.innerWidth;
+//             setIsDesktop(width >= 1024);
+//             setIsMobile(width < 768);
+//         };
+//         window.addEventListener('resize', handleResize);
+//         return () => window.removeEventListener('resize', handleResize);
+//     }, []);
+
+//     useEffect(() => {
+//         window.scrollTo({ top: 0, behavior: 'smooth' });
+//     }, [currentPage]);
+
+//     useEffect(() => {
+//         if (!user) return; 
+
+//         const fetchData = async () => {
+//             try {
+//                 const start = Date.now();
+//                 const url = `${backendUrl}/api/leaderboard`;
+//                 // GET REQUEST: Plain Params
+//                 const res = await fetch(url, { method: 'GET', credentials: 'include' });
+
+//                 if (res.status === 401 || res.status === 403) { logout(); return; }
+//                 if (!res.ok) throw new Error('Failed to fetch leaderboard');
+                
+//                 const rawJson = await res.json();
+                
+//                 // DECRYPTION LOGIC
+//                 const data = rawJson.data ? decryptData(rawJson.data) : rawJson;
+                
+//                 if (data.batches) setAvailableBatches(['All', ...data.batches.sort()]);
+
+//                 const toTitleCase = (str) => str?.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'Student';
+                
+//                 const parsed = (data.AllCoders || []).map(c => ({
+//                     ...c,
+//                     displayName: toTitleCase(c.name),
+//                     displayId: c.rollno,
+//                     batch: c.batch,
+//                     totalScore: c.totalScore ? parseInt(c.totalScore, 10) : 0,
+//                     scores: c.scores || {},
+//                     handles: c.handles || {}
+//                 }))
+//                 .sort((a,b) => b.totalScore - a.totalScore)
+//                 .map((c, i) => ({...c, rank: i + 1}));
+
+//                 const delta = Date.now() - start;
+//                 if (delta < 800) await new Promise(r => setTimeout(r, 800 - delta));
+
+//                 setAllCoders(parsed);
+//                 if (data.myPosition) setMyData(parsed.find(c => c.rank === data.myPosition));
+
+//             } catch (e) { console.error("Leaderboard fetch error:", e); } finally {
+//                 setLoading(false);
+//                 setTimeout(() => setAnimate(true), 100);
+//             }
+//         };
+//         fetchData();
+//     }, [user, logout]);
+
+//     const filteredData = useMemo(() => {
+//         const lowerSearch = searchTerm.toLowerCase();
+//         return allCoders.filter(c => 
+//             (selectedBatch === 'All' || c.batch === selectedBatch) &&
+//             (c.displayName.toLowerCase().includes(lowerSearch) || c.displayId.toLowerCase().includes(lowerSearch))
+//         );
+//     }, [allCoders, searchTerm, selectedBatch]);
+
+//     const showHeroSection = isDesktop && currentPage === 1 && !searchTerm && selectedBatch === 'All' && filteredData.length > 0;
+//     const effectiveData = (showHeroSection && !isMobile) ? filteredData.slice(3) : filteredData;
+    
+//     const paginatedData = useMemo(() => {
+//         const start = (currentPage - 1) * itemsPerPage;
+//         return effectiveData.slice(start, start + itemsPerPage);
+//     }, [effectiveData, currentPage, itemsPerPage]);
+
+//     const totalPages = Math.ceil(effectiveData.length / itemsPerPage);
+
+//     if (isMobile && !showMobileList) {
+//         return <MobileBlocker onUnlock={() => setShowMobileList(true)} />;
+//     }
+
+//     return (
+//         <div className={`min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans ${myData ? 'pb-28 sm:pb-36' : 'pb-10'}`}>
+            
+//             <div className="relative px-4 pt-4 pb-6 z-20">
+//                 <Header animate={animate} />
+//                 <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
+//             </div>
+
+//             <main className="px-4 sm:px-6 lg:px-12 xl:px-20 max-w-[95%] 2xl:max-w-[1600px] mx-auto py-4 space-y-8 lg:space-y-12">
+                
+//                 {/* --- HEADER --- */}
+//                 <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 transition-all duration-700 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+//                     <div className="flex-1">
+//                         <div className="flex items-center gap-4 mb-2">
+//                             <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white tracking-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+//                                 Leaderboard
+//                             </h1>
+//                             <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-pulse">
+//                                 <Sparkles size={20} />
+//                             </div>
+//                         </div>
+//                     </div>
+
+//                     {/* BOXED STATS (Right Side) */}
+//                     <div className="hidden md:flex gap-4 self-end md:self-auto">
+//                         {/* Box 1: Total Students */}
+//                         <div className="bg-[#0F172A]/80 backdrop-blur-md p-3 px-5 rounded-xl border border-white/10 flex items-center gap-4 shadow-lg min-w-[180px]">
+//                             <div className="p-2.5 bg-blue-500/20 rounded-lg text-blue-400">
+//                                 <Users size={20} />
+//                             </div>
+//                             <div>
+//                                 <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Total Students</p>
+//                                 <p className="text-xl font-black text-white">{loading ? '...' : stats.active}</p>
+//                             </div>
+//                         </div>
+
+//                         {/* Box 2: Top Score */}
+//                         <div className="bg-[#0F172A]/80 backdrop-blur-md p-3 px-5 rounded-xl border border-white/10 flex items-center gap-4 shadow-lg min-w-[180px]">
+//                             <div className="p-2.5 bg-yellow-500/20 rounded-lg text-yellow-400">
+//                                 <Trophy size={20} />
+//                             </div>
+//                             <div>
+//                                 <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Top Score</p>
+//                                 <p className="text-xl font-black text-white">{loading ? '...' : (stats.benchmark || 0).toLocaleString()}</p>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
+
+//                 {/* --- LOADING SKELETON --- */}
+//                 {loading ? (
+//                     <div className="animate-fade-in"><SkeletonList /></div>
+//                 ) : (
+//                     <>
+//                         {/* Hero Section */}
+//                         {showHeroSection && (
+//                             <div className="hidden lg:flex flex-row justify-center items-end gap-2 lg:gap-4 xl:gap-10 mb-16 lg:mb-16 xl:mb-20 min-h-[300px] lg:min-h-[360px] xl:min-h-[400px] animate-fade-in-up">
+//                                 {filteredData[1] && <HeroCard coder={filteredData[1]} rank={2} />}
+//                                 {filteredData[0] && <HeroCard coder={filteredData[0]} rank={1} />}
+//                                 {filteredData[2] && <HeroCard coder={filteredData[2]} rank={3} />}
+//                             </div>
+//                         )}
+
+//                         {/* Sticky Toolbar: Search + Filter + View + Pagination */}
+//                         <div className="sticky top-6 z-40 mb-8 flex justify-center">
+//                             <div className={`
+//                                 bg-[#0F172A]/90 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center gap-2 ring-1 ring-white/5 transition-all duration-300
+//                                 ${isMobile ? 'w-full justify-between px-3' : ''}
+//                             `}>
+//                                 {/* SEARCH BAR */}
+//                                 <div className={`relative flex items-center transition-all duration-500 rounded-full h-10 border border-transparent bg-white/5 hover:bg-white/10 ${isMobile ? 'flex-1 mr-2' : 'w-64 focus-within:w-80 px-4'}`}>
+//                                     <div className={`text-slate-400 pointer-events-none ${isMobile ? 'ml-3' : ''}`}><Search size={16} /></div>
+//                                     <input 
+//                                         type="text" 
+//                                         placeholder={isMobile ? "Search..." : "Search student..."}
+//                                         value={searchTerm}
+//                                         onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+//                                         className="bg-transparent text-white text-sm font-bold placeholder-slate-500 focus:outline-none ml-2 w-full h-full rounded-full"
+//                                     />
+//                                     {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-500 hover:text-white mr-3"><X size={14} /></button>}
+//                                 </div>
+
+//                                 {!isMobile && <div className="w-px h-6 bg-white/10"></div>}
+
+//                                 <div className="flex gap-2 shrink-0">
+//                                     <div className="relative group">
+//                                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"><Filter size={14} /></div>
+//                                         <select 
+//                                             value={selectedBatch}
+//                                             onChange={(e) => { setSelectedBatch(e.target.value); setCurrentPage(1); }}
+//                                             className="appearance-none bg-white/5 hover:bg-white/10 text-white rounded-full py-2 pl-9 pr-8 text-sm font-bold border border-transparent cursor-pointer transition-colors focus:outline-none h-10"
+//                                         >
+//                                             {availableBatches.map(b => <option key={b} value={b} className="bg-[#0F172A] text-white">{b === 'All' ? 'All' : b}</option>)}
+//                                         </select>
+//                                     </div>
+
+//                                     {!isMobile && (
+//                                         <div className="flex bg-white/5 rounded-full p-1 gap-1 border border-white/5 h-10 items-center">
+//                                             <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-all duration-300 ${viewMode === 'list' ? 'bg-[#1E293B] text-white shadow-md' : 'text-slate-500 hover:text-white'}`}><List size={16} /></button>
+//                                             <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full transition-all duration-300 ${viewMode === 'grid' ? 'bg-[#1E293B] text-white shadow-md' : 'text-slate-500 hover:text-white'}`}><LayoutGrid size={16} /></button>
+//                                         </div>
+//                                     )}
+//                                 </div>
+
+//                                 {totalPages > 1 && !isMobile && (
+//                                     <>
+//                                         <div className="w-px h-6 bg-white/10"></div>
+//                                         <div className="flex items-center gap-1 px-2">
+//                                             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronLeft size={16} /></button>
+//                                             <span className="text-xs font-mono font-bold text-slate-400 select-none">{currentPage}/{totalPages}</span>
+//                                             <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronRight size={16} /></button>
+//                                         </div>
+//                                     </>
+//                                 )}
+//                             </div>
+//                         </div>
+
+//                         {/* --- LIST / GRID CONTENT --- */}
+//                         <div key={`${currentPage}-${selectedBatch}-${searchTerm}`} className="animate-slide-up-fade">
+//                             {paginatedData.length === 0 ? (
+//                                 <div className="text-center py-24 bg-white/5 rounded-[2rem] border border-white/10 border-dashed max-w-2xl mx-auto">
+//                                     <Sparkles className="mx-auto text-slate-500 mb-4" size={40} />
+//                                     <h3 className="text-xl font-bold text-white mb-1">No students found</h3>
+//                                 </div>
+//                             ) : (
+//                                 <div className={viewMode === 'list' || isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
+                                    
+//                                     {!isMobile && viewMode === 'list' && (
+//                                         <div className="grid grid-cols-12 gap-6 px-10 py-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 rounded-xl border border-white/5 items-center select-none">
+//                                             <div className="col-span-1 text-center">Rank</div>
+//                                             <div className="col-span-4 pl-2">Student Profile</div>
+//                                             <div className="col-span-5 text-center">Platform Stats</div>
+//                                             <div className="col-span-2 text-right pr-4">Total Score</div>
+//                                         </div>
+//                                     )}
+
+//                                     {paginatedData.map((coder) => (
+//                                         <div key={coder.displayId} 
+//                                             className={`
+//                                                 relative bg-[#0F172A]/60 border border-white/5 rounded-2xl transition-all duration-300 group
+//                                                 ${viewMode === 'grid' && !isMobile ? 'p-6 flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl hover:border-blue-500/30' : 'p-3 lg:px-10 lg:py-4 hover:bg-[#1E293B]/50 hover:border-white/10'}
+//                                                 ${myData?.displayId === coder.displayId ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''}
+//                                             `}
+//                                         >
+//                                             {isMobile ? (
+//                                                 <div className="flex items-center justify-between gap-3 p-1">
+//                                                     {/* LEFT: Rank, Avatar, Name */}
+//                                                     <div className="flex items-center gap-3 overflow-hidden">
+//                                                         <span className="font-mono font-bold text-slate-500 text-sm w-6 text-center">#{coder.rank}</span>
+//                                                         <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="sm" />
+//                                                         <div className="min-w-0">
+//                                                             <div className="font-bold text-white text-sm truncate">{coder.displayName}</div>
+//                                                             <div className="text-[10px] text-slate-500 font-mono">{coder.displayId}</div>
+//                                                         </div>
+//                                                     </div>
+//                                                     {/* RIGHT: Just Total Score */}
+//                                                     <div className="shrink-0 text-right pl-2">
+//                                                         <div className="font-black text-white text-base tracking-tight">
+//                                                             {coder.totalScore.toLocaleString()}
+//                                                         </div>
+//                                                     </div>
+//                                                 </div>
+//                                             ) : (
+//                                                 viewMode === 'list' ? (
+//                                                     <div className="grid grid-cols-12 gap-6 items-center">
+//                                                         <div className="col-span-1 flex justify-center"><ListRankBadge rank={coder.rank} /></div>
+//                                                         <div className="col-span-4 flex items-center gap-5 pl-2">
+//                                                             <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="md" />
+//                                                             <div className="min-w-0">
+//                                                                 <h4 className="font-bold text-white text-lg truncate group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
+//                                                                 <div className="flex items-center gap-2 mt-1.5">
+//                                                                     <span className="text-xs font-mono font-bold text-slate-400">{coder.displayId}</span>
+//                                                                     <span className="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-blue-200 border border-white/10">{coder.batch}</span>
+//                                                                 </div>
+//                                                             </div>
+//                                                         </div>
+//                                                         <div className="col-span-5 flex justify-center">
+//                                                             <div className="grid grid-cols-4 gap-3 w-full max-w-xl">
+//                                                                 <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
+//                                                                 <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
+//                                                                 <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
+//                                                                 <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
+//                                                             </div>
+//                                                         </div>
+//                                                         <div className="col-span-2 text-right pr-4">
+//                                                             <span className="text-2xl font-black text-white tracking-tighter tabular-nums drop-shadow-md">{(coder.totalScore || 0).toLocaleString()}</span>
+//                                                         </div>
+//                                                     </div>
+//                                                 ) : (
+//                                                     <>
+//                                                         <div className="absolute top-5 left-5"><ListRankBadge rank={coder.rank} /></div>
+//                                                         <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="lg" />
+//                                                         <div className="mt-5 text-center w-full">
+//                                                             <h4 className="font-bold text-white text-xl truncate px-2 group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
+//                                                             <div className="flex justify-center gap-2 mt-2">
+//                                                                 <span className="text-[10px] font-mono font-bold text-slate-400 bg-black/30 px-2 py-1 rounded border border-white/10">{coder.displayId}</span>
+//                                                                 <span className="text-[10px] font-mono font-bold text-blue-300 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">{coder.batch}</span>
+//                                                             </div>
+//                                                         </div>
+//                                                         <div className="w-full mt-6 space-y-3">
+//                                                             <div className="grid grid-cols-2 gap-2">
+//                                                                 <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
+//                                                                 <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
+//                                                                 <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
+//                                                                 <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
+//                                                             </div>
+//                                                             <div className="flex justify-between items-center pt-4 border-t border-white/10">
+//                                                                 <span className="text-[10px] text-slate-400 font-bold uppercase">Total Score</span>
+//                                                                 <span className="text-2xl font-black text-white">{(coder.totalScore || 0).toLocaleString()}</span>
+//                                                             </div>
+//                                                         </div>
+//                                                     </>
+//                                                 )
+//                                             )}
+//                                         </div>
+//                                     ))}
+//                                 </div>
+//                             )}
+//                         </div>
+
+//                         {/* Bottom Pagination */}
+//                         {totalPages > 1 && (
+//                             <div className="mt-12 flex justify-center pb-8">
+//                                 <div className="inline-flex bg-[#0F172A] rounded-full p-2 border border-white/10 shadow-2xl ring-1 ring-white/5 gap-4 items-center">
+//                                     <button 
+//                                         onClick={() => { setCurrentPage(p => Math.max(1, p-1)); }}
+//                                         disabled={currentPage === 1}
+//                                         className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
+//                                     >
+//                                         <ChevronLeft size={20} />
+//                                     </button>
+//                                     <div className="flex items-center px-4 font-mono text-sm text-slate-400 border-x border-white/5 h-5">
+//                                         <span className="text-white font-bold mr-2">{currentPage}</span> / <span className="ml-2">{totalPages}</span>
+//                                     </div>
+//                                     <button 
+//                                         onClick={() => { setCurrentPage(p => Math.min(totalPages, p+1)); }}
+//                                         disabled={currentPage >= totalPages}
+//                                         className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
+//                                     >
+//                                         <ChevronRight size={20} />
+//                                     </button>
+//                                 </div>
+//                             </div>
+//                         )}
+//                     </>
+//                 )}
+//             </main>
+
+//             {myData && <StudentStickyFooter myData={myData} />}
+//         </div>
+//     );
+// };
+
+// export default LeaderBoardPage;
