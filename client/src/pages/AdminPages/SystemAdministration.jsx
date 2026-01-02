@@ -1562,7 +1562,7 @@ const ModifyCollectionModal = ({ collection, onClose, onSuccess }) => {
             const response = await fetch(`${API_URL}/api/admin/modify-collection`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }),
+                body: JSON.stringify({ payload: encryptedBody }),
                 credentials: "include"
             });
 
@@ -1918,7 +1918,7 @@ const DeleteConfirmationModal = ({ collectionName, onClose, onSuccess }) => {
             const res = await fetch(`${API_URL}/api/admin/deletecollections`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }),
+                body: JSON.stringify({ payload: encryptedBody }),
                 credentials: "include"
             });
 
@@ -2118,7 +2118,7 @@ const SystemAdministrationPage = () => {
             const res = await fetch(`${API_URL}/api/admin/create-sem`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }),
+                body: JSON.stringify({ payload: encryptedBody }),
                 credentials: "include"
             });
 
@@ -2227,7 +2227,7 @@ const SystemAdministrationPage = () => {
             const res = await fetch(`${API_URL}/api/admin/modify-sem`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }),
+                body: JSON.stringify({ payload: encryptedBody }),
                 credentials: "include"
             });
             

@@ -912,7 +912,7 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                 // Send the encrypted string inside a 'data' key (standard practice), 
                 // or just the string depending on your backend expectation.
                 // Assuming standard { data: "ciphertext" } wrapper:
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include"
             });
 
@@ -1065,7 +1065,7 @@ const ChangePasswordModal = ({ isOpen, onClose, rollNo, sem }) => {
             const response = await fetch(`${backendUrl}/api/auth/change-password`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }), // Wrapped in data key
+                body: JSON.stringify({ payload: encryptedBody }), // Wrapped in data key
                 credentials: "include",
             });
             

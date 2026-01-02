@@ -1121,7 +1121,7 @@ export default function MultiBatchAttendancePage() {
 
             const response = await fetch(`${BACKEND_URL}/api/attendance-mark-multiple-qr`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: 'include'
             });
             

@@ -1412,7 +1412,7 @@ const AddStudentForm = ({ animate, onCancel, onStudentAdded }) => {
             const res = await fetch(`${API_BASE_URL}/api/admin/add-student`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include" 
             });
             
@@ -1582,7 +1582,7 @@ const ModifyStudentPanel = ({ animate, preloadedStudent, onCancel, onStudentUpda
             const response = await fetch(`${API_BASE_URL}/api/admin/update-student`, { 
                 method: 'PATCH', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include" 
             });
             
@@ -1767,7 +1767,7 @@ const ManageStudentPage = () => {
             const res = await fetch(`${API_BASE_URL}/api/admin/delete-student`, { 
                 method: 'DELETE', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include" 
             });
             
@@ -1786,7 +1786,7 @@ const ManageStudentPage = () => {
             const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, { 
                 method: 'PATCH', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include" 
             });
             

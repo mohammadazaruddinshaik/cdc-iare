@@ -1222,7 +1222,7 @@ const AnnouncementFormModal = ({ isOpen, onClose, onSuccess, initialData = null 
             const res = await fetch(endpoint, {
                 method: method, 
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: 'include'
             });
             

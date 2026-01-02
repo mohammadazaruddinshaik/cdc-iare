@@ -696,7 +696,7 @@ const ChangePasswordModal = ({ isOpen, onClose, username }) => {
             const response = await fetch(`${backendUrl}/api/auth/change-password`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include",
             });
             

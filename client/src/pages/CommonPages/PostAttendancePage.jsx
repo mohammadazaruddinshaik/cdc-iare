@@ -1003,7 +1003,7 @@ export default function AttendanceScanner() {
             const response = await fetch(`${BACKEND_URL}/api/attendance-mark-qr`, {
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: 'include'
             });
             

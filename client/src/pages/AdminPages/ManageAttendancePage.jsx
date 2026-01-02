@@ -1637,7 +1637,7 @@ const useAttendanceForm = (endpoint, method, isUpdate = false) => {
 
             const res = await fetch(`${backendUrl}${endpoint}`, {
                 method: method, headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include"
             });
             if (res.status === 401 || res.status === 403) { logout(); return; }
@@ -1981,7 +1981,7 @@ const DeleteAttendanceForm = ({ animate }) => {
 
             const res = await fetch(`${backendUrl}/api/admin/delete-attendance-log`, {
                 method: 'DELETE', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include"
             });
             

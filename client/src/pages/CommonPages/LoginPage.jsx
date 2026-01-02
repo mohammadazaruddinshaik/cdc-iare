@@ -429,11 +429,8 @@
 // };
 
 // export default LoginPage;
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// --- REMOVED: import { useAuth } from '../../context/AuthContext'; ---
 
 // --- ICONS ---
 import {
@@ -445,19 +442,48 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import IARELogo from '../../assets/logo.png';
 import AzarImg from '../../assets/azaruddin.png'
-import CryptoJS from 'crypto-js'; // Import CryptoJS
+import CryptoJS from 'crypto-js'; 
 
 const API_URL = import.meta.env.VITE_BASE_URL;
-const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_SECRET_KEY; // Get Secret Key
+const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_SECRET_KEY; 
 
-// --- ENCRYPTION UTILS ---
+// --- DEBUG CHECK ---
+if (!EncDec_SECRET_KEY) {
+    console.error("CRITICAL ERROR: VITE_ENC_SECRET_KEY is missing from environment variables.");
+}
+
+// --- ENCRYPTION & DECRYPTION UTILS ---
+
 const encryptData = (data) => {
     try {
         if (!data) return null;
+        if (!EncDec_SECRET_KEY) throw new Error("Missing Encryption Key");
+
         const strData = typeof data === 'object' ? JSON.stringify(data) : String(data);
-        return CryptoJS.AES.encrypt(strData, EncDec_SECRET_KEY).toString();
+        const encrypted = CryptoJS.AES.encrypt(strData, EncDec_SECRET_KEY).toString();
+        return encrypted;
     } catch (err) {
         console.error("Encryption Error:", err);
+        return null;
+    }
+};
+
+const decryptData = (cipherText) => {
+    try {
+        if (!cipherText) return null;
+        if (!EncDec_SECRET_KEY) throw new Error("Missing Encryption Key");
+
+        const bytes = CryptoJS.AES.decrypt(cipherText, EncDec_SECRET_KEY);
+        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        
+        if (!decryptedString) {
+            console.warn("Decryption produced empty string (Wrong Key or Corrupt Data)");
+            return null;
+        }
+        
+        return JSON.parse(decryptedString);
+    } catch (err) {
+        console.error("Decryption Error:", err);
         return null;
     }
 };
@@ -663,56 +689,81 @@ const LoginPage = () => {
         setActiveField('loading'); 
         
         try {
-            // ENCRYPT LOGIN DATA
+            // 1. ENCRYPT LOGIN DATA
             const encryptedBody = encryptData({ username, password });
 
+            // CRITICAL CHECK: Stop if encryption failed (returns null)
+            if (!encryptedBody) {
+                console.error("Encryption failed. Check VITE_ENC_SECRET_KEY.");
+                setError('Security configuration error. Please contact admin.');
+                setIsLoading(false);
+                setActiveField('error');
+                setTimeout(() => { setActiveField(null); }, 2500);
+                return;
+            }
+
+            // 2. SEND REQUEST 
+            // - Payload wrapper changed to 'payload' instead of 'data'
             const response = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Send encrypted data wrapped in 'data' key
-                body: JSON.stringify({ data: encryptedBody }),
+                body: JSON.stringify({ payload: encryptedBody }),
                 credentials: "include"
             });
-            const data = await response.json();
+            
+            const rawResponse = await response.json();
             
             if (response.ok) {
-                // 2. Successful Login
+                // 3. DECRYPT RESPONSE
+                // - Response data is still expected in 'data' field
+                const decryptedResponse = decryptData(rawResponse.data);
+
+                if (!decryptedResponse) {
+                    throw new Error("Failed to decrypt server response.");
+                }
+
                 setActiveField('success');
                 
-                // --- NEW LOGIC: NO AUTH CONTEXT ---
-                
-                // Optional: Store user info manually so app picks it up on reload
-                // (This mimics what the Context usually does)
+                // Store decrypted user info
                 localStorage.setItem('user', JSON.stringify({
-                    username: data.username,
-                    role: data.role
+                    username: decryptedResponse.username,
+                    role: decryptedResponse.role
                 }));
 
                 // Wait for animation, then Force Reload to update App State
                 setTimeout(() => {
                     let targetPath = '/';
-                    switch (data.role) {
+                    switch (decryptedResponse.role) {
                         case 'admin': targetPath = '/admin/dashboard'; break;
                         case 'faculty': targetPath = '/faculty/dashboard'; break;
                         case 'student': targetPath = '/student/dashboard'; break;
                         default: setError("Login successful, but role is unknown."); return;
                     }
 
-                    // Use window.location.href to force a full page reload.
-                    // This ensures the App re-initializes and checks the session cookie.
                     window.location.href = targetPath;
 
                 }, 1500);
 
             } else {
-                setError(data.message || 'Login failed.');
+                // Handle Error Response
+                // Check if error message is encrypted in 'data' or plain text in 'message'
+                let errorMessage = rawResponse.message || 'Login failed.';
+                
+                if (rawResponse.data) {
+                    const decryptedError = decryptData(rawResponse.data);
+                    if (decryptedError && decryptedError.message) {
+                        errorMessage = decryptedError.message;
+                    }
+                }
+
+                setError(errorMessage);
                 setActiveField('error');
                 setIsLoading(false);
                 setTimeout(() => { setActiveField(null); }, 2500);
             }
         } catch (err) {
             console.error('Login request failed:', err);
-            setError('Network error. Please try again.');
+            setError('Network error or Encryption mismatch.');
             setActiveField('error');
             setIsLoading(false);
             setTimeout(() => { setActiveField(null); }, 2500);

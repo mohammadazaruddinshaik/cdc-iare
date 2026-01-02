@@ -686,7 +686,7 @@ const useFacultyAttendance = () => {
             const res = await fetch(`${backendUrl}/api/attendance-session-post`, {
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: encryptedBody }), // Send Encrypted Data
+                body: JSON.stringify({ payload: encryptedBody }), // Send Encrypted Data
                 credentials: "include"
             });
 

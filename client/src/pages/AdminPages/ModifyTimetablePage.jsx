@@ -965,7 +965,7 @@ const ModifyTimetablePage = () => {
             const response = await fetch(`${API_URL}/api/admin/delete-timetable`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: encryptedBody }),
+                body: JSON.stringify({ payload: encryptedBody }),
                 credentials: 'include'
             });
 
@@ -1148,7 +1148,7 @@ const ModifyTimetablePage = () => {
             const response = await fetch(`${API_URL}/api/admin/modifytimetable`, {
                 method: "PATCH", 
                 headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include"
             });
             

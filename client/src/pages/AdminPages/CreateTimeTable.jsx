@@ -1225,7 +1225,7 @@ const CreateTimetablePage = () => {
 
             const response = await fetch(`${API_URL}/api/admin/createtimetable`, {
                 method: "POST", headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ data: encryptedBody }), 
+                body: JSON.stringify({ payload: encryptedBody }), 
                 credentials: "include"
             });
             if (response.status === 401 || response.status === 403) { logout(); return; }
