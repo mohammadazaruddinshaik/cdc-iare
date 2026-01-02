@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // 1. Added Navigation
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileSpreadsheet, Download, Calendar, GraduationCap, ChevronDown } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/dist/style.css';
+// Removed react-day-picker imports
 import { format } from 'date-fns';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
-
 
 const SpinnerOverlay = ({ isLoading }) => {
     if (!isLoading) return null;
@@ -29,69 +27,17 @@ const Toast = ({ message, type, onDismiss }) => {
     return <div className={`${baseStyle} ${typeStyle}`}>{message}</div>;
 };
 
-const DatePicker = ({ selectedDate, onSelectDate, label, icon, disabledDates }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const popoverRef = useRef(null);
-
-    const handleSelect = (date) => {
-        if (date) onSelectDate(date);
-        setIsOpen(false);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (isOpen && popoverRef.current && !popoverRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen]);
-
-    return (
-        <div className="relative" ref={popoverRef}>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2">
-                {icon} {label}
-            </label>
-            <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/20 rounded-xl text-white text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex justify-between items-center"
-            >
-                <span>{selectedDate ? format(selectedDate, 'dd MMM, yyyy') : 'Select date'}</span>
-                <Calendar size={16} className="text-gray-400"/>
-            </button>
-            {isOpen && (
-                <div className={`absolute w-full sm:w-max z-50 mt-2 bg-[#0A1B3A] border border-white/20 rounded-xl shadow-2xl p-1`}>
-                    <DayPicker
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={handleSelect}
-                        disabled={disabledDates}
-                        initialFocus
-                        modifiersClassNames={{
-                            selected: 'day-selected',
-                            today: 'day-today',
-                        }}
-                    />
-                </div>
-            )}
-        </div>
-    );
-};
-
 // --- Main Monthly Report Page Component ---
 
 const MonthlyReport = () => {
-    const { user, logout } = useAuth(); // 3. Use Auth Context
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     
     const [animate, setAnimate] = useState(false);
     const [semname, setSemname] = useState('');
-    const [fromDate, setFromDate] = useState(null);
-    const [toDate, setToDate] = useState(null);
+    // State now holds string values 'YYYY-MM-DD' for native inputs
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState({ message: '', type: 'info', visible: false });
 
@@ -100,16 +46,18 @@ const MonthlyReport = () => {
     const backendUrl = import.meta.env.VITE_BASE_URL;
 
     useEffect(() => {
-        // 4. Security Check
         if (!user) {
             navigate('/');
             return;
         }
 
+        // Set default dates strings (YYYY-MM-DD)
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        setToDate(today);
-        setFromDate(firstDayOfMonth);
+        
+        setToDate(today.toISOString().split('T')[0]);
+        setFromDate(firstDayOfMonth.toISOString().split('T')[0]);
+        
         setTimeout(() => setAnimate(true), 100);
     }, [user, navigate]);
 
@@ -134,24 +82,20 @@ const MonthlyReport = () => {
         setIsLoading(true);
 
         try {
-            const fromDateFormatted = format(fromDate, 'yyyy-MM-dd');
-            const toDateFormatted = format(toDate, 'yyyy-MM-dd');
-            
-            // Construct Query Parameters
+            // Inputs are already YYYY-MM-DD, no formatting needed for API params
             const params = new URLSearchParams({ 
                 semname: semname,
-                from: fromDateFormatted, 
-                to: toDateFormatted 
+                from: fromDate, 
+                to: toDate 
             });
             
             const url = `${backendUrl}/api/admin/monthly-attendance-report-excel?${params.toString()}`;
 
             const response = await fetch(url, { 
                 method: 'GET',
-                credentials: "include" // 5. Credentials for Cookies
+                credentials: "include"
             });
 
-            // 6. Handle Auth Errors
             if (response.status === 401 || response.status === 403) {
                 logout();
                 return;
@@ -163,7 +107,11 @@ const MonthlyReport = () => {
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
-            const filename = `CDC-MonthlyReport_${semname}_${format(fromDate, 'dd-MM-yyyy')}_to_${format(toDate, 'dd-MM-yyyy')}.xlsx`;
+            
+            // Format filename date for readability (DD-MM-YYYY)
+            const fDate = new Date(fromDate);
+            const tDate = new Date(toDate);
+            const filename = `CDC-MonthlyReport_${semname}_${format(fDate, 'dd-MM-yyyy')}_to_${format(tDate, 'dd-MM-yyyy')}.xlsx`;
             
             const a = document.createElement("a");
             a.href = blobUrl;
@@ -188,16 +136,6 @@ const MonthlyReport = () => {
 
     return (
         <>
-            <style>{`
-                .rdp { --rdp-cell-size: 32px; --rdp-accent-color: #3b82f6; --rdp-background-color: #60a5fa; color: #d1d5db; font-size: 0.875rem; }
-                .rdp-months { padding: 0.5em; }
-                .rdp-caption_label { font-size: 1rem; font-weight: bold; color: #fff; }
-                .rdp-nav_button { color: #9ca3af; }
-                .rdp-head_cell { color: #6b7280; font-weight: 600; font-size: 0.8rem; }
-                .day-today { font-weight: bold; color: #60a5fa !important; background-color: rgba(96, 165, 250, 0.1) !important; }
-                .day-selected { color: #fff !important; font-weight: bold; }
-            `}</style>
-            
             <SpinnerOverlay isLoading={isLoading} />
             {toast.visible && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />}
 
@@ -247,22 +185,36 @@ const MonthlyReport = () => {
                                 </div>
                             </div>
 
-                            {/* Date Selection Grid */}
+                            {/* Standard HTML Date Inputs */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <DatePicker 
-                                    selectedDate={fromDate}
-                                    onSelectDate={setFromDate}
-                                    label="From Date"
-                                    icon={<Calendar size={16}/>}
-                                    disabledDates={{ after: toDate || new Date() }}
-                                />
-                                <DatePicker 
-                                    selectedDate={toDate}
-                                    onSelectDate={setToDate}
-                                    label="To Date"
-                                    icon={<Calendar size={16}/>}
-                                    disabledDates={{ before: fromDate, after: new Date() }}
-                                />
+                                {/* From Date */}
+                                <div className="relative">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2">
+                                        <Calendar size={16}/> From Date
+                                    </label>
+                                    <input 
+                                        type="date"
+                                        value={fromDate}
+                                        onChange={(e) => setFromDate(e.target.value)}
+                                        max={toDate || new Date().toISOString().split('T')[0]}
+                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/20 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all [color-scheme:dark] cursor-pointer"
+                                    />
+                                </div>
+
+                                {/* To Date */}
+                                <div className="relative">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2">
+                                        <Calendar size={16}/> To Date
+                                    </label>
+                                    <input 
+                                        type="date"
+                                        value={toDate}
+                                        onChange={(e) => setToDate(e.target.value)}
+                                        min={fromDate}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/20 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all [color-scheme:dark] cursor-pointer"
+                                    />
+                                </div>
                             </div>
 
                             <div className="pt-4 border-t border-white/10">
