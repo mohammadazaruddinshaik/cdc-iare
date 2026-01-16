@@ -37,6 +37,17 @@ import MonthlyReport from './pages/AdminPages/MonthlyReportPage';
 import CreateTimetablePage from './pages/AdminPages/CreateTimeTable';
 import SystemAdministrationPage from './pages/AdminPages/SystemAdministration';
 import AdminAnnouncementsPage from './pages/AdminPages/AdminAnnouncementsPage';
+import FacultyContestPage from './pages/FacultyPages/FacultyContestPage';
+import StudentContestPage from './pages/StudentPages/StudentContestPage';
+import EnterContest from './pages/StudentPages/EnterContestPage';
+import ContestDashboard from './pages/StudentPages/ContestDashboardPage'
+import ProblemSolver from './pages/StudentPages/ProblemSolverPage';
+
+import ContestInstructions from './pages/StudentPages/ContestInstructions';
+import FacultyQuizDashboard from './pages/FacultyPages/FacultyQuizDashboard';
+import QuizJoin from './pages/StudentPages/QuizJoin.jsx';
+import QuizInstructions from './pages/StudentPages/QuizInstructions.jsx';
+import QuizActive from './pages/StudentPages/QuizActive.jsx';
 
 // --- 1. NEW COMPONENT: HANDLES AUTH CONTEXT & LOADING ---
 // This wrapper ensures AuthProvider only loads for pages INSIDE it.
@@ -49,7 +60,6 @@ const AuthLayout = () => {
 };
 
 // --- 2. LOADING HANDLER ---
-// This component sits inside AuthProvider to safely use useAuth()
 const AuthLoadingHandler = () => {
   const { loading } = useAuth();
 
@@ -62,21 +72,20 @@ const AuthLoadingHandler = () => {
     );
   }
 
-  // <Outlet /> renders the child routes (Dashboard, etc.) defined in AppRoutes
   return <Outlet />;
 };
 
 const AppRoutes = () => {
   return (
-    <Router>
+    // FIX: Added future flags here to silence v7 warnings
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         {/* === PUBLIC ROUTE (NO AUTH CONTEXT) === */}
-        {/* This is outside AuthLayout, so it makes NO API calls on load */}
         <Route path="/" element={<LoginPage />} />
-
-
+        
+        {/* Public Contest Routes */}
+      
         {/* === PROTECTED ROUTES (WRAPPED IN AUTH CONTEXT) === */}
-        {/* All routes inside here will trigger the Session Check */}
         <Route element={<AuthLayout />}>
           
           {/* 1. SHARED ADMIN & FACULTY ROUTES */}
@@ -86,6 +95,7 @@ const AppRoutes = () => {
             <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
             <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
             <Route path="/batch-report" element={<BatchWiseReport />} />
+            <Route path="/coding-contests" element={<FacultyContestPage />} />
           </Route>
 
           {/* 2. EXCLUSIVE ADMIN ROUTES */}
@@ -112,6 +122,7 @@ const AppRoutes = () => {
             <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
             <Route path="/faculty/students" element={<ViewAttendance />} />
             <Route path="/faculty/timetable" element={<FacultyTimetablePage />} />
+            <Route path="/faculty/quiz" element={<FacultyQuizDashboard />} />
           </Route>
 
           {/* 4. STUDENT ROUTES */}
@@ -120,9 +131,27 @@ const AppRoutes = () => {
             <Route path="/student/profile" element={<StudentProfilePage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/inbox" element={<AnnouncementsPage />} />
-          </Route>
+              {/* 1. Main List: View all contests */}
+              <Route path="/contests" element={<StudentContestPage />} />
 
-          {/* Semi-Public / Shared Routes (Accessible by all logged in users) */}
+
+              {/* 2. Contest Landing/Lobby: View specific contest details & Register */}
+              {/* Example: /contests/101 */}
+              <Route path="/contests/:contestId" element={<EnterContest />} />  
+              <Route path="/contest/:contestId/instructions" element={<ContestInstructions />} />
+              {/* 3. Live Dashboard: The main hub when the contest is running */}
+              {/* Example: /contests/101/live */}
+              <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
+
+              {/* 4. Problem Solver: Solving a specific problem within a contest */}
+              {/* Example: /contests/101/problem/5 */}
+              <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
+              <Route path="/join" element={<QuizJoin />} />              
+              <Route path="/quiz/instructions" element={<QuizInstructions />} />
+        <Route path="/quiz/active" element={<QuizActive />} />
+                    </Route>
+
+          {/* Semi-Public / Shared Routes (Logged in users only) */}
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/timetable" element={<TimeTablePage />} />
 
@@ -141,8 +170,6 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    // REMOVED AuthProvider from here. 
-    // It is now handled inside AppRoutes -> AuthLayout
     <AppRoutes />
   );
 }

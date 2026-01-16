@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     User, LogOut, Menu, X, ChevronDown, ShieldCheck, GraduationCap, Briefcase, 
     LayoutDashboard, Trophy, CalendarDays, ClipboardCheck, FileClock, 
-    Inbox as InboxIcon, Megaphone, CalendarRange 
+    Inbox as InboxIcon, Megaphone, CalendarRange , BrainCircuit, Code2 , Swords , FileQuestion, ListOrdered,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import IARELogo from '../assets/logo.png';
@@ -80,17 +80,18 @@ const Header = ({ animate }) => {
             { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
             { path: '/faculty/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
             { path: '/faculty/students', label: 'Attendance', icon: <ClipboardCheck size={iconSize} /> },
+            { path: '/coding-contests', label: 'Contests', icon: <Code2 size={iconSize} /> },
+            { path: '/faculty/quiz', label: 'Quiz', icon: <FileQuestion size={iconSize} /> }, 
         ];
     } else if (user?.role === 'student') {
         dashboardPath = '/student/dashboard';
         profilePath = '/student/profile';
         navLinks = [
             { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
-            { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
-            { path: '/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
-            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 
+            { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
+{ path: '/timetable', label: 'Schedule', icon: <CalendarRange size={iconSize} /> },            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 
             { path: '/inbox', label: 'Inbox', icon: <InboxIcon size={iconSize} /> }, 
-        ];
+{ path: '/contests', label: 'Contests', icon: <Code2 size={iconSize} /> },        ];
     } else if (user?.role === 'admin') {
         dashboardPath = '/admin/dashboard';
         profilePath = '/admin/profile';
@@ -99,7 +100,8 @@ const Header = ({ animate }) => {
             { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
             { path: '/admin/timetable', label: 'Schedules', icon: <CalendarRange size={iconSize} /> },
             { path: '/admin/attendance', label: 'Attendance', icon: <ClipboardCheck size={iconSize} /> },
-            { path: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={iconSize} /> }
+            { path: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={iconSize} /> },
+             { path: '/coding-contests', label: 'Coding Contests', icon: <Code2 size={iconSize} /> },           
         ];
     }
 

@@ -4,6 +4,8 @@ import App from './App.jsx';
 // REMOVED: import { AuthProvider } from './context/AuthContext'; 
 import './index.css';
 
+
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

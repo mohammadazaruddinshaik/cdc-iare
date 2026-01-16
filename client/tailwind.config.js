@@ -1,3 +1,5 @@
+const { fontFamily } = require("html2canvas/dist/types/css/property-descriptors/font-family");
+
 module.exports = {
   content: [
     "./index.html",
@@ -10,6 +12,9 @@ module.exports = {
         taupe: '#d3c8bb',
         navy: '#14365c',
         black: '#181818'
+      },
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
       }
     }
   },
