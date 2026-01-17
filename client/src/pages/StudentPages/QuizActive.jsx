@@ -1,37 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
-  ChevronRight, ChevronLeft, Check, Menu, X, 
-  PanelLeftClose, PanelLeftOpen, Trophy, Sun, Moon, 
-  Timer, LayoutGrid, Star, ShieldAlert, Ban, Maximize,
-  ListTodo, CheckCircle2, Circle
+  ChevronRight, ChevronLeft, Menu, 
+  PanelLeftClose, PanelLeftOpen, Sun, Moon, 
+  LayoutGrid, Star, ShieldAlert, Ban, Maximize,
+  ListTodo, Activity, CheckCircle2, Clock, Loader2, 
+  WifiOff, SignalLow, Image as ImageIcon, Lock, Wifi 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-/* --- 0. SECURITY CONFIG --- */
+/* --- 0. CONFIGURATION --- */
+const BACKEND_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000"; 
+
 const SECURITY_CONFIG = {
-    MAX_VIOLATIONS: 3,
+    MAX_VIOLATIONS: 45,
     VIOLATION_WEIGHTS: { TAB_SWITCH: 1, FULLSCREEN_EXIT: 1, RIGHT_CLICK: 0.5 }
 };
 
-/* --- 1. MOCK DATA --- */
-const QUIZ_DATA = [
-    { "_id": "q1", "questionText": "Which concept of OOP allows a subclass to provide a specific implementation?", "type": "mcq", "marks": 1, "options": [{ "_id": "opt1a", "text": "Encapsulation" }, { "_id": "opt1b", "text": "Polymorphism" }], "correct": "opt1b" },
-    { "_id": "q2", "questionText": "Which of the following are the four main pillars of OOP?", "type": "checkbox", "marks": 2, "options": [{ "_id": "opt2a", "text": "Encapsulation" }, { "_id": "opt2c", "text": "Inheritance" }, { "_id": "opt2d", "text": "Polymorphism" }, { "_id": "opt2e", "text": "Abstraction" }], "correct": ["opt2a", "opt2c", "opt2d", "opt2e"] },
-    { "_id": "q3", "questionText": "In Java, which access modifier is private?", "type": "mcq", "marks": 1, "options": [{ "_id": "opt3a", "text": "public" }, { "_id": "opt3b", "text": "private" }], "correct": "opt3b" },
-    { "_id": "q4", "questionText": "Analyze the code: 'class Dog extends Animal'. What relationship does this establish?", "type": "mcq", "marks": 1, "options": [{ "_id": "opt4a", "text": "IS-A Relationship" }, { "_id": "opt4b", "text": "HAS-A Relationship" }], "correct": "opt4a" },
-    { "_id": "q5", "questionText": "What implies hiding the internal implementation details?", "type": "mcq", "marks": 5, "options": [{ "_id": "opt5a", "text": "Inheritance" }, { "_id": "opt5b", "text": "Abstraction" }], "correct": "opt5b" },
-    ...Array.from({ length: 15 }).map((_, i) => ({
-        "_id": `q${i+6}`,
-        "questionText": `Demo Question ${i+6}: What is the output of the following code snippet?`,
-        "type": "mcq",
-        "marks": 1,
-        "options": [{ "_id": "a", "text": "Option A" }, { "_id": "b", "text": "Option B" }],
-        "correct": "a"
-    }))
-];
-
-/* --- 2. ATMOSPHERE & THEME --- */
+/* --- 1. ATMOSPHERE & THEME --- */
 const Atmosphere = ({ isDarkMode }) => (
     <div className={`fixed inset-0 overflow-hidden pointer-events-none transition-colors duration-700 z-0 ${isDarkMode ? 'bg-[#050B14]' : 'bg-slate-50'}`}>
         <motion.div 
@@ -53,36 +39,60 @@ const getTheme = (isDarkMode) => ({
     primaryBtn: "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30",
 });
 
-/* --- 3. ANIMATION VARIANTS (ENHANCED FLOW) --- */
+/* --- 2. ANIMATION VARIANTS --- */
 const slideVariants = {
-  enter: (direction) => ({
-    x: direction > 0 ? 50 : -50, // Slide in from right (next) or left (prev)
-    opacity: 0,
-    scale: 0.95
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-    transition: {
-      x: { type: "spring", stiffness: 300, damping: 25 }, // Snappier spring
-      opacity: { duration: 0.2 },
-      scale: { duration: 0.2 }
-    }
-  },
-  exit: (direction) => ({
-    x: direction < 0 ? 50 : -50, // Slide out to right (prev) or left (next)
-    opacity: 0,
-    scale: 0.95,
-    transition: {
-      x: { type: "spring", stiffness: 300, damping: 25 },
-      opacity: { duration: 0.2 },
-      scale: { duration: 0.2 }
-    }
-  })
+  enter: (direction) => ({ x: direction > 0 ? 50 : -50, opacity: 0, scale: 0.95 }),
+  center: { x: 0, opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 25, opacity: { duration: 0.2 } } },
+  exit: (direction) => ({ x: direction < 0 ? 50 : -50, opacity: 0, scale: 0.95, transition: { type: "spring", stiffness: 300, damping: 25, opacity: { duration: 0.2 } } })
 };
 
-/* --- 4. MODALS & SUB-COMPONENTS --- */
+/* --- 3. MODALS --- */
+const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDarkMode, jumpToQuestion, isSubmitting }) => {
+    if (!isOpen) return null;
+    const attempted = Object.keys(answers).length;
+    const total = quizData.length;
+    const skipped = total - attempted;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`w-full max-w-2xl p-6 md:p-8 rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+                <div className="text-center mb-6">
+                    <ListTodo size={48} className="mx-auto text-blue-500 mb-3" />
+                    <h2 className="text-2xl font-black">Submission Summary</h2>
+                    <p className={isDarkMode ? "text-slate-400" : "text-slate-500"}>Review your status before final submission</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className={`p-4 rounded-2xl border text-center ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-100 border-emerald-200'}`}>
+                        <div className={`text-3xl font-black ${isDarkMode ? 'text-emerald-500' : 'text-emerald-700'}`}>{attempted}</div>
+                        <div className="text-xs font-bold uppercase tracking-wider opacity-70">Attempted</div>
+                    </div>
+                    <div className={`p-4 rounded-2xl border text-center ${isDarkMode ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-100 border-amber-200'}`}>
+                        <div className={`text-3xl font-black ${isDarkMode ? 'text-amber-500' : 'text-amber-700'}`}>{skipped}</div>
+                        <div className="text-xs font-bold uppercase tracking-wider opacity-70">Skipped</div>
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto min-h-[150px] mb-6 pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                        {quizData.map((q, idx) => {
+                             const isAnswered = answers[q._id];
+                             let btnClass = isAnswered 
+                                ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border-emerald-300") 
+                                : (isDarkMode ? "bg-slate-800 text-slate-500 border-slate-700" : "bg-slate-100 text-slate-400 border-slate-200");
+                             return ( <button key={q._id} onClick={() => jumpToQuestion(idx)} className={`h-8 w-8 rounded-md flex items-center justify-center text-xs font-bold border transition-transform hover:scale-110 ${btnClass}`}>{idx + 1}</button> );
+                        })}
+                    </div>
+                </div>
+                <div className="flex gap-3 mt-auto pt-4 border-t border-inherit">
+                    <button onClick={onClose} disabled={isSubmitting} className={`flex-1 py-3.5 rounded-xl font-bold transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>Review Answers</button>
+                    <button onClick={onConfirm} disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "Confirm Finish"}
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
 const WarningModal = ({ isOpen, onClose, violationCount, maxViolations }) => {
     if (!isOpen) return null;
     return (
@@ -102,8 +112,8 @@ const LockoutModal = () => (
         <div className="text-center text-white max-w-lg">
             <Ban size={64} className="text-red-500 mx-auto mb-6" />
             <h1 className="text-4xl font-black mb-4">Quiz Locked</h1>
-            <p className="text-slate-400 mb-8">Multiple violations detected. Your responses have been submitted for review.</p>
-            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-slate-800 rounded-xl font-bold border border-slate-700">Return Home</button>
+            <p className="text-slate-400 mb-8">Maximum security violations exceeded. Your session has been auto-submitted.</p>
+            <button onClick={() => window.location.replace('/student/dashboard')} className="px-8 py-3 bg-slate-800 rounded-xl font-bold border border-slate-700">Return Home</button>
         </div>
     </div>
 );
@@ -113,59 +123,171 @@ const FullscreenGate = ({ onEnter }) => (
         <div className="text-center text-white">
             <Maximize size={48} className="text-indigo-400 mx-auto mb-6" />
             <h1 className="text-3xl font-black mb-4">Secure Environment</h1>
+            <p className="text-slate-400 mb-8 max-w-md mx-auto">This assessment requires full-screen mode. Exiting full-screen or switching tabs will be recorded as a violation.</p>
             <button onClick={onEnter} className="w-full py-4 px-8 bg-indigo-600 rounded-xl font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/30">Enable Fullscreen</button>
         </div>
     </div>
 );
 
-/* --- 5. MAIN COMPONENT --- */
+/* --- 4. MAIN COMPONENT --- */
 const QuizActivePage = () => {
   const location = useLocation();
-  const initialTheme = location.state?.selectedTheme === 'light' ? false : true;
+  const navigate = useNavigate();
 
-  // State
+  // --- DATA RETRIEVAL ---
+  const apiData = location.state || {};
+  const { student, session, questions } = apiData;
+  const activeSessionCode = apiData.sessionCode; 
+
+  // [SECURITY 1] ENFORCED ENTRY GUARD
+  useEffect(() => {
+    if (!questions || !session || !activeSessionCode) {
+        navigate('/quiz/join', { replace: true });
+    }
+  }, [questions, session, activeSessionCode, navigate]);
+
+  // --- STATE ---
+  const initialTheme = location.state?.theme === 'light' ? false : true;
   const [isDarkMode, setIsDarkMode] = useState(initialTheme);
   const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [direction, setDirection] = useState(0); // For sliding animation
+  const [direction, setDirection] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [lockedQuestions, setLockedQuestions] = useState(new Set()); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  
-  // Security
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState({ online: true, effectiveType: '4g' });
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [timeLeft, setTimeLeft] = useState((session?.durationMinutes || 45) * 60);
+
+  // Security State
   const [hasStarted, setHasStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(45 * 60);
-
+  
   const t = getTheme(isDarkMode);
-  const currentQ = QUIZ_DATA[currentQIndex];
+  const currentQ = questions ? questions[currentQIndex] : null;
 
-  // --- SECURITY LOGIC ---
+  /* --- HANDLERS --- */
+  
+  // Non-blocking submission handler
+  const submitAnswerBackground = async (qId, selectedOption, timeTaken) => {
+      try {
+          await fetch(`${BACKEND_URL}/api/student/quiz/submit-answer`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                  sessionCode: activeSessionCode, 
+                  questionId: qId,
+                  selectedOption: selectedOption,
+                  timeTaken: timeTaken
+              })
+          });
+          // Update locked state silently
+          setLockedQuestions(prev => new Set(prev).add(qId));
+      } catch (error) { 
+          console.error("Background Save Error:", error); 
+      }
+  };
+
+  const handleSelect = (optionId) => {
+    if (isLocked || isSubmitting || lockedQuestions.has(currentQ._id)) return;
+    setAnswers(prev => ({ ...prev, [currentQ._id]: optionId }));
+  };
+
+  const navigateQuestion = (newIndex) => {
+      if (newIndex === currentQIndex) return;
+      
+      // FIRE AND FORGET - Submit current question before moving
+      const currentAnswer = answers[currentQ._id];
+      if (currentAnswer && !lockedQuestions.has(currentQ._id)) {
+          const timeTaken = Math.max(1, Math.floor((Date.now() - questionStartTime) / 1000));
+          submitAnswerBackground(currentQ._id, currentAnswer, timeTaken);
+      }
+
+      setDirection(newIndex > currentQIndex ? 1 : -1);
+      setCurrentQIndex(newIndex);
+      setQuestionStartTime(Date.now());
+      setMobileMenuOpen(false);
+  };
+
+  /* --- [SECURITY 2] DESTRUCTIVE SUBMISSION --- */
+  const finishQuiz = useCallback(async () => {
+      if(isSubmitting) return; 
+      setIsSubmitting(true);
+      
+      try {
+          const response = await fetch(`${BACKEND_URL}/api/student/quiz/finish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ sessionCode: activeSessionCode })
+          });
+          const result = await response.json();
+          
+          if (result.success) {
+              if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+              navigate('/student/quiz/result', { state: result.data, replace: true });
+          } else {
+              alert("Submission Failed: " + result.message);
+              setIsSubmitting(false);
+          }
+      } catch (error) {
+          console.error("Finish Error", error);
+          alert("Network Error. Please check your connection.");
+          setIsSubmitting(false);
+      }
+  }, [activeSessionCode, navigate, isSubmitting]);
+
+  /* --- NETWORK & SECURITY EFFECTS --- */
+  useEffect(() => {
+    const updateConnectionStatus = () => {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        setConnectionStatus({ online: navigator.onLine, effectiveType: connection ? connection.effectiveType : '4g' });
+    };
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    return () => {
+        window.removeEventListener('online', updateConnectionStatus);
+        window.removeEventListener('offline', updateConnectionStatus);
+    };
+  }, []);
+
+  useEffect(() => {
+    const preventRefresh = (e) => {
+        if ((e.ctrlKey && e.key === 'r') || e.key === 'F5' || (e.metaKey && e.key === 'r')) e.preventDefault();
+    };
+    const handleBeforeUnload = (e) => {
+        if (!isSubmitting) { e.preventDefault(); e.returnValue = "Quiz in progress!"; }
+    };
+    window.addEventListener('keydown', preventRefresh);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+        window.removeEventListener('keydown', preventRefresh);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isSubmitting]);
+
   const handleViolation = useCallback((type) => {
-      if (isSubmitted || isLocked || !hasStarted) return;
+      if (isLocked || !hasStarted || isSubmitting) return;
       const weight = SECURITY_CONFIG.VIOLATION_WEIGHTS[type] || 1;
       setViolationCount(prev => {
           const newCount = prev + weight;
-          if (newCount >= SECURITY_CONFIG.MAX_VIOLATIONS) { setIsLocked(true); handleSubmit(true); return newCount; }
-          setShowWarning(true);
-          return newCount;
+          if (newCount >= SECURITY_CONFIG.MAX_VIOLATIONS) { 
+              setIsLocked(true); finishQuiz(); return newCount; 
+          }
+          setShowWarning(true); return newCount;
       });
-  }, [isSubmitted, isLocked, hasStarted]);
-
-  const enterFullscreen = () => {
-      const elem = document.documentElement;
-      if (elem.requestFullscreen) elem.requestFullscreen().then(() => setHasStarted(true)).catch(() => setHasStarted(true));
-      else setHasStarted(true);
-  };
+  }, [isLocked, hasStarted, isSubmitting, finishQuiz]);
 
   useEffect(() => {
       if (!hasStarted) return;
       const handleFS = () => { if (!document.fullscreenElement) handleViolation('FULLSCREEN_EXIT'); };
       const handleVis = () => { if (document.hidden) handleViolation('TAB_SWITCH'); };
       const handleBlur = () => handleViolation('TAB_SWITCH');
-      
       document.addEventListener('fullscreenchange', handleFS);
       document.addEventListener('visibilitychange', handleVis);
       window.addEventListener('blur', handleBlur);
@@ -177,239 +299,290 @@ const QuizActivePage = () => {
   }, [hasStarted, handleViolation]);
 
   useEffect(() => {
-      const preventDefault = (e) => e.preventDefault();
-      document.addEventListener('contextmenu', preventDefault);
-      return () => document.removeEventListener('contextmenu', preventDefault);
-  }, []);
-
-  // --- TIMER ---
-  useEffect(() => {
-    if (!hasStarted || isSubmitted || isLocked) return;
+    if (!hasStarted || isLocked || isSubmitting) return;
     const timer = setInterval(() => {
       setTimeLeft(prev => {
-          if (prev <= 1) { clearInterval(timer); handleSubmit(false); return 0; }
+          if (prev <= 1) { clearInterval(timer); finishQuiz(); return 0; }
           return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [hasStarted, isSubmitted, isLocked]);
+  }, [hasStarted, isLocked, isSubmitting, finishQuiz]);
 
-  // --- QUIZ LOGIC ---
-  const handleSubmit = (forced = false) => {
-      setIsSubmitted(true);
-      if (document.fullscreenElement) document.exitFullscreen().catch(console.error);
+  const enterFullscreen = () => {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) elem.requestFullscreen().then(() => setHasStarted(true)).catch(() => setHasStarted(true));
+      else setHasStarted(true);
   };
 
-  const handleSelect = (optionId) => {
-    if (isSubmitted || isLocked) return; 
-    if (currentQ.type === 'checkbox') {
-      const currentAns = answers[currentQ._id] || [];
-      const newAns = currentAns.includes(optionId) ? currentAns.filter(id => id !== optionId) : [...currentAns, optionId];
-      setAnswers({ ...answers, [currentQ._id]: newAns });
-    } else {
-      setAnswers({ ...answers, [currentQ._id]: optionId });
-    }
-  };
-
-  const navigateQuestion = (newIndex) => {
-      // Calculate direction: +1 if moving forward, -1 if backward
-      const newDirection = newIndex > currentQIndex ? 1 : -1;
-      setDirection(newDirection);
-      setCurrentQIndex(newIndex);
-      setMobileMenuOpen(false);
-  };
-
-  const isSelected = (optionId) => {
-      if (currentQ.type === 'checkbox') return (answers[currentQ._id] || []).includes(optionId);
-      return answers[currentQ._id] === optionId;
-  };
+  if (!questions || !session) return null;
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+  const isUrgent = timeLeft < 300; 
 
-  // --- INTERNAL COMPONENT: ATLAS (SIDEBAR) RESTORED ---
-  const QuizAtlas = () => (
-    <div className={`flex flex-col h-full border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0F172A] border-slate-800' : 'bg-white border-slate-200'}`}>
-      
-      {/* 1. Atlas Header */}
-      <div className="p-5 pb-4 border-b border-inherit">
-         <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg shadow-sm border ${isDarkMode ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}`}>
-                <LayoutGrid size={18} />
-            </div>
-            <div>
-                <h2 className={`text-sm font-black uppercase tracking-wide ${t.text}`}>Question Atlas</h2>
-                <p className={`text-[10px] font-bold ${t.textSecondary}`}>{Object.keys(answers).length} / {QUIZ_DATA.length} Answered</p>
-            </div>
-         </div>
-      </div>
+  /* --- RENDER COMPONENTS --- */
+  const NetworkIndicator = () => {
+      const isWeak = connectionStatus.effectiveType === '2g' || connectionStatus.effectiveType === 'slow-2g';
+      // UPDATED COLOR PALETTE FOR LIGHT MODE GREEN
+      return (
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300
+              ${!connectionStatus.online ? 'bg-red-500/10 text-red-500 border-red-500/20' : isDarkMode 
+                  ? (isWeak ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500')
+                  : (isWeak ? 'bg-amber-100 border-amber-200 text-amber-700' : 'bg-emerald-100 border-emerald-200 text-emerald-700')
+              }`}
+          >
+              {!connectionStatus.online ? <WifiOff size={16} /> : isWeak ? <SignalLow size={16} /> : <Wifi size={16} />}
+              <span className="text-xs font-bold uppercase hidden sm:block">
+                  {!connectionStatus.online ? 'Offline' : isWeak ? 'Weak Signal' : 'Connected'}
+              </span>
+          </div>
+      );
+  };
 
-      {/* 2. Grid */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-hide">
-        <div className="grid grid-cols-5 gap-2">
-          {QUIZ_DATA.map((q, idx) => {
-             const isActive = currentQIndex === idx;
-             const isAnswered = answers[q._id] && (Array.isArray(answers[q._id]) ? answers[q._id].length > 0 : true);
-             
-             // Dynamic Styles for Atlas Buttons
-             let btnClass = "";
-             if (isActive) btnClass = "bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-1 ring-blue-400 font-black z-10 scale-105";
-             else if (isAnswered) btnClass = isDarkMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border border-emerald-200";
-             else btnClass = isDarkMode ? "bg-[#1E293B] text-slate-500 border border-slate-800 hover:bg-slate-800" : "bg-white text-slate-400 border border-slate-200 hover:bg-slate-50";
+  const QuizAtlas = () => {
+    const avatarUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${student?.rollno}/${student?.rollno}.jpg`;
 
-             return (
-                <button
-                  key={q._id}
-                  onClick={() => navigateQuestion(idx)}
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-200 ${btnClass}`}
-                >
-                  {idx + 1}
-                </button>
-             )
-          })}
-        </div>
-      </div>
-
-      {/* 3. Restored Footer: Legend & Submit */}
-      <div className={`p-5 mt-auto border-t ${t.border} bg-opacity-50`}>
-          {/* Legend */}
-          <div className="grid grid-cols-2 gap-y-2 gap-x-1 mb-4">
-              <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${isDarkMode ? 'bg-emerald-500/20 border border-emerald-500/50' : 'bg-emerald-100 border border-emerald-300'}`}></div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${t.textSecondary}`}>Answered</span>
+    return (
+        <div className={`flex flex-col h-full border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0F172A] border-slate-800' : 'bg-white border-slate-200'}`}>
+          
+          {/* --- MINIMAL ROW BY ROW PROFILE --- */}
+          <div className="p-8 flex flex-col items-center text-center gap-3 border-b border-inherit">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-blue-500/50 bg-slate-200 shadow-inner flex-shrink-0">
+                  <img 
+                    src={avatarUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${student?.name}&background=random`; }} 
+                  />
               </div>
-              <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${isDarkMode ? 'bg-slate-800 border border-slate-700' : 'bg-slate-100 border border-slate-300'}`}></div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${t.textSecondary}`}>Skipped</span>
-              </div>
-              <div className="flex items-center gap-2 col-span-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border border-blue-400 shadow-[0_0_8px_rgba(37,99,235,0.5)]"></div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${t.textSecondary}`}>Current Question</span>
+              <div className="space-y-0.5">
+                  <h3 className={`font-bold text-sm leading-tight uppercase ${t.text}`}>{student?.name}</h3>
+                  <p className={`text-[10px] font-bold tracking-widest opacity-50 uppercase ${t.text}`}>{student?.rollno}</p>
+                  <p className={`text-[10px] font-bold tracking-widest opacity-50 uppercase ${t.text}`}>{student?.batch}</p>
               </div>
           </div>
 
-          {/* Submit Button */}
-          <button 
-              onClick={() => { setMobileMenuOpen(false); handleSubmit(false); }}
-              className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-transform active:scale-95 ${t.primaryBtn}`}
-          >
-              Final Submit
-          </button>
-      </div>
-    </div>
-  );
+          <div className="p-5 pb-2 border-b border-inherit flex items-center gap-2">
+             <LayoutGrid size={16} className="text-indigo-400" />
+             <span className={`text-xs font-black uppercase tracking-widest ${t.textSecondary}`}>Question Map</span>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
+            <div className="grid grid-cols-5 gap-2">
+              {questions.map((q, idx) => {
+                 const isActive = currentQIndex === idx;
+                 const isAnswered = answers[q._id];
+                 const isLocked = lockedQuestions.has(q._id);
+
+                 // UPDATED COLOR PALETTE FOR SIDEBAR
+                 let btnClass = isActive 
+                    ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400 scale-105"
+                    : isLocked ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-800 border border-emerald-300")
+                    : isAnswered ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-200")
+                    : (isDarkMode ? "bg-[#1E293B] text-slate-500 border border-slate-800" : "bg-white text-slate-400 border border-slate-200");
+                 
+                 return ( 
+                    <button 
+                        key={q._id} 
+                        onClick={() => navigateQuestion(idx)} 
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all relative ${btnClass}`}
+                    >
+                        {idx + 1}
+                    </button> 
+                 )
+              })}
+            </div>
+          </div>
+          <div className={`p-5 mt-auto border-t ${t.border}`}>
+              <button 
+                onClick={() => { 
+                    const currentAnswer = answers[currentQ._id];
+                    if(currentAnswer) {
+                        const timeTaken = Math.max(1, Math.floor((Date.now() - questionStartTime) / 1000));
+                        submitAnswerBackground(currentQ._id, currentAnswer, timeTaken);
+                    }
+                    setIsReviewing(true); 
+                }} 
+                className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg ${t.primaryBtn}`}
+              >
+                  Final Submit
+              </button>
+          </div>
+        </div>
+    );
+  };
 
   return (
     <div className={`h-screen flex flex-col font-sans overflow-hidden transition-colors duration-500 ${t.text} select-none`}>
-      
       {!hasStarted && <FullscreenGate onEnter={enterFullscreen} />}
       {isLocked && <LockoutModal />}
-      <WarningModal isOpen={showWarning} onClose={() => { setShowWarning(false); enterFullscreen(); }} violationCount={Math.floor(violationCount)} maxViolations={SECURITY_CONFIG.MAX_VIOLATIONS} />
-
+      <WarningModal isOpen={showWarning} onClose={() => { setShowWarning(false); enterFullscreen(); }} violationCount={violationCount} maxViolations={SECURITY_CONFIG.MAX_VIOLATIONS} />
+      <SubmitReviewModal isOpen={isReviewing} onClose={() => setIsReviewing(false)} onConfirm={finishQuiz} answers={answers} quizData={questions} isDarkMode={isDarkMode} jumpToQuestion={(idx) => { navigateQuestion(idx); setIsReviewing(false); }} isSubmitting={isSubmitting} />
       <Atmosphere isDarkMode={isDarkMode} />
 
-      <header className={`h-20 border-b flex items-center justify-between px-6 z-20 flex-shrink-0 relative transition-colors duration-300 ${isDarkMode ? 'bg-[#0F172A]/80 border-slate-800' : 'bg-white/80 border-slate-200'} backdrop-blur-md`}>
+      <header className={`h-20 border-b flex items-center justify-between px-6 z-20 relative backdrop-blur-md ${isDarkMode ? 'bg-[#0F172A]/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className={`hidden lg:flex p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
-                {sidebarOpen ? <PanelLeftClose size={24} /> : <PanelLeftOpen size={24} />}
-            </button>
-            <button className={`lg:hidden p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`} onClick={() => setMobileMenuOpen(true)}>
-                <Menu size={24} />
-            </button>
-            <div className="hidden lg:block">
-                <h1 className="text-xl font-black tracking-tight">CDC Assessment</h1>
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-500"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>SECURE</div>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex p-2 rounded-xl text-slate-400">{sidebarOpen ? <PanelLeftClose size={24} /> : <PanelLeftOpen size={24} />}</button>
+            <button className="lg:hidden p-2 rounded-xl" onClick={() => setMobileMenuOpen(true)}><Menu size={24} /></button>
+            <div className="hidden sm:block ml-2">
+                <h1 className="text-lg font-black">{session?.title}</h1>
+                <div className={`flex items-center gap-1.5 text-xs font-bold ${isDarkMode ? 'text-emerald-500' : 'text-emerald-700'}`}><CheckCircle2 size={12} /> Live Session</div>
             </div>
         </div>
+
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className={`flex items-center gap-3 px-5 py-2 rounded-full font-mono font-bold border transition-all duration-500 ${timeLeft < 300 ? 'bg-rose-500 text-white border-rose-600 animate-pulse' : isDarkMode ? 'bg-[#1E293B] text-blue-400 border-slate-700 shadow-lg' : 'bg-white text-slate-700 border-slate-200 shadow-sm'}`}>
-                <Timer size={18} /> <span className="text-lg tracking-widest min-w-[60px] text-center">{formatTime(timeLeft)}</span>
+            <div className={`flex items-center gap-3 px-5 py-2 rounded-full font-mono font-bold border ${isUrgent ? 'bg-rose-500 text-white border-rose-600' : (isDarkMode ? 'bg-[#1E293B] text-blue-400 border-slate-700' : 'bg-white text-slate-700 border-slate-200 shadow-sm')}`}>
+                {isUrgent ? <Activity size={18} className="animate-pulse" /> : <Clock size={18} />}
+                <span className="text-lg tracking-widest">{formatTime(timeLeft)}</span>
             </div>
         </div>
-        <div onClick={() => setIsDarkMode(!isDarkMode)} className={`relative h-10 w-20 rounded-full cursor-pointer p-1 transition-colors duration-300 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-200 border-slate-300'}`}>
-            <div className="flex justify-between items-center w-full h-full px-1.5 z-10 relative"><Moon size={16} className={isDarkMode ? "text-white" : "text-slate-400"} /><Sun size={16} className={!isDarkMode ? "text-orange-500" : "text-slate-600"} /></div>
-            <motion.div layout transition={{ type: "spring", stiffness: 700, damping: 30 }} className={`absolute top-1 bottom-1 w-[34px] rounded-full shadow-sm z-0 ${isDarkMode ? 'left-1 bg-slate-600' : 'right-1 bg-white'}`} />
+
+        <div className="flex items-center gap-3">
+             <NetworkIndicator />
+            <div onClick={() => setIsDarkMode(!isDarkMode)} className="relative h-10 w-20 rounded-full cursor-pointer p-1 bg-slate-800 border border-slate-700">
+                <div className="flex justify-between items-center w-full h-full px-1.5"><Moon size={16} className={isDarkMode ? "text-white" : "text-slate-400"} /><Sun size={16} className={!isDarkMode ? "text-orange-500" : "text-slate-600"} /></div>
+                <motion.div layout className={`absolute top-1 bottom-1 w-[34px] rounded-full shadow-sm ${isDarkMode ? 'left-1 bg-slate-600' : 'right-1 bg-white'}`} />
+            </div>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden relative z-10">
-        <AnimatePresence initial={false}>
-            {sidebarOpen && (
-                <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className={`hidden lg:block h-full shadow-2xl z-10 overflow-hidden border-r ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+        <AnimatePresence initial={false} mode="wait">
+            {sidebarOpen && ( 
+                <motion.aside 
+                    key="sidebar"
+                    initial={{ width: 0, opacity: 0 }} 
+                    animate={{ width: 280, opacity: 1 }} 
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="hidden lg:block h-full border-r border-inherit overflow-hidden whitespace-nowrap"
+                >
                     <QuizAtlas />
-                </motion.aside>
+                </motion.aside> 
             )}
         </AnimatePresence>
 
-        <main className="flex-1 overflow-y-auto relative transition-colors duration-500 p-4 md:p-10">
-            {isSubmitted && !isLocked && (
-                 <div className="flex flex-col items-center justify-center h-full text-center animate-in fade-in duration-500">
-                    <Trophy size={64} className="text-yellow-500 mb-6" />
-                    <h2 className="text-4xl font-black mb-2">Quiz Completed!</h2>
-                    <p className="text-slate-500">Your answers have been securely recorded.</p>
-                    <button onClick={() => window.location.reload()} className={`mt-8 px-8 py-3 font-bold rounded-xl ${t.primaryBtn}`}>Back to Dashboard</button>
-                </div>
-            )}
-
-            {!isSubmitted && (
-                /* --- KEY CHANGE: FLOW ANIMATION --- */
-                <AnimatePresence mode="wait" custom={direction}>
-                    <motion.div 
-                        key={currentQ._id}
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        className="max-w-4xl mx-auto w-full flex flex-col h-full"
-                    >
-                         <div className="flex justify-between items-center mb-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-10 pb-24 md:pb-24 scroll-smooth custom-scrollbar">
+            <AnimatePresence mode="wait" custom={direction}>
+                <motion.div 
+                    key={currentQ._id} 
+                    custom={direction} 
+                    variants={slideVariants} 
+                    initial="enter" 
+                    animate="center" 
+                    exit="exit" 
+                    className="max-w-4xl mx-auto w-full flex flex-col min-h-full"
+                >
+                        <div className="flex justify-between items-center mb-6">
                             <span className={`text-xs font-black px-4 py-1.5 rounded-full uppercase border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>Question {currentQIndex + 1}</span>
-                            <span className={`text-xs font-bold px-3 py-1.5 rounded-full uppercase border flex items-center gap-1 ${isDarkMode ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-600'}`}><Star size={12} fill="currentColor"/> {currentQ.marks} Pts</span>
-                         </div>
+                            <div className="flex gap-2">
+                                {lockedQuestions.has(currentQ._id) && (
+                                    <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full uppercase border flex items-center gap-1 ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-emerald-100 border-emerald-200 text-emerald-700'}`}>
+                                        <Lock size={12} /> Answered
+                                    </span>
+                                )}
+                                <span className={`text-xs font-bold px-3 py-1.5 rounded-full uppercase border flex items-center gap-1 ${isDarkMode ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-amber-100 border-amber-200 text-amber-700'}`}>
+                                    <Star size={12} fill="currentColor"/> {currentQ.marks} Pts
+                                </span>
+                            </div>
+                        </div>
 
-                         <div className={`p-8 md:p-10 rounded-[2rem] mb-8 ${t.card}`}>
-                             <h2 className="text-xl md:text-3xl font-bold leading-relaxed">{currentQ.questionText}</h2>
-                         </div>
-
-                         <div className="space-y-3 mb-auto">
-                            {currentQ.options.map((opt) => {
-                                const active = isSelected(opt._id);
-                                const isCheckbox = currentQ.type === 'checkbox';
-                                return (
-                                    <div key={opt._id} onClick={() => handleSelect(opt._id)} className={`group flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${active ? t.optionActive : t.optionIdle}`}>
-                                        <div className={`w-6 h-6 flex-shrink-0 flex items-center justify-center transition-all duration-200 rounded-full border-2 ${active ? 'bg-blue-600 border-blue-600' : isDarkMode ? 'border-slate-600' : 'border-slate-300'}`}>
-                                            {active && (isCheckbox ? <Check size={14} className="text-white" strokeWidth={4} /> : <div className="w-2.5 h-2.5 bg-white rounded-full" />)}
-                                        </div>
-                                        <span className={`font-medium ${active ? t.text : t.textSecondary}`}>{opt.text}</span>
+                        {/* --- QUESTION BOX --- */}
+                        <div className={`p-8 md:p-10 rounded-[2rem] mb-8 flex flex-col gap-6 ${t.card}`}>
+                            <h2 className="text-xl md:text-3xl font-bold leading-relaxed">{currentQ.questionText}</h2>
+                            
+                            {currentQ.image && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="w-full relative rounded-2xl overflow-hidden border border-inherit bg-black/5"
+                                >
+                                    <img 
+                                        src={currentQ.image} 
+                                        alt="Question Visual" 
+                                        className="w-full h-auto max-h-[350px] object-contain mx-auto"
+                                    />
+                                    <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-md p-1.5 rounded-lg text-white">
+                                        <ImageIcon size={14} />
                                     </div>
-                                )
-                            })}
-                         </div>
-
-                         <div className="flex justify-between pt-6 mt-8">
-                            <button onClick={() => navigateQuestion(Math.max(0, currentQIndex - 1))} disabled={currentQIndex === 0} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold ${t.navBtn}`}><ChevronLeft size={20} /> Prev</button>
-                            {currentQIndex === QUIZ_DATA.length - 1 ? (
-                                <button onClick={() => handleSubmit(false)} className={`px-8 py-3 rounded-xl font-bold ${t.primaryBtn}`}>Submit</button>
-                            ) : (
-                                <button onClick={() => navigateQuestion(Math.min(QUIZ_DATA.length - 1, currentQIndex + 1))} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${t.primaryBtn}`}>Next <ChevronRight size={20} /></button>
+                                </motion.div>
                             )}
-                         </div>
-                    </motion.div>
-                </AnimatePresence>
-            )}
+                        </div>
+
+                        {/* --- OPTIONS LIST --- */}
+                        <div className="space-y-3 mb-auto">
+                        {currentQ.options.map((opt) => {
+                            const isSelected = answers[currentQ._id] === opt._id;
+                            const isLocked = lockedQuestions.has(currentQ._id);
+                            return (
+                                <div 
+                                    key={opt._id} 
+                                    onClick={() => handleSelect(opt._id)} 
+                                    className={`group flex items-center gap-4 p-5 rounded-2xl border-2 transition-all 
+                                        ${isSelected ? t.optionActive : t.optionIdle}
+                                        ${isLocked ? 'cursor-not-allowed opacity-75 grayscale-[0.3]' : 'cursor-pointer'}
+                                    `}
+                                >
+                                    <div className={`w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full border-2 ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600'}`}>
+                                        {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                                    </div>
+                                    <span className={`font-medium ${isSelected ? t.text : t.textSecondary}`}>{opt.text}</span>
+                                </div>
+                            )
+                        })}
+                        </div>
+
+                        {/* --- NAVIGATION --- */}
+                        <div className="flex justify-between pt-8 mt-auto pb-4">
+                            <button 
+                                onClick={() => navigateQuestion(Math.max(0, currentQIndex - 1))} 
+                                disabled={currentQIndex === 0} 
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold ${t.navBtn}`}
+                            >
+                                <ChevronLeft size={20} /> Prev
+                            </button>
+                            
+                            {currentQIndex === questions.length - 1 ? ( 
+                                <button 
+                                    onClick={() => {
+                                        const currentAnswer = answers[currentQ._id];
+                                        if(currentAnswer) {
+                                            const timeTaken = Math.max(1, Math.floor((Date.now() - questionStartTime) / 1000));
+                                            submitAnswerBackground(currentQ._id, currentAnswer, timeTaken);
+                                        }
+                                        setIsReviewing(true); 
+                                    }} 
+                                    className={`px-8 py-3 rounded-xl font-bold ${t.primaryBtn}`}
+                                >
+                                    Submit
+                                </button> 
+                            ) : ( 
+                                <button 
+                                    onClick={() => navigateQuestion(Math.min(questions.length - 1, currentQIndex + 1))} 
+                                    className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${t.primaryBtn}`}
+                                >
+                                    Next <ChevronRight size={20} />
+                                </button> 
+                            )}
+                        </div>
+                </motion.div>
+            </AnimatePresence>
         </main>
         
         <AnimatePresence>
-        {mobileMenuOpen && (
-            <motion.div className="absolute inset-0 z-50 lg:hidden">
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-                <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} className={`absolute left-0 top-0 bottom-0 w-[280px] shadow-2xl ${isDarkMode ? 'bg-[#0F172A]' : 'bg-white'}`}>
-                    <QuizAtlas />
+            {mobileMenuOpen && (
+                <motion.div className="absolute inset-0 z-50 lg:hidden">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+                    <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} className="absolute left-0 top-0 bottom-0 w-[280px] bg-[#0F172A]"><QuizAtlas /></motion.div>
                 </motion.div>
-            </motion.div>
-        )}
+            )}
         </AnimatePresence>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.2); border-radius: 20px; }
+      `}} />
     </div>
   );
 };

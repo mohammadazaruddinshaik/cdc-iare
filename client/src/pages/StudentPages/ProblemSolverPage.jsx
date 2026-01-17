@@ -145,7 +145,7 @@ const ProblemSolverPage = () => {
         const fetchData = async () => {
             setLoadingProblem(true);
             try {
-                setContestName(contestId.replace(/-/g, ' '));
+                if(contestId) setContestName(contestId.replace(/-/g, ' '));
                 const res = await fetch(`${API_URL}/api/student/get-problem-details/${problemId}`, {credentials: 'include'});
                 const data = await res.json();
                 
@@ -277,14 +277,24 @@ const ProblemSolverPage = () => {
             setStatus('running');
             setActiveTab('result');
             setExecutionResults(null);
-            setSubmissionResult(null); // Clear previous submit results
+            setSubmissionResult(null); 
             
             try {
+                // Filter out 'sample' types if the backend automatically adds the public case
+                // Map 'expected' to 'output' for the API contract
+                const customCases = testCases
+                    .filter(tc => tc.type !== 'sample')
+                    .map(tc => ({
+                        input: tc.input,
+                        output: tc.expected
+                    }));
+
                 const payload = {
                     examId: contestId,
                     problemId: problemId,
                     languageId: LANGUAGE_ID_MAP[language],
-                    code: code
+                    code: code,
+                    customTestCases: customCases
                 };
 
                 const res = await fetch(`${API_URL}/api/student/run`, {
@@ -316,7 +326,7 @@ const ProblemSolverPage = () => {
         } else if (mode === 'submit') {
             setStatus('submitting');
             setActiveTab('result');
-            setExecutionResults(null); // Clear previous run results
+            setExecutionResults(null);
             setSubmissionResult(null);
 
             try {
@@ -336,7 +346,6 @@ const ProblemSolverPage = () => {
 
                 const data = await res.json();
 
-                // Handle both API success true/false scenarios
                 if (data.success) {
                     setSubmissionResult({
                         success: true,
@@ -364,7 +373,6 @@ const ProblemSolverPage = () => {
                 });
                 setStatus('idle');
             } finally {
-                // Reset status to idle after delay if it was success
                 if(status !== 'idle') {
                     setTimeout(() => setStatus('idle'), 3000);
                 }
@@ -470,29 +478,16 @@ const ProblemSolverPage = () => {
                             .prose code { color: ${isDarkMode ? '#e2e8f0' : '#000'} !important; background: ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}; padding: 2px 4px; rounded: 4px; }
                         `}</style>
                         
-                        <div className={cn("prose prose-sm max-w-none space-y-6", theme.prose)}>
+                        <div className={cn("prose prose-sm max-w-none space-y-8", theme.prose)}>
+                            {/* 1. DESCRIPTION */}
                             <div>
                                 <h3 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-2">Description</h3>
-                                <p className="leading-relaxed">{problemDetails?.description}</p>
+                                <div className="leading-relaxed whitespace-pre-wrap">{problemDetails?.description}</div>
                             </div>
                             
-                            <div className="grid grid-cols-1 gap-4">
-                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2">Input Format</h3>
-                                    <p className="opacity-90 font-mono">{problemDetails?.inputFormat}</p>
-                                </div>
-                                 <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2">Output Format</h3>
-                                    <p className="opacity-90 font-mono">{problemDetails?.outputFormat}</p>
-                                </div>
-                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2"><AlertTriangle size={12}/> Constraints</h3>
-                                    <p className="opacity-90 font-mono">{problemDetails?.constraints}</p>
-                                </div>
-                            </div>
-
+                            {/* 2. EXAMPLES / TEST CASES */}
                             {problemDetails?.publicTestCases && problemDetails.publicTestCases.length > 0 && (
-                                <div className="space-y-4 mt-8 border-t pt-6 border-dashed border-gray-500/30">
+                                <div className="space-y-4 pt-2">
                                     <h3 className="text-xs font-bold uppercase tracking-widest opacity-50 flex items-center gap-2">
                                         <CheckCircleIcon /> Examples
                                     </h3>
@@ -504,11 +499,11 @@ const ProblemSolverPage = () => {
                                             <div className="p-4 grid grid-cols-1 gap-4">
                                                 <div>
                                                     <div className="text-[10px] uppercase opacity-50 mb-1">Input</div>
-                                                    <div className={cn("font-mono text-sm p-2 rounded-lg", theme.codeBlock)}>{tc.input}</div>
+                                                    <div className={cn("font-mono text-sm p-2 rounded-lg whitespace-pre-wrap", theme.codeBlock)}>{tc.input}</div>
                                                 </div>
                                                 <div>
                                                     <div className="text-[10px] uppercase opacity-50 mb-1">Output</div>
-                                                    <div className={cn("font-mono text-sm p-2 rounded-lg", theme.codeBlock)}>{tc.output}</div>
+                                                    <div className={cn("font-mono text-sm p-2 rounded-lg whitespace-pre-wrap", theme.codeBlock)}>{tc.output}</div>
                                                 </div>
                                                 {tc.explanation && (
                                                     <div className="text-xs opacity-80 italic mt-1 border-l-2 border-blue-500 pl-3">
@@ -520,6 +515,22 @@ const ProblemSolverPage = () => {
                                     ))}
                                 </div>
                             )}
+
+                            {/* 3. FORMATS & CONSTRAINTS */}
+                            <div className="grid grid-cols-1 gap-4 border-t pt-6 border-dashed border-gray-500/30">
+                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
+                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2">Input Format</h3>
+                                    <div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.inputFormat}</div>
+                                </div>
+                                 <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
+                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2">Output Format</h3>
+                                    <div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.outputFormat}</div>
+                                </div>
+                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
+                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2"><AlertTriangle size={12}/> Constraints</h3>
+                                    <div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.constraints}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -695,14 +706,7 @@ const ProblemSolverPage = () => {
                                             />
                                          </div>
                                     </div>
-                                    {currentTestCase?.type === 'sample' && (
-                                        <div className="mt-2 text-xs opacity-70 p-2 border rounded-lg border-dashed border-gray-500/30">
-                                            <div className="flex justify-between items-center">
-                                                <span className="font-bold uppercase text-[10px]">Expected Output:</span>
-                                                <span className="font-mono bg-black/10 px-2 py-0.5 rounded">{currentTestCase.expected}</span>
-                                            </div>
-                                        </div>
-                                    )}
+                                    {/* Expected Output removed here as requested */}
                                 </div>
                             ) : (
                                 <div className="h-full flex flex-col">

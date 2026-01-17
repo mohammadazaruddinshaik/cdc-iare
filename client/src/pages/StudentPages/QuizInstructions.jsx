@@ -1,254 +1,389 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-    ShieldCheck, Eye, Zap, Lock, 
-    Sun, Moon, ArrowRight, Check, 
-    Terminal, Cpu, Wifi, MousePointerClick,
-    AlertOctagon, ScanFace
+    Moon, Sun, Check, ShieldAlert, 
+    MousePointer2, Maximize2, FileText, 
+    ChevronRight, Clock, ArrowRight, 
+    Calendar, Timer, Hash 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- 1. ATMOSPHERE BACKGROUND ---
-const Atmosphere = ({ theme }) => {
-    const isDark = theme === 'dark';
+// --- CSS UTILS ---
+const styles = `
+    .glass-panel {
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+`;
+
+// --- 1. DYNAMIC GRID BACKGROUND ---
+const GridBackground = ({ activeMode }) => {
     return (
-        <div className={`fixed inset-0 overflow-hidden pointer-events-none transition-colors duration-700 ${isDark ? 'bg-[#050B14]' : 'bg-slate-50'}`}>
+        <div className="fixed inset-0 overflow-hidden pointer-events-none transition-colors duration-700 bg-white z-0">
+            {/* Dark Mode BG */}
             <motion.div 
-                animate={{ scale: [1, 1.1, 1], opacity: isDark ? [0.2, 0.3, 0.2] : [0.4, 0.5, 0.4] }}
-                transition={{ duration: 10, repeat: Infinity }}
-                className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[800px] rounded-full blur-[120px] ${isDark ? 'bg-indigo-900/30' : 'bg-blue-100'}`}
-            />
-            <div className={`absolute inset-0 opacity-[0.1]`} 
-                 style={{ backgroundImage: `linear-gradient(${isDark ? '#4f46e5' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? '#4f46e5' : '#94a3b8'} 1px, transparent 1px)`, backgroundSize: '40px 40px' }}>
-            </div>
+                animate={{ opacity: activeMode === 'dark' ? 1 : 0 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 bg-[#0B1121]"
+            >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.2),transparent_70%)]" />
+                <div className="absolute inset-0" 
+                     style={{ 
+                         backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)', 
+                         backgroundSize: '40px 40px',
+                         maskImage: 'radial-gradient(circle at center, black 60%, transparent 100%)' 
+                     }} 
+                />
+            </motion.div>
+
+            {/* Light Mode BG */}
+            <motion.div 
+                animate={{ opacity: activeMode === 'light' ? 1 : 0 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 bg-white" 
+            >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.08),transparent_70%)]" />
+                <div className="absolute inset-0" 
+                     style={{ 
+                         backgroundImage: 'linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px)', 
+                         backgroundSize: '40px 40px',
+                         maskImage: 'radial-gradient(circle at center, black 60%, transparent 100%)'
+                     }} 
+                />
+            </motion.div>
         </div>
     );
 };
 
-// --- 2. MAIN COMPONENT ---
-const QuizInstructions = () => {
-    const navigate = useNavigate();
-    
-    // State
-    const [theme, setTheme] = useState(null); 
-    const [step, setStep] = useState(1); 
-    const [agreed, setAgreed] = useState(false);
-
-    // Theme Logic
-    const isDark = theme === 'dark';
-    const t = {
-        card: isDark ? "bg-[#0F172A]/90 border-slate-700" : "bg-white/90 border-slate-200",
-        text: isDark ? "text-slate-100" : "text-slate-900",
-        subText: isDark ? "text-slate-400" : "text-slate-500",
-        accent: isDark ? "text-indigo-400" : "text-indigo-600",
-        gridItem: isDark ? "bg-slate-800/50 border-slate-700 hover:border-indigo-500/50" : "bg-slate-50 border-slate-200 hover:border-indigo-300",
-        iconBg: isDark ? "bg-slate-900 text-indigo-400" : "bg-white text-indigo-600 shadow-sm"
-    };
-
-    // Actions
-    const handleThemeSelect = (selected) => {
-        setTheme(selected);
-        setTimeout(() => setStep(2), 400);
-    };
-
-    const handleLaunch = () => {
-        // Enforce transition logic here
-        navigate('/quiz/active', { state: { selectedTheme: theme } });
-    };
-
-    // Helper for Rule Items
-    const RuleItem = ({ icon: Icon, title, desc }) => (
-        <div className={`flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 ${t.gridItem}`}>
-            <div className={`p-2.5 rounded-lg flex-shrink-0 ${t.iconBg}`}>
-                <Icon size={20} strokeWidth={2} />
+// --- 2. THEME CARD ---
+const ThemeCard = ({ mode, icon: Icon, title, sub, onSelect }) => {
+    const isDark = mode === 'dark';
+    return (
+        <motion.button
+            onClick={(e) => onSelect(mode, e)}
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`
+                group relative w-full md:w-80 h-96 rounded-3xl border text-left p-8 overflow-hidden transition-all duration-300
+                flex flex-col justify-between
+                ${isDark 
+                    ? 'bg-slate-900/60 border-slate-700 hover:border-blue-500 hover:shadow-[0_0_30px_-5px_rgba(37,99,235,0.3)]' 
+                    : 'bg-white/90 border-slate-200 hover:border-blue-600 hover:shadow-[0_0_30px_-5px_rgba(37,99,235,0.15)]'
+                }
+                backdrop-blur-md
+            `}
+        >
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors duration-300
+                ${isDark 
+                    ? 'bg-slate-800 text-blue-400 group-hover:bg-blue-600 group-hover:text-white' 
+                    : 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white shadow-sm'
+                }
+            `}>
+                <Icon size={32} strokeWidth={1.5} />
             </div>
             <div>
-                <h4 className={`text-sm font-bold mb-1 ${t.text}`}>{title}</h4>
-                <p className={`text-xs leading-relaxed ${t.subText}`}>{desc}</p>
+                <h3 className={`text-3xl font-bold mb-3 tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                    {title}
+                </h3>
+                <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {sub}
+                </p>
             </div>
-        </div>
+            <div className={`absolute bottom-8 right-8 transition-all duration-300 transform translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100
+                ${isDark ? 'text-blue-400' : 'text-blue-600'}
+            `}>
+                <ArrowRight size={24} />
+            </div>
+        </motion.button>
     );
+};
+
+// --- 3. MAIN COMPONENT ---
+const QuizInstructions = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // [SECURITY 1] State Guard
+    // Checks if valid session data exists. If not, kicks user to Home/Join page.
+    // This prevents direct URL access or page reloads.
+    useEffect(() => {
+        if (!location.state || !location.state.session) {
+            navigate('/', { replace: true });
+        }
+    }, [location, navigate]);
+
+    // RETRIEVE DATA
+    const apiData = location.state || {};
+    const sessionData = apiData.session || {};
+    
+    // State
+    const [step, setStep] = useState(1);
+    const [selectedTheme, setSelectedTheme] = useState('light'); 
+    const [hoveredTheme, setHoveredTheme] = useState(null); 
+    const [sliderVal, setSliderVal] = useState(0);
+    const [clipPath, setClipPath] = useState('circle(0% at 50% 50%)');
+
+    const handleThemeSelect = (mode, e) => {
+        const x = e.clientX; 
+        const y = e.clientY; 
+        
+        setSelectedTheme(mode);
+        setClipPath(`circle(0% at ${x}px ${y}px)`);
+        
+        setTimeout(() => {
+            setStep(2);
+            setClipPath(`circle(150% at ${x}px ${y}px)`);
+        }, 50);
+    };
+
+    // --- SECURITY CRITICAL SECTION ---
+    const handleLaunch = () => {
+        const accentColor = selectedTheme === 'light' ? '#2563EB' : '#6366f1';
+        
+        // PASS DATA TO ACTIVE PAGE WITH 'replace: true'
+        // This destroys the 'Instructions' page from history.
+        // Hitting 'Back' from the quiz will skip this page entirely.
+        navigate('/quiz/active', { 
+            state: { 
+                ...apiData, 
+                theme: selectedTheme, 
+                accent: accentColor,
+                _security_startTime: Date.now() // Optional: Track start time
+            },
+            replace: true // <--- THIS IS THE KEY SECURITY FIX
+        });
+    };
+
+    const handleSlider = (e) => {
+        const val = parseInt(e.target.value);
+        setSliderVal(val);
+        if(val > 95) handleLaunch();
+    };
+
+    // If security check fails, don't render anything (prevents flash)
+    if (!location.state || !location.state.session) return null;
+
+    const isDark = selectedTheme === 'dark';
+    
+    // Formatters
+    const formatDate = (isoStr) => {
+        if(!isoStr) return 'TBD';
+        return new Date(isoStr).toLocaleDateString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric'
+        });
+    };
+
+    const formatTime = (isoStr) => {
+        if(!isoStr) return '--:--';
+        return new Date(isoStr).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit'
+        });
+    };
+
+    const rules = [
+        { icon: Clock, title: "Timed Assessment", desc: "Timer starts immediately." },
+        { icon: Maximize2, title: "Fullscreen Only", desc: "Do not exit fullscreen." },
+        { icon: MousePointer2, title: "Focus Tracking", desc: "Tab switching is logged." },
+        { icon: ShieldAlert, title: "Secure Environment", desc: "Copy/Paste disabled." },
+    ];
 
     return (
-        <div className={`relative min-h-screen w-full flex flex-col items-center justify-center font-sans p-6 overflow-hidden`}>
+        <div className={`relative w-full h-screen overflow-hidden font-sans selection:bg-blue-500 selection:text-white`}>
+            <style>{styles}</style>
             
-            <Atmosphere theme={theme || 'light'} />
+            <GridBackground activeMode={step === 1 ? (hoveredTheme || 'light') : selectedTheme} />
 
-            <div className="relative z-10 w-full max-w-5xl">
-                <AnimatePresence mode="wait">
-                    
-                    {/* --- STEP 1: INTERFACE SELECTION --- */}
-                    {step === 1 && (
+            <AnimatePresence mode="wait">
+                
+                {/* --- STEP 1: THEME SELECTION --- */}
+                {step === 1 && (
+                    <motion.div 
+                        key="step1"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="relative z-10 flex flex-col items-center justify-center h-full px-4"
+                    >
                         <motion.div 
-                            key="step1"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            className="flex flex-col items-center justify-center min-h-[60vh]"
-                        >
-                            <div className="text-center mb-12">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-4 border border-indigo-500/20">
-                                    <Terminal size={12} /> System Configuration
-                                </div>
-                                <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-3">
-                                    Select Interface
-                                </h1>
-                                <p className="text-slate-500 max-w-md mx-auto">
-                                    Choose your preferred environment for optimal focus.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-                                {/* Light Mode Option */}
-                                <button 
-                                    onClick={() => handleThemeSelect('light')}
-                                    className="group relative p-8 rounded-3xl bg-white border-2 border-slate-100 hover:border-indigo-500 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 text-left overflow-hidden"
-                                >
-                                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                                        <Sun size={120} />
-                                    </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
-                                        <Sun size={24} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Daylight Mode</h3>
-                                    <p className="text-sm text-slate-500 font-medium">High contrast, clear visibility.</p>
-                                </button>
-
-                                {/* Dark Mode Option */}
-                                <button 
-                                    onClick={() => handleThemeSelect('dark')}
-                                    className="group relative p-8 rounded-3xl bg-slate-900 border-2 border-slate-800 hover:border-indigo-500 hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 text-left overflow-hidden"
-                                >
-                                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                                        <Moon size={120} className="text-white" />
-                                    </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-800 text-indigo-400 flex items-center justify-center mb-6 border border-slate-700 group-hover:scale-110 transition-transform">
-                                        <Moon size={24} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Midnight Mode</h3>
-                                    <p className="text-sm text-slate-400 font-medium">Reduced eye strain, deep focus.</p>
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* --- STEP 2: STRUCTURED INSTRUCTIONS --- */}
-                    {step === 2 && (
-                        <motion.div 
-                            key="step2"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`w-full mx-auto rounded-[2rem] border shadow-2xl backdrop-blur-xl overflow-hidden ${t.card}`}
+                            className="text-center mb-12"
                         >
-                            {/* Top Bar */}
-                            <div className={`px-8 py-6 border-b flex justify-between items-center ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50/80'}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-lg ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>
-                                        <ShieldCheck size={20} />
-                                    </div>
-                                    <div>
-                                        <h2 className={`text-lg font-bold leading-none ${t.text}`}>Integrity Check</h2>
-                                        <p className={`text-xs mt-1 font-medium ${t.subText}`}>Session ID: {Math.random().toString(36).substr(2, 8).toUpperCase()}</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setStep(1)} className={`text-xs font-bold uppercase tracking-wider hover:underline ${t.subText}`}>
-                                    Switch Theme
-                                </button>
-                            </div>
+                            <span className="inline-block py-1 px-3 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-4 backdrop-blur-sm">
+                                System Preference
+                            </span>
+                            <h1 className={`text-5xl md:text-6xl font-black tracking-tight mb-4
+                                ${hoveredTheme === 'dark' ? 'text-white' : 'text-slate-900'} transition-colors duration-500
+                            `}>
+                                Choose Interface
+                            </h1>
+                        </motion.div>
 
-                            <div className="p-8">
-                                {/* Introduction */}
-                                <div className="mb-8">
-                                    <h1 className={`text-3xl font-black mb-3 ${t.text}`}>
-                                        Fair Play <span className={t.accent}>Protocols</span>
-                                    </h1>
-                                    <p className={`text-sm ${t.subText} max-w-2xl`}>
-                                        Our advanced proctoring system ensures a fair assessment environment. 
-                                        Please review the active monitoring modules below before commencing.
+                        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                            <div onMouseEnter={() => setHoveredTheme('light')} onMouseLeave={() => setHoveredTheme(null)}>
+                                <ThemeCard mode="light" icon={Sun} title="Light Mode" sub="High contrast. Professional Blue accents." onSelect={handleThemeSelect} />
+                            </div>
+                            <div onMouseEnter={() => setHoveredTheme('dark')} onMouseLeave={() => setHoveredTheme(null)}>
+                                <ThemeCard mode="dark" icon={Moon} title="Midnight" sub="Deep immersion. Reduced eye strain for focus." onSelect={handleThemeSelect} />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* --- STEP 2: RULES & INFO --- */}
+                {step === 2 && (
+                    <motion.div 
+                        key="step2"
+                        initial={{ clipPath: clipPath }}
+                        animate={{ clipPath: `circle(150% at 50% 50%)` }}
+                        transition={{ duration: 0.8, ease: "easeInOut" }}
+                        className={`absolute inset-0 z-20 flex items-center justify-center
+                            ${isDark ? 'bg-[#0B1121]' : 'bg-white'}
+                        `}
+                    >
+                        {/* Inner Grid */}
+                        <div className="absolute inset-0 opacity-30 pointer-events-none" 
+                             style={{ 
+                                 backgroundImage: `linear-gradient(${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(37,99,235,0.1)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(37,99,235,0.1)'} 1px, transparent 1px)`, 
+                                 backgroundSize: '40px 40px'
+                             }} 
+                        />
+
+                        <div className="w-full max-w-2xl px-6 py-8 relative z-30 overflow-y-auto max-h-screen no-scrollbar">
+                            
+                            {/* --- HEADER --- */}
+                            <div className="flex items-start justify-between mb-8 pb-6 border-b border-current/10">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        
+                                    </div>
+                                    <h2 className={`text-3xl md:text-4xl font-black tracking-tight leading-none mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                        {sessionData.title || "Untitled Session"}
+                                    </h2>
+                                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        Review the parameters below before initiating.
                                     </p>
                                 </div>
+                            </div>
 
-                                {/* Structured Grid */}
-                                <div className="grid md:grid-cols-2 gap-4 mb-8">
-                                    <RuleItem 
-                                        icon={ScanFace} 
-                                        title="Focus & Visibility" 
-                                        desc="Tab switching, window resizing, and loss of focus are logged instantly." 
-                                    />
-                                    <RuleItem 
-                                        icon={MousePointerClick} 
-                                        title="Input Restrictions" 
-                                        desc="Right-click menu, copy/paste shortcuts, and text selection are disabled." 
-                                    />
-                                    <RuleItem 
-                                        icon={AlertOctagon} 
-                                        title="Fullscreen Enforcement" 
-                                        desc="The quiz must remain in fullscreen mode. Exiting triggers a violation." 
-                                    />
-                                    <RuleItem 
-                                        icon={Cpu} 
-                                        title="Behavioral Analysis" 
-                                        desc="Anomalies in navigation patterns or timing may flag your session for review." 
-                                    />
+                            {/* --- STRUCTURED SCHEDULE BOX --- */}
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`mb-8 rounded-2xl border overflow-hidden
+                                    ${isDark 
+                                        ? 'bg-slate-800/40 border-slate-700' 
+                                        : 'bg-white border-slate-200 shadow-sm'
+                                    }`}
+                            >
+                                {/* Box Header */}
+                                <div className={`px-5 py-3 border-b flex items-center gap-2
+                                    ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}
+                                `}>
+                                    <span className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                      Information
+                                    </span>
                                 </div>
 
-                                {/* Acknowledgement Section */}
-                                <div className={`p-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg`}>
-                                    <div className={`rounded-xl p-5 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-                                        <label className="flex items-start gap-4 cursor-pointer group select-none">
-                                            <div className="relative mt-0.5">
-                                                <input 
-                                                    type="checkbox" 
-                                                    className="peer sr-only"
-                                                    checked={agreed}
-                                                    onChange={(e) => setAgreed(e.target.checked)}
-                                                />
-                                                <div className={`w-6 h-6 rounded-md border-2 transition-all flex items-center justify-center ${isDark ? 'border-slate-600 peer-checked:bg-indigo-500 peer-checked:border-indigo-500' : 'border-slate-300 peer-checked:bg-indigo-600 peer-checked:border-indigo-600'}`}>
-                                                    <Check size={14} className="text-white opacity-0 peer-checked:opacity-100" strokeWidth={3} />
-                                                </div>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className={`font-bold text-sm ${t.text}`}>I acknowledge the rules.</p>
-                                                <p className={`text-xs mt-0.5 ${t.subText}`}>I understand that violations will result in warnings and potential disqualification.</p>
-                                            </div>
-                                            
-                                            {/* CTA Button */}
-                                            <button 
-                                                disabled={!agreed}
-                                                onClick={handleLaunch}
-                                                className={`
-                                                    px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition-all
-                                                    ${agreed 
-                                                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 translate-x-0 opacity-100' 
-                                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed translate-x-4 opacity-50 hidden md:flex'
-                                                    }
-                                                `}
-                                            >
-                                                Start <ArrowRight size={16} />
-                                            </button>
-                                        </label>
-                                        
-                                        {/* Mobile Button Fallback */}
-                                        <button 
-                                            disabled={!agreed}
-                                            onClick={handleLaunch}
-                                            className={`
-                                                mt-4 w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wider flex md:hidden items-center justify-center gap-2 transition-all
-                                                ${agreed 
-                                                    ? 'bg-indigo-600 text-white' 
-                                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                }
-                                            `}
-                                        >
-                                            Start Quiz
-                                        </button>
+                                {/* Box Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-current/10">
+                                    {/* 1. DATE */}
+                                    <div className={`p-5 flex flex-col items-center justify-center text-center ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
+                                        <div className={`mb-2 p-2 rounded-lg ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                                            <Calendar size={20} />
+                                        </div>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Date</span>
+                                        <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{formatDate(sessionData.startTime)}</span>
+                                    </div>
+                                    {/* 2. TIME */}
+                                    <div className={`p-5 flex flex-col items-center justify-center text-center ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
+                                        <div className={`mb-2 p-2 rounded-lg ${isDark ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>
+                                            <Clock size={20} />
+                                        </div>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Window</span>
+                                        <div className={`font-mono text-sm font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{formatTime(sessionData.startTime)} - {formatTime(sessionData.endTime)}</div>
+                                    </div>
+                                    {/* 3. DURATION */}
+                                    <div className={`p-5 flex flex-col items-center justify-center text-center ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
+                                        <div className={`mb-2 p-2 rounded-lg ${isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                                            <Timer size={20} />
+                                        </div>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Duration</span>
+                                        <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{sessionData.durationMinutes || 0} Min</span>
                                     </div>
                                 </div>
+                            </motion.div>
+
+                            {/* Rules Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+                                {rules.map((item, idx) => (
+                                    <motion.div 
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 + (idx * 0.1) }}
+                                        className={`p-4 rounded-xl border flex items-start gap-4 transition-transform hover:scale-[1.02]
+                                            ${isDark 
+                                                ? 'bg-slate-800/30 border-slate-700' 
+                                                : 'bg-white border-slate-200 shadow-sm'
+                                            }`}
+                                    >
+                                        <div className={`mt-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                                            <item.icon size={18} />
+                                        </div>
+                                        <div>
+                                            <h4 className={`font-bold text-sm mb-0.5 ${isDark ? 'text-white' : 'text-slate-800'}`}>{item.title}</h4>
+                                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
+                                        </div>
+                                    </motion.div>
+                                ))}
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+
+                            {/* Slider Button */}
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.5 }}
+                            >
+                                <div className={`relative h-16 rounded-full overflow-hidden border transition-all
+                                    ${isDark 
+                                        ? 'bg-slate-900 border-slate-700 shadow-inner' 
+                                        : 'bg-white border-slate-200 shadow-inner'}
+                                `}>
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                        <span className={`text-xs font-black uppercase tracking-[0.2em] transition-opacity
+                                            ${sliderVal > 30 ? 'opacity-0' : 'opacity-40'}
+                                            ${isDark ? 'text-white' : 'text-slate-400'}
+                                        `}>
+                                            Slide to Start
+                                        </span>
+                                    </div>
+                                    <div className={`absolute inset-y-0 left-0 transition-none bg-blue-600/20`} style={{ width: `${sliderVal}%` }} />
+                                    <input type="range" min="0" max="100" value={sliderVal} onChange={handleSlider} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30" />
+                                    <div 
+                                        className={`absolute top-1.5 bottom-1.5 w-14 rounded-full flex items-center justify-center pointer-events-none z-20 transition-transform ease-out
+                                            bg-blue-600 text-white shadow-lg shadow-blue-500/30
+                                        `}
+                                        style={{ 
+                                            left: `calc(${sliderVal}% - ${sliderVal * 0.45}px + 6px)`,
+                                            transform: `translateX(-${sliderVal}%)` 
+                                        }}
+                                    >
+                                        {sliderVal > 90 ? <Check size={20} strokeWidth={3} /> : <ChevronRight size={20} strokeWidth={3} />}
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

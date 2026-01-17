@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext'; 
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 import LoginPage from './pages/CommonPages/LoginPage';
-import ProtectedRoute from './components/ProtectedRoute'; 
+import ProtectedRoute from './components/ProtectedRoute';
 
 // --- Pages Imports ---
 import AdminDashboard from './pages/AdminPages/AdminDashboard';
@@ -48,6 +48,10 @@ import FacultyQuizDashboard from './pages/FacultyPages/FacultyQuizDashboard';
 import QuizJoin from './pages/StudentPages/QuizJoin.jsx';
 import QuizInstructions from './pages/StudentPages/QuizInstructions.jsx';
 import QuizActive from './pages/StudentPages/QuizActive.jsx';
+import FacultySessionPage from './pages/FacultyPages/FacultySessionPage.jsx';
+import FacultySessionAnalytics from './pages/FacultyPages/FacultySessionAnalytics.jsx';
+import StudentResultPage from './pages/StudentPages/StudentResultsPage.jsx';
+
 
 // --- 1. NEW COMPONENT: HANDLES AUTH CONTEXT & LOADING ---
 // This wrapper ensures AuthProvider only loads for pages INSIDE it.
@@ -82,12 +86,12 @@ const AppRoutes = () => {
       <Routes>
         {/* === PUBLIC ROUTE (NO AUTH CONTEXT) === */}
         <Route path="/" element={<LoginPage />} />
-        
+
         {/* Public Contest Routes */}
-      
+
         {/* === PROTECTED ROUTES (WRAPPED IN AUTH CONTEXT) === */}
         <Route element={<AuthLayout />}>
-          
+
           {/* 1. SHARED ADMIN & FACULTY ROUTES */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
             <Route path="/post-attendance" element={<PostAttendance />} />
@@ -123,6 +127,8 @@ const AppRoutes = () => {
             <Route path="/faculty/students" element={<ViewAttendance />} />
             <Route path="/faculty/timetable" element={<FacultyTimetablePage />} />
             <Route path="/faculty/quiz" element={<FacultyQuizDashboard />} />
+            <Route path="/faculty/sessions" element={<FacultySessionPage />} />
+            <Route path="/faculty/sessions/:sessionCode/analytics" element={<FacultySessionAnalytics />} />
           </Route>
 
           {/* 4. STUDENT ROUTES */}
@@ -131,25 +137,26 @@ const AppRoutes = () => {
             <Route path="/student/profile" element={<StudentProfilePage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/inbox" element={<AnnouncementsPage />} />
-              {/* 1. Main List: View all contests */}
-              <Route path="/contests" element={<StudentContestPage />} />
+            {/* 1. Main List: View all contests */}
+            <Route path="/contests" element={<StudentContestPage />} />
 
 
-              {/* 2. Contest Landing/Lobby: View specific contest details & Register */}
-              {/* Example: /contests/101 */}
-              <Route path="/contests/:contestId" element={<EnterContest />} />  
-              <Route path="/contest/:contestId/instructions" element={<ContestInstructions />} />
-              {/* 3. Live Dashboard: The main hub when the contest is running */}
-              {/* Example: /contests/101/live */}
-              <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
+            {/* 2. Contest Landing/Lobby: View specific contest details & Register */}
+            {/* Example: /contests/101 */}
+            <Route path="/contests/:contestId" element={<EnterContest />} />
+            <Route path="/contest/:contestId/instructions" element={<ContestInstructions />} />
+            {/* 3. Live Dashboard: The main hub when the contest is running */}
+            {/* Example: /contests/101/live */}
+            <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
 
-              {/* 4. Problem Solver: Solving a specific problem within a contest */}
-              {/* Example: /contests/101/problem/5 */}
-              <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
-              <Route path="/join" element={<QuizJoin />} />              
-              <Route path="/quiz/instructions" element={<QuizInstructions />} />
-        <Route path="/quiz/active" element={<QuizActive />} />
-                    </Route>
+            {/* 4. Problem Solver: Solving a specific problem within a contest */}
+            {/* Example: /contests/101/problem/5 */}
+            <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
+            <Route path="/join" element={<QuizJoin />} />
+            <Route path="/quiz/instructions" element={<QuizInstructions />} />
+            <Route path="/quiz/active" element={<QuizActive />} />
+            <Route path="/student/quiz/result" element={<StudentResultPage />} />
+          </Route>
 
           {/* Semi-Public / Shared Routes (Logged in users only) */}
           <Route path="/leaderboard" element={<LeaderboardPage />} />
@@ -161,7 +168,7 @@ const AppRoutes = () => {
               <h1>404 | Page Not Found</h1>
             </div>
           } />
-          
+
         </Route> {/* End of AuthLayout */}
       </Routes>
     </Router>

@@ -179,12 +179,13 @@ const ContestEntry = () => {
     };
 
     const handleStartContest = () => {
-        if (apiData) {
-            // Navigate to instructions/contest page
-            navigate(`/contest/${examId}/instructions`, { state: { contestData: apiData } });
-        }
-    };
-
+    if (apiData) {
+        // We pass 'apiData' under the key 'contestData'
+        navigate(`/contest/${examId}/instructions`, { 
+            state: { contestData: apiData } 
+        });
+    }
+};
     return (
         <div className="relative min-h-screen w-full flex flex-col items-center justify-center font-sans text-slate-900 overflow-hidden">
             
