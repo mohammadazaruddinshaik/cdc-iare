@@ -24,9 +24,15 @@ export const AuthProvider = ({ children }) => {
 
         if (response.ok) {
           const data = await response.json();
+          
+          // --- UPDATED MAPPING LOGIC ---
+          // Maps userId (from student response) to username for consistent usage in Header
           setUser({
-            username: data.username || data.rollno,
+            username: data.username || data.userId || data.rollno, 
             role: data.role,
+            sem: data.sem,       // Captured from student response
+            batch: data.batch,   // Captured from student response
+            userId: data.userId  // Explicitly storing userId
           });
         } else {
           // --- CASE 1: Token missing or Invalid (401/403) ---

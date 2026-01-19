@@ -253,10 +253,10 @@ const LoginPage = () => {
             
             if (!encryptedPayload) throw new Error("Client-side encryption failed");
 
-            const response = await fetch(`${API_URL}/api/login`, {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payload: encryptedPayload }), // Send Encrypted Payload
+                body: JSON.stringify({ payload: encryptedPayload }), 
                 credentials: "include"
             });
             
@@ -429,12 +429,21 @@ const LoginPage = () => {
                             </form>
 
                             <div className="mt-8 flex justify-center">
-                                {/* MODIFIED HOVER STATE FOR BLUE TEXT */}
-                                <motion.div onClick={scrollToTeam} className="flex flex-col items-center cursor-pointer group p-2" whileHover={{ y: 5 }}>
-                                    <span className="text-[10px] font-black text-gray-400 group-hover:text-blue-600 transition-colors tracking-[0.2em] uppercase mb-1">Meet The Team</span>
-                                    <ChevronDown className="w-5 h-5 text-gray-300 group-hover:text-blue-600 animate-bounce" />
-                                </motion.div>
-                            </div>
+    {/* HIGHLIGHTED SECTION */}
+    <motion.div 
+        onClick={scrollToTeam} 
+        className="flex flex-col items-center cursor-pointer group p-2" 
+        whileHover={{ y: 5 }}
+    >
+        {/* CHANGED: Text is now darker (gray-900), slightly larger (text-xs), and says "Developers" */}
+        <span className="text-xs font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-[0.15em] uppercase mb-1">
+            Meet The Team 
+        </span>
+        
+        {/* CHANGED: Icon is now darker (gray-500) so it is visible even without hovering */}
+        <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-blue-600 animate-bounce" />
+    </motion.div>
+</div>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 /**
  * @file TimetablePage.jsx
- * @description Student Timetable with synced colors and specific "Not Found" handling.
+ * @description Student Timetable with unified professional styling and optimized mobile width.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     Calendar, Clock, Terminal, Cloud, Database, Coffee, MapPin, 
     ChevronRight, ChevronLeft, CalendarDays, Zap,
-    BookOpen, User, CalendarX, AlertCircle
+    BookOpen, User, AlertCircle
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext';
@@ -16,42 +16,33 @@ import Loader from '../../components/Loader';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 
-// --- 1. THEMES (Synced with LogsPage) ---
+// --- 1. THEMES (Unified Blue/Slate) ---
+const UNIFIED_STYLE = {
+    borderColor: 'border-blue-500/30 hover:border-blue-400',
+    textColor: 'text-blue-300',
+    iconColor: 'text-blue-400',
+    glow: 'hover:shadow-[0_0_20px_-10px_rgba(59,130,246,0.3)]',
+};
+
 const SUBJECT_STYLES = {
   'CP': { 
       fullTitle: 'Competitive Programming',
-      // Synced: Orange/Amber
-      borderColor: 'border-orange-500/50 hover:border-orange-400',
-      textColor: 'text-orange-400',
-      iconColor: 'text-orange-400',
-      glow: 'hover:shadow-[0_0_20px_-10px_rgba(249,115,22,0.3)]',
+      ...UNIFIED_STYLE,
       icon: Terminal 
   },
   'AWS': { 
       fullTitle: 'Cloud Computing (AWS)',
-      // Synced: Violet/Purple
-      borderColor: 'border-violet-500/50 hover:border-violet-400',
-      textColor: 'text-violet-400',
-      iconColor: 'text-violet-400',
-      glow: 'hover:shadow-[0_0_20px_-10px_rgba(139,92,246,0.3)]',
+      ...UNIFIED_STYLE,
       icon: Cloud 
   },
   'DBS': { 
       fullTitle: 'Database Solutions',
-      // Synced: Emerald/Teal
-      borderColor: 'border-emerald-500/50 hover:border-emerald-400',
-      textColor: 'text-emerald-400',
-      iconColor: 'text-emerald-400',
-      glow: 'hover:shadow-[0_0_20px_-10px_rgba(16,185,129,0.3)]',
+      ...UNIFIED_STYLE,
       icon: Database 
   },
   'JFS': { 
       fullTitle: 'Java Full Stack',
-      // Synced: Rose/Red
-      borderColor: 'border-rose-500/50 hover:border-rose-400',
-      textColor: 'text-rose-400',
-      iconColor: 'text-rose-400',
-      glow: 'hover:shadow-[0_0_20px_-10px_rgba(244,63,94,0.3)]',
+      ...UNIFIED_STYLE,
       icon: Coffee 
   },
   'DEFAULT': {
@@ -81,7 +72,7 @@ const TimetablePage = () => {
   const [scheduleMap, setScheduleMap] = useState({});
   const [userBatch, setUserBatch] = useState('');
   const [semester, setSemester] = useState('');
-  const [apiMessage, setApiMessage] = useState(''); // To store "TimeTable not found..."
+  const [apiMessage, setApiMessage] = useState(''); 
 
   // UI State
   const [todaySchedule, setTodaySchedule] = useState(null);
@@ -107,19 +98,17 @@ const TimetablePage = () => {
 
             const rawData = await response.json();
             
-            // CHECK 1: Handle specific "Not Found" message object
             if (rawData.message) {
                 setApiMessage(rawData.message);
-                setScheduleMap({}); // Ensure empty state triggers
+                setScheduleMap({}); 
                 return; 
             }
 
-            // CHECK 2: Handle Array Response
             const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
             if (data && data.weekSchedule) {
-                setUserBatch(data.batch);
-                setSemester(data.sem);
+                setUserBatch(data.batch || 'N/A');
+                setSemester(data.sem || 'N/A');
 
                 const map = {};
                 if (Array.isArray(data.weekSchedule)) {
@@ -191,8 +180,6 @@ const TimetablePage = () => {
 
   const ITEMS_PER_PAGE = 6; 
   const currentViewSchedule = upcomingSchedule.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
-
-  // Check if timetable is completely empty
   const isTimetableEmpty = Object.keys(scheduleMap).length === 0;
 
   if (isLoading) return <Loader />;
@@ -201,34 +188,37 @@ const TimetablePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-32 relative overflow-hidden selection:bg-blue-500/30">
       
-      {/* Header */}
-      <div className="relative px-4 sm:px-6 lg:px-8 pt-4 pb-6 z-20">
+      {/* Header Container - Increased padding for narrower feel */}
+      <div className="relative px-6 sm:px-8 pt-4 pb-6 z-20">
          <Header animate={animate} />
          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 relative z-10">
+      {/* Main Container 
+         CHANGED: px-6 (was px-4) to reduce width on mobile 
+      */}
+      <main className="max-w-7xl mx-auto px-6 sm:px-8 py-4 relative z-10">
         
-        {/* --- TITLE --- */}
+        {/* --- TITLE & METADATA --- */}
         <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div>
-                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                {/* Scaled down text size on mobile (text-3xl) to fit reduced width */}
+                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
                         Course Schedule
                     </span>
                 </h1>
             </div>
 
-            {/* Only show batch if data exists */}
-            {!isTimetableEmpty && userBatch && (
-                <div className="flex items-center gap-3">
-                    <div className="bg-[#0F172A] border border-white/10 px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
-                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Semester</span>
-                        <span className="text-sm font-bold text-blue-200">{semester}</span>
+            {!isTimetableEmpty && (
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="bg-[#0F172A] border border-white/10 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
+                        <span className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Sem</span>
+                        <span className="text-xs md:text-sm font-bold text-white">{semester}</span>
                     </div>
-                    <div className="bg-[#0F172A] border border-white/10 px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
-                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Batch</span>
-                        <span className="text-sm font-bold text-blue-200">{userBatch}</span>
+                    <div className="bg-[#0F172A] border border-white/10 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
+                        <span className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Batch</span>
+                        <span className="text-xs md:text-sm font-bold text-white">{userBatch}</span>
                     </div>
                 </div>
             )}
@@ -237,25 +227,19 @@ const TimetablePage = () => {
         {/* --- MAIN CONTENT AREA --- */}
         {isTimetableEmpty ? (
             
-            // --- EMPTY STATE (Centered Box) ---
             <div className={`flex flex-col items-center justify-center min-h-[50vh] transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className="bg-[#0F172A]/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-12 text-center max-w-lg shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors">
-                    {/* Background glow */}
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-blue-500/20 transition-colors"></div>
-                    
-                    <div className="w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-white/5 ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-500">
+                <div className="bg-[#0F172A]/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 text-center max-w-lg shadow-2xl relative overflow-hidden">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-white/5 ring-1 ring-white/10">
                         <AlertCircle size={32} className="text-slate-400" />
                     </div>
-                    
-                    <h3 className="text-2xl font-black text-white mb-3">No Schedule Found</h3>
-                    <p className="text-slate-400 font-medium leading-relaxed">
-                        {apiMessage || "We couldn't find any timetable data for your current session. Please check back later."}
+                    <h3 className="text-xl md:text-2xl font-black text-white mb-3">No Schedule Found</h3>
+                    <p className="text-slate-400 text-sm md:text-base font-medium leading-relaxed">
+                        {apiMessage || "We couldn't find any timetable data for your current session."}
                     </p>
                 </div>
             </div>
 
         ) : (
-            // --- NORMAL SCHEDULE UI ---
             <>
                 {/* Section 1: Today */}
                 <section className={`mb-10 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -265,18 +249,20 @@ const TimetablePage = () => {
                     
                     {todaySchedule?.hasClass ? (
                         <div className={`
-                            relative rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden border transition-all duration-300
+                            relative rounded-[2.5rem] shadow-2xl overflow-hidden border transition-all duration-300
+                            /* CHANGED: Reduced padding on mobile (p-6) vs desktop (p-10) */
+                            p-6 md:p-10
                             bg-[#0F172A]/80 backdrop-blur-xl ${todaySchedule.classInfo.borderColor} ${todaySchedule.classInfo.glow}
                         `}>
-                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] -mr-20 -mt-20 pointer-events-none"></div>
+                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[100px] -mr-20 -mt-20 pointer-events-none"></div>
                             
-                            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex flex-col items-center justify-center w-20 h-20 rounded-3xl bg-white/5 border border-white/10 shadow-inner backdrop-blur-md">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-8">
+                                <div className="flex items-center gap-5 md:gap-6">
+                                    <div className="flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-white/5 border border-white/10 shadow-inner backdrop-blur-md shrink-0">
+                                        <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">
                                             {todaySchedule.dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
                                         </span>
-                                        <span className="text-3xl font-black text-white leading-none mt-1">
+                                        <span className="text-2xl md:text-3xl font-black text-white leading-none mt-1">
                                             {todaySchedule.dateObj.getDate()}
                                         </span>
                                     </div>
@@ -285,24 +271,25 @@ const TimetablePage = () => {
                                         <span className={`inline-block px-3 py-1 rounded-full bg-white/5 font-bold text-[10px] uppercase tracking-widest border border-white/10 mb-2 shadow-sm ${todaySchedule.classInfo.textColor}`}>
                                             Happening Now
                                         </span>
-                                        <h3 className="text-3xl md:text-5xl font-black text-white leading-tight">
+                                        {/* Reduced title size on mobile */}
+                                        <h3 className="text-2xl md:text-5xl font-black text-white leading-tight break-words">
                                             {todaySchedule.classInfo.fullTitle}
                                         </h3>
-                                        <p className={`text-lg mt-2 font-medium flex items-center gap-2 ${todaySchedule.classInfo.textColor}`}>
-                                            <User size={18} />
+                                        <p className="text-sm md:text-lg mt-2 font-medium flex items-center gap-2 text-slate-300">
+                                            <User size={16} className="text-slate-400" />
                                             {todaySchedule.classInfo.faculty}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-start md:items-end gap-3 bg-black/20 p-5 rounded-2xl border border-white/5 backdrop-blur-md w-full md:w-auto">
+                                <div className="flex flex-col items-start md:items-end gap-3 bg-black/20 p-4 md:p-5 rounded-2xl border border-white/5 backdrop-blur-md w-full md:w-auto">
                                     <div className="flex items-center gap-3">
-                                        <Clock className={`w-6 h-6 ${todaySchedule.classInfo.textColor}`} />
-                                        <span className="text-3xl font-bold text-white tracking-tight">
+                                        <Clock className={`w-5 h-5 md:w-6 md:h-6 ${todaySchedule.classInfo.textColor}`} />
+                                        <span className="text-2xl md:text-3xl font-bold text-white tracking-tight">
                                             {todaySchedule.classInfo.time.split(' - ')[0]}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-slate-300 text-sm font-bold bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                                    <div className="flex items-center gap-2 text-slate-300 text-xs md:text-sm font-bold bg-white/5 px-3 py-1 rounded-lg border border-white/5">
                                         <MapPin size={14} />
                                         <span>Room {todaySchedule.classInfo.room}</span>
                                     </div>
@@ -333,8 +320,10 @@ const TimetablePage = () => {
                             <div 
                                 key={idx}
                                 className={`
-                                    relative rounded-[2rem] p-6 border transition-all duration-300 overflow-hidden group h-full flex flex-col justify-between
+                                    relative rounded-[2rem] border transition-all duration-300 overflow-hidden group h-full flex flex-col justify-between
                                     bg-[#0F172A]/40 backdrop-blur-md
+                                    /* CHANGED: Reduced padding on mobile */
+                                    p-5 md:p-6
                                     ${item.hasClass 
                                         ? `${item.classInfo.borderColor} ${item.classInfo.glow}` 
                                         : 'border-white/5 opacity-50'}
@@ -342,20 +331,20 @@ const TimetablePage = () => {
                             >
                                 <div className="flex items-start justify-between mb-6">
                                     <div className={`
-                                        flex flex-col items-center justify-center w-14 h-14 rounded-2xl border shadow-sm transition-all
+                                        flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl border shadow-sm transition-all
                                         bg-white/5 border-white/5 group-hover:border-white/10
                                     `}>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                             {item.dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
                                         </span>
-                                        <span className="text-xl font-black text-white leading-none mt-0.5">
+                                        <span className="text-lg md:text-xl font-black text-white leading-none mt-0.5">
                                             {item.dateObj.getDate()}
                                         </span>
                                     </div>
 
                                     {item.hasClass && (
-                                        <div className={`p-3 rounded-2xl border bg-white/5 ${item.classInfo.borderColor} ${item.classInfo.textColor}`}>
-                                            <item.classInfo.icon size={20} />
+                                        <div className={`p-2.5 md:p-3 rounded-2xl border bg-white/5 ${item.classInfo.borderColor} ${item.classInfo.textColor}`}>
+                                            <item.classInfo.icon size={18} className="md:w-5 md:h-5" />
                                         </div>
                                     )}
                                 </div>
@@ -363,11 +352,11 @@ const TimetablePage = () => {
                                 <div>
                                     {item.hasClass ? (
                                         <>
-                                            <h4 className="text-xl font-black text-white leading-tight mb-2 group-hover:text-white transition-colors line-clamp-2">
+                                            <h4 className="text-lg md:text-xl font-black text-white leading-tight mb-2 group-hover:text-blue-200 transition-colors line-clamp-2">
                                                 {item.classInfo.fullTitle}
                                             </h4>
                                             
-                                            <p className={`text-xs font-bold mb-5 flex items-center gap-2 ${item.classInfo.textColor}`}>
+                                            <p className="text-xs font-bold mb-5 flex items-center gap-2 text-slate-400">
                                                 <User size={12} />
                                                 {item.classInfo.faculty}
                                             </p>
@@ -398,15 +387,15 @@ const TimetablePage = () => {
 
       </main>
 
-      {/* --- PAGINATION (HIDDEN IF NO TIMETABLE) --- */}
+      {/* --- PAGINATION --- */}
       {!isTimetableEmpty && (
-        <div className="fixed bottom-6 left-0 right-0 z-30 px-4 pointer-events-none flex justify-center">
+        <div className="fixed bottom-6 left-0 right-0 z-30 px-6 pointer-events-none flex justify-center">
             <div className="bg-[#0F172A]/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full p-1.5 flex items-center gap-2 pointer-events-auto ring-1 ring-white/5">
                 <button 
                     onClick={() => setCurrentPage(0)}
                     disabled={currentPage === 0}
                     className={`
-                        flex items-center gap-2 px-6 py-3 rounded-full transition-all duration-300
+                        flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-full transition-all duration-300
                         ${currentPage === 0 
                             ? 'bg-white/5 text-gray-500 cursor-not-allowed' 
                             : 'bg-[#071225] text-white hover:bg-blue-600 border border-white/10 shadow-lg'}
@@ -420,7 +409,7 @@ const TimetablePage = () => {
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
                     className={`
-                        flex items-center gap-2 px-6 py-3 rounded-full transition-all duration-300
+                        flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-full transition-all duration-300
                         ${currentPage === 1 
                             ? 'bg-white/5 text-gray-500 cursor-not-allowed' 
                             : 'bg-white text-[#071225] hover:bg-gray-200 border border-white/20 shadow-lg'}
@@ -437,6 +426,7 @@ const TimetablePage = () => {
 };
 
 export default TimetablePage;
+
 
 // /**
 //  * @file TimetablePage.jsx

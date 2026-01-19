@@ -2,8 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
     Search, LayoutGrid, List, 
     ChevronLeft, ChevronRight, X, User, Filter,
-    Sparkles, Trophy, Monitor, Smartphone,
-    Flag, Target, Users // Icons
+    Flag // Kept Flag for footer rank, removed others for cleanliness
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
@@ -24,8 +23,9 @@ const ASSETS = {
 
 // --- CONFIGURATION ---
 const PODIUM_STYLES = {
+    // REDUCED HEIGHT: Adjusted margins (less negative margin) and scale
     1: {
-        wrapper: 'order-2 z-20 -mt-6 lg:-mt-8 xl:-mt-10 scale-100 lg:scale-110', 
+        wrapper: 'order-2 z-20 -mt-2 lg:-mt-4 scale-100 lg:scale-105', 
         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
         border: 'border-yellow-500/50',
         rankCircle: 'border-yellow-400 text-yellow-400 bg-[#0F172A] shadow-[0_0_25px_rgba(250,204,21,0.5)]',
@@ -33,7 +33,7 @@ const PODIUM_STYLES = {
         shadow: 'shadow-[0_0_50px_-10px_rgba(234,179,8,0.2)]'
     },
     2: {
-        wrapper: 'order-1 z-10 mt-4 scale-95 lg:scale-100', 
+        wrapper: 'order-1 z-10 mt-6 scale-95 lg:scale-95', 
         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
         border: 'border-slate-400/30',
         rankCircle: 'border-slate-300 text-slate-300 bg-[#0F172A] shadow-[0_0_25px_rgba(203,213,225,0.3)]',
@@ -41,7 +41,7 @@ const PODIUM_STYLES = {
         shadow: 'shadow-[0_0_50px_-10px_rgba(148,163,184,0.1)]'
     },
     3: {
-        wrapper: 'order-3 z-10 mt-4 scale-95 lg:scale-100', 
+        wrapper: 'order-3 z-10 mt-6 scale-95 lg:scale-95', 
         bg: 'bg-[#0F172A]/90 backdrop-blur-xl',
         border: 'border-orange-500/30',
         rankCircle: 'border-orange-400 text-orange-400 bg-[#0F172A] shadow-[0_0_25px_rgba(251,146,60,0.3)]',
@@ -67,17 +67,13 @@ const SkeletonList = () => (
             <div className="col-span-2 h-3 bg-slate-700/50 rounded ml-auto w-16"></div>
         </div>
         {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-20 bg-[#0F172A]/60 border border-white/5 rounded-2xl flex items-center px-4 lg:px-8 gap-6">
+            <div key={i} className="h-16 bg-[#0F172A]/60 border border-white/5 rounded-2xl flex items-center px-4 lg:px-8 gap-6">
                 <div className="w-8 h-8 rounded-full bg-slate-700/30"></div>
-                <div className="w-12 h-12 rounded-full bg-slate-700/30 shrink-0"></div>
+                <div className="w-10 h-10 rounded-full bg-slate-700/30 shrink-0"></div>
                 <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-slate-700/30 rounded w-48"></div>
-                    <div className="h-3 bg-slate-700/30 rounded w-24"></div>
+                    <div className="h-3 bg-slate-700/30 rounded w-48"></div>
                 </div>
-                <div className="hidden lg:flex gap-3">
-                    {[...Array(4)].map((_, j) => <div key={j} className="w-24 h-8 bg-slate-700/30 rounded-lg"></div>)}
-                </div>
-                <div className="w-20 h-8 bg-slate-700/30 rounded ml-auto"></div>
+                <div className="w-20 h-6 bg-slate-700/30 rounded ml-auto"></div>
             </div>
         ))}
     </div>
@@ -87,20 +83,15 @@ const SkeletonList = () => (
 
 const MobileBlocker = ({ onUnlock }) => (
     <div className="fixed inset-0 z-[100] bg-[#020617] flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-        <div className="relative mb-8">
-            <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full"></div>
-            <Monitor size={64} className="text-blue-400 relative z-10" />
-            <Smartphone size={24} className="text-slate-500 absolute -bottom-2 -right-2 z-20 bg-[#020617] rounded-full p-1 border border-slate-700" />
-        </div>
-        <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Desktop Experience Recommended</h2>
-        <p className="text-slate-400 mb-8 max-w-xs mx-auto leading-relaxed">
-            The leaderboard contains detailed statistics that are best viewed on a larger screen.
+        <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Desktop Recommended</h2>
+        <p className="text-slate-400 mb-8 max-w-xs mx-auto leading-relaxed text-sm">
+            This dashboard is optimized for larger screens.
         </p>
         <button 
             onClick={onUnlock}
-            className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
+            className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-bold text-slate-300"
         >
-            <span className="text-sm font-bold text-slate-300 group-hover:text-white">View Minimal Version</span>
+            Continue Anyway
         </button>
     </div>
 );
@@ -108,12 +99,12 @@ const MobileBlocker = ({ onUnlock }) => (
 const ListRankBadge = ({ rank }) => {
     if (rank > 3) return <span className="text-sm font-mono font-bold text-slate-500 w-8 text-center">#{rank}</span>;
     const colors = {
-        1: 'border-yellow-500 text-yellow-400 bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.4)]',
-        2: 'border-slate-400 text-slate-300 bg-slate-400/10 shadow-[0_0_15px_rgba(148,163,184,0.3)]',
-        3: 'border-orange-500 text-orange-400 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
+        1: 'border-yellow-500 text-yellow-400 bg-yellow-500/10',
+        2: 'border-slate-400 text-slate-300 bg-slate-400/10',
+        3: 'border-orange-500 text-orange-400 bg-orange-500/10'
     };
     return (
-        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm ${colors[rank]} transform hover:scale-110 transition-transform`}>
+        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm ${colors[rank]}`}>
             {rank}
         </div>
     );
@@ -131,11 +122,12 @@ const StudentAvatar = ({ rollNo, size = "md", rank }) => {
     const formattedRoll = rollNo ? rollNo.toUpperCase() : '';
     const imgSrc = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${formattedRoll}/${formattedRoll}.jpg`;
     
+    // Adjusted sizes slightly for better proportions
     const sizeClasses = { 
         sm: "w-9 h-9", 
-        md: "w-12 h-12 lg:w-12 lg:h-12 xl:w-14 xl:h-14", 
-        lg: "w-16 h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24", 
-        xl: "w-24 h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32" 
+        md: "w-11 h-11 lg:w-12 lg:h-12", 
+        lg: "w-14 h-14 lg:w-16 lg:h-16", 
+        xl: "w-18 h-18 lg:w-20 lg:h-20" 
     };
     
     const isPodium = rank <= 3 && size === 'xl'; 
@@ -144,23 +136,29 @@ const StudentAvatar = ({ rollNo, size = "md", rank }) => {
         : 'ring-white/10 group-hover:ring-blue-400/50';
 
     return (
-        <div className={`relative ${sizeClasses[size]} flex-shrink-0 transition-all duration-500`}>
-            <div className={`relative w-full h-full rounded-full p-[3px] ring-2 ${ringColor} bg-[#071225] overflow-hidden shadow-2xl z-10`}>
+        <div className={`relative ${sizeClasses[size]} flex-shrink-0`}>
+            <div className={`relative w-full h-full rounded-full p-[2px] ring-2 ${ringColor} bg-[#071225] overflow-hidden shadow-2xl z-10`}>
                 {!error ? (
                     <>
-                        <div className={`absolute inset-0 bg-slate-800 transition-opacity duration-500 ${imgLoaded ? 'opacity-0' : 'opacity-100'}`} />
+                        {/* Loading State Pulse */}
+                        {!imgLoaded && (
+                            <div className="absolute inset-0 bg-slate-800 animate-pulse z-20 flex items-center justify-center">
+                                <User size={size === 'sm' ? 12 : 16} className="text-slate-600 opacity-50" />
+                            </div>
+                        )}
                         <img 
                             src={imgSrc} 
                             alt="Student" 
                             loading="lazy"
                             onLoad={() => setImgLoaded(true)}
                             onError={() => setError(true)} 
-                            className={`w-full h-full object-cover rounded-full transition-opacity duration-700 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                            className={`w-full h-full object-cover rounded-full transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
                         />
                     </>
                 ) : (
-                    <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                        <User size={size === 'xl' ? 40 : 16} />
+                    // Clean Fallback
+                    <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
+                        <User size={size === 'xl' ? 32 : (size === 'sm' ? 14 : 20)} />
                     </div>
                 )}
             </div>
@@ -175,28 +173,26 @@ const BrandTile = ({ type, score, url, compact = false }) => {
     const displayScore = isNaN(numericScore) ? 0 : numericScore;
     const Container = url ? 'a' : 'div';
     const containerProps = url 
-        ? { href: url, target: "_blank", rel: "noopener noreferrer", className: "block h-full hover:-translate-y-0.5 transition-transform cursor-pointer" }
+        ? { href: url, target: "_blank", rel: "noopener noreferrer", className: "block h-full hover:opacity-80 transition-opacity cursor-pointer" }
         : { className: "block h-full cursor-default" };
 
     return (
         <Container {...containerProps}>
              <div className={`
-                flex items-center justify-between rounded-xl border backdrop-blur-md 
-                transition-all duration-300 group w-full h-full
+                flex items-center justify-between rounded-lg border backdrop-blur-md 
+                transition-all duration-300 w-full h-full
                 ${style.border} ${style.bg} hover:border-opacity-100 border-opacity-30
-                ${compact ? 'px-2 py-1' : 'px-3 py-2'}
+                ${compact ? 'px-2 py-1' : 'px-3 py-1.5'}
             `}>
                 <div className="shrink-0 flex items-center justify-center">
                     {assetSrc ? (
-                        <img src={assetSrc} alt={type} loading="lazy" className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4 lg:w-5 lg:h-5'} object-contain opacity-90 group-hover:opacity-100 transition-opacity`} />
+                        <img src={assetSrc} alt={type} loading="lazy" className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} object-contain opacity-90`} />
                     ) : (
-                        <div className={`${compact ? 'w-3.5 h-3.5 text-[8px]' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center font-black border border-white/20 text-slate-400 bg-white/10`}>
-                            {type.substring(0,1).toUpperCase()}
-                        </div>
+                        <div className="w-3 h-3 rounded-full bg-white/10" />
                     )}
                 </div>
                 <div className="flex items-center ml-2 min-w-0">
-                    <span className={`font-mono font-bold tracking-tight ${url ? 'group-hover:text-white' : ''} transition-colors truncate ${style.text} ${compact ? 'text-xs' : 'text-sm'}`}>
+                    <span className={`font-mono font-bold tracking-tight truncate ${style.text} ${compact ? 'text-[10px]' : 'text-xs'}`}>
                         {displayScore}
                     </span>
                 </div>
@@ -211,38 +207,38 @@ const HeroCard = ({ coder, rank }) => {
     const styles = PODIUM_STYLES[rank];
     
     return (
-        <div className={`relative group transition-all duration-700 ease-out flex-1 lg:min-w-[200px] lg:max-w-[260px] xl:min-w-[260px] xl:max-w-[340px] ${styles.wrapper}`}>
+        <div className={`relative group transition-all duration-700 ease-out flex-1 lg:min-w-[180px] lg:max-w-[240px] xl:min-w-[240px] xl:max-w-[300px] ${styles.wrapper}`}>
             <div className={`
-                relative rounded-[2rem] 
-                p-4 lg:p-4 xl:p-6 
-                ${styles.bg} ${styles.border} ${styles.shadow} border-2
-                hover:-translate-y-3 hover:shadow-2xl transition-all duration-500
-                flex flex-col items-center h-full justify-between animate-fade-in-up
+                relative rounded-3xl 
+                p-3 lg:p-4 
+                ${styles.bg} ${styles.border} ${styles.shadow} border
+                hover:-translate-y-1 hover:shadow-2xl transition-all duration-500
+                flex flex-col items-center h-full justify-between
             `}>
                 <div className="relative z-10 flex flex-col items-center w-full">
-                    <div className="relative mb-4 lg:mb-4 xl:mb-6 transform group-hover:scale-105 transition-transform duration-500">
+                    <div className="relative mb-3 lg:mb-4 transform group-hover:scale-105 transition-transform duration-500">
                         <StudentAvatar rollNo={coder.displayId} rank={rank} size={rank === 1 ? "xl" : "lg"} />
-                        <div className={`absolute -bottom-2 -right-1 w-8 h-8 lg:w-8 lg:h-8 xl:w-10 xl:h-10 rounded-full border-[3px] flex items-center justify-center z-20 font-black text-base lg:text-base xl:text-lg shadow-xl ${styles.rankCircle}`}>
+                        <div className={`absolute -bottom-2 -right-1 w-6 h-6 lg:w-8 lg:h-8 rounded-full border-2 flex items-center justify-center z-20 font-black text-sm shadow-xl ${styles.rankCircle}`}>
                             {rank}
                         </div>
                     </div>
                     
-                    <div className="mt-1 text-center w-full space-y-1">
-                        <h3 className={`text-lg lg:text-lg xl:text-xl font-bold truncate px-2 leading-tight tracking-tight ${styles.text} drop-shadow-md`}>{coder.displayName}</h3>
-                        <div className="flex justify-center gap-2">
-                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg bg-black/40 text-slate-400 border border-white/5">{coder.displayId}</span>
-                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20">{coder.batch}</span>
+                    <div className="mt-1 text-center w-full space-y-0.5">
+                        <h3 className={`text-base lg:text-lg font-bold truncate px-2 leading-tight tracking-tight ${styles.text}`}>{coder.displayName}</h3>
+                        <div className="flex justify-center gap-2 pt-1">
+                            <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/5">{coder.displayId}</span>
                         </div>
                     </div>
                     
-                    <div className="my-4 lg:my-3 xl:my-5 w-full bg-black/30 rounded-xl py-2 lg:py-2 xl:py-3 border border-white/5 text-center shadow-inner group-hover:border-white/10 transition-colors">
-                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-[0.25em] mb-0.5 block">Total Score</span>
-                        <div className="text-2xl lg:text-2xl xl:text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                    {/* Compacted Total Score Area */}
+                    <div className="my-2 lg:my-3 w-full bg-black/20 rounded-lg py-1.5 border border-white/5 text-center">
+                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest block">Total Score</span>
+                        <div className="text-xl lg:text-2xl font-black text-white tracking-tighter">
                             {(coder.totalScore || 0).toLocaleString()}
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 w-full">
+                    <div className="grid grid-cols-2 gap-1.5 w-full">
                         <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} compact={false} />
                         <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} compact={false} />
                         <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} compact={false} />
@@ -254,11 +250,10 @@ const HeroCard = ({ coder, rank }) => {
     );
 };
 
-// --- UPDATED FOOTER (Detailed UI + Hide/Show Logic) ---
+// --- FOOTER ---
 const StudentStickyFooter = ({ myData }) => {
     const [isVisible, setIsVisible] = useState(false);
 
-    // Scroll Logic to Toggle Visibility
     useEffect(() => {
         const handleScroll = () => {
             if (window.scrollY > 100) {
@@ -275,52 +270,43 @@ const StudentStickyFooter = ({ myData }) => {
     if (!myData) return null;
 
     return (
-        <div className={`fixed bottom-2 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${
+        <div className={`fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none transition-all duration-500 ${
             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0'
         }`}>
-            {/* Main Content Box */}
-            <div className="pointer-events-auto w-full max-w-5xl bg-[#0F172A]/90 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.5)] p-2 sm:p-3 pr-4 sm:pr-6 flex items-center justify-between ring-1 ring-white/10 relative overflow-hidden">
+            <div className="pointer-events-auto w-full max-w-4xl bg-[#0F172A]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-2 pr-4 flex items-center justify-between ring-1 ring-white/10">
                 
-                {/* Background Glow */}
-                <div className="absolute top-0 left-1/4 w-1/2 h-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
-                
-                {/* Left: Avatar, ID, Rank */}
-                <div className="flex items-center gap-3 sm:gap-4 relative z-10 shrink-0">
-                    <div className="relative group cursor-pointer">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/10 shadow-lg group-hover:border-blue-500/50 transition-colors">
-                            <img 
-                                src={`https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${myData.displayId}/${myData.displayId}.jpg`} 
-                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/150'; }}
-                                alt="Me" 
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
+                {/* Left: Avatar & Info */}
+                <div className="flex items-center gap-3 relative z-10 shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
+                        <img 
+                            src={`https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${myData.displayId}/${myData.displayId}.jpg`} 
+                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/150'; }}
+                            alt="Me" 
+                            className="w-full h-full object-cover"
+                        />
                     </div>
-                    
-                   <div className="flex flex-col justify-center items-start gap-1"> 
-                        <span className="text-[10px] sm:text-xs font-mono font-semibold text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 w-fit">{myData.displayId}</span>
-                        <div className="flex items-center gap-2">
-                            {/* Replaced Trophy with Flag (Race Icon) for "Your Position" context */}
-                            <Flag size={14} className="text-yellow-500 fill-yellow-500/20" />
-                            <span className="text-sm sm:text-base font-bold text-white leading-tight">Rank #{myData.rank}</span>
+                    <div className="flex flex-col justify-center"> 
+                        <span className="text-[10px] font-mono font-semibold text-slate-400">{myData.displayId}</span>
+                        <div className="flex items-center gap-1.5">
+                            <Flag size={12} className="text-yellow-500" />
+                            <span className="text-sm font-bold text-white">Rank #{myData.rank}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Middle: Platform Stats (Hidden on small mobile) */}
-                <div className="hidden sm:block flex-1 mx-3 sm:mx-6 overflow-x-auto no-scrollbar">
-                    <div className="flex items-center gap-2 sm:gap-3 w-max sm:mx-auto">
-                        <div className="w-[110px] h-9"><BrandTile type="leetcode" score={myData.scores?.leetcode} compact={true} /></div>
-                        <div className="w-[110px] h-9"><BrandTile type="gfg" score={myData.scores?.gfg} compact={true} /></div>
-                        <div className="w-[110px] h-9"><BrandTile type="codechef" score={myData.scores?.codechef} compact={true} /></div>
-                        <div className="w-[110px] h-9"><BrandTile type="github" score={myData.scores?.github} compact={true} /></div>
-                    </div>
+                {/* Middle: Stats (Hidden on mobile) */}
+                <div className="hidden sm:flex flex-1 mx-4 gap-2 justify-center">
+                    <div className="w-24 h-8"><BrandTile type="leetcode" score={myData.scores?.leetcode} compact={true} /></div>
+                    <div className="w-24 h-8"><BrandTile type="gfg" score={myData.scores?.gfg} compact={true} /></div>
+                    <div className="w-24 h-8"><BrandTile type="codechef" score={myData.scores?.codechef} compact={true} /></div>
+                    <div className="w-24 h-8"><BrandTile type="github" score={myData.scores?.github} compact={true} /></div>
+
                 </div>
 
-                {/* Right: Total Score */}
-                <div className="flex flex-col items-end border-l border-white/10 pl-3 sm:pl-5 shrink-0 relative z-10 min-w-[80px]">
-                    <span className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-bold mb-0.5">Total</span>
-                    <span className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-300 leading-none drop-shadow-lg">
+                {/* Right: Score */}
+                <div className="flex flex-col items-end border-l border-white/10 pl-4 shrink-0">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Total</span>
+                    <span className="text-xl font-black text-white leading-none">
                         {(myData.totalScore || 0).toLocaleString()}
                     </span>
                 </div>
@@ -329,7 +315,7 @@ const StudentStickyFooter = ({ myData }) => {
     );
 };
 
-// --- MAIN PAGE COMPONENT ---
+// --- MAIN PAGE ---
 const LeaderBoardPage = () => {
     const { user, logout } = useAuth();
     
@@ -351,7 +337,7 @@ const LeaderBoardPage = () => {
     const itemsPerPage = viewMode === 'list' ? 12 : 8;
 
     const stats = useMemo(() => {
-        if (!allCoders.length) return { active: 0, benchmark: 0, average: 0 };
+        if (!allCoders.length) return { active: 0, benchmark: 0 };
         const active = allCoders.length;
         const benchmark = allCoders[0]?.totalScore || 0;
         return { active, benchmark };
@@ -423,6 +409,7 @@ const LeaderBoardPage = () => {
         );
     }, [allCoders, searchTerm, selectedBatch]);
 
+    // Only show podium if we have data, are on desktop, page 1, and no active filters
     const showHeroSection = isDesktop && currentPage === 1 && !searchTerm && selectedBatch === 'All' && filteredData.length > 0;
     const effectiveData = (showHeroSection && !isMobile) ? filteredData.slice(3) : filteredData;
     
@@ -438,52 +425,26 @@ const LeaderBoardPage = () => {
     }
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans ${myData ? 'pb-28 sm:pb-36' : 'pb-10'}`}>
+        <div className={`min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans ${myData ? 'pb-24 sm:pb-32' : 'pb-10'}`}>
             
             <div className="relative px-4 pt-4 pb-6 z-20">
                 <Header animate={animate} />
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
             </div>
 
-            <main className="px-4 sm:px-6 lg:px-12 xl:px-20 max-w-[95%] 2xl:max-w-[1600px] mx-auto py-4 space-y-8 lg:space-y-12">
+            <main className="px-4 sm:px-6 lg:px-12 xl:px-20 max-w-[95%] 2xl:max-w-[1600px] mx-auto py-2 space-y-6 lg:space-y-10">
                 
-                {/* --- HEADER --- */}
-                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 transition-all duration-700 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                {/* --- TITLE & STATS --- */}
+                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 transition-all duration-700 ease-out ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
-                            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white tracking-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                         <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
                                 Leaderboard
-                            </h1>
-                            <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-pulse">
-                                <Sparkles size={20} />
-                            </div>
-                        </div>
+                            </span>
+                        </h1>
                     </div>
 
-                    {/* BOXED STATS (Right Side) */}
-                    <div className="hidden md:flex gap-4 self-end md:self-auto">
-                        {/* Box 1: Total Students */}
-                        <div className="bg-[#0F172A]/80 backdrop-blur-md p-3 px-5 rounded-xl border border-white/10 flex items-center gap-4 shadow-lg min-w-[180px]">
-                            <div className="p-2.5 bg-blue-500/20 rounded-lg text-blue-400">
-                                <Users size={20} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Total Students</p>
-                                <p className="text-xl font-black text-white">{loading ? '...' : stats.active}</p>
-                            </div>
-                        </div>
-
-                        {/* Box 2: Top Score */}
-                        <div className="bg-[#0F172A]/80 backdrop-blur-md p-3 px-5 rounded-xl border border-white/10 flex items-center gap-4 shadow-lg min-w-[180px]">
-                            <div className="p-2.5 bg-yellow-500/20 rounded-lg text-yellow-400">
-                                <Trophy size={20} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Top Score</p>
-                                <p className="text-xl font-black text-white">{loading ? '...' : (stats.benchmark || 0).toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </div>
 
                 {/* --- LOADING SKELETON --- */}
@@ -491,22 +452,21 @@ const LeaderBoardPage = () => {
                     <div className="animate-fade-in"><SkeletonList /></div>
                 ) : (
                     <>
-                        {/* Hero Section */}
+                        {/* Hero Section (Podium) - Reduced Height */}
                         {showHeroSection && (
-                            <div className="hidden lg:flex flex-row justify-center items-end gap-2 lg:gap-4 xl:gap-10 mb-16 lg:mb-16 xl:mb-20 min-h-[300px] lg:min-h-[360px] xl:min-h-[400px] animate-fade-in-up">
+                            <div className="hidden lg:flex flex-row justify-center items-end gap-3 lg:gap-6 mb-12 min-h-[250px] animate-fade-in-up">
                                 {filteredData[1] && <HeroCard coder={filteredData[1]} rank={2} />}
                                 {filteredData[0] && <HeroCard coder={filteredData[0]} rank={1} />}
                                 {filteredData[2] && <HeroCard coder={filteredData[2]} rank={3} />}
                             </div>
                         )}
 
-                        {/* Sticky Toolbar: Search + Filter + View + Pagination */}
-                        <div className="sticky top-6 z-40 mb-8 flex justify-center">
+                        {/* Controls Toolbar */}
+                        <div className="sticky top-4 z-40 mb-6 flex justify-center">
                             <div className={`
                                 bg-[#0F172A]/90 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center gap-2 ring-1 ring-white/5 transition-all duration-300
                                 ${isMobile ? 'w-full justify-between px-3' : ''}
                             `}>
-                                {/* SEARCH BAR */}
                                 <div className={`relative flex items-center transition-all duration-500 rounded-full h-10 border border-transparent bg-white/5 hover:bg-white/10 ${isMobile ? 'flex-1 mr-2' : 'w-64 focus-within:w-80 px-4'}`}>
                                     <div className={`text-slate-400 pointer-events-none ${isMobile ? 'ml-3' : ''}`}><Search size={16} /></div>
                                     <input 
@@ -557,33 +517,31 @@ const LeaderBoardPage = () => {
                         {/* --- LIST / GRID CONTENT --- */}
                         <div key={`${currentPage}-${selectedBatch}-${searchTerm}`} className="animate-slide-up-fade">
                             {paginatedData.length === 0 ? (
-                                <div className="text-center py-24 bg-white/5 rounded-[2rem] border border-white/10 border-dashed max-w-2xl mx-auto">
-                                    <Sparkles className="mx-auto text-slate-500 mb-4" size={40} />
-                                    <h3 className="text-xl font-bold text-white mb-1">No students found</h3>
+                                <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed max-w-xl mx-auto">
+                                    <h3 className="text-lg font-bold text-white mb-1">No students found</h3>
                                 </div>
                             ) : (
-                                <div className={viewMode === 'list' || isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"}>
+                                <div className={viewMode === 'list' || isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"}>
                                     
                                     {!isMobile && viewMode === 'list' && (
                                         <div className="grid grid-cols-12 gap-6 px-10 py-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 rounded-xl border border-white/5 items-center select-none">
                                             <div className="col-span-1 text-center">Rank</div>
                                             <div className="col-span-4 pl-2">Student Profile</div>
-                                            <div className="col-span-5 text-center">Platform Stats</div>
-                                            <div className="col-span-2 text-right pr-4">Total Score</div>
+                                            <div className="col-span-5 text-center">Stats</div>
+                                            <div className="col-span-2 text-right pr-4">Score</div>
                                         </div>
                                     )}
 
                                     {paginatedData.map((coder) => (
                                         <div key={coder.displayId} 
                                             className={`
-                                                relative bg-[#0F172A]/60 border border-white/5 rounded-2xl transition-all duration-300 group
-                                                ${viewMode === 'grid' && !isMobile ? 'p-6 flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl hover:border-blue-500/30' : 'p-3 lg:px-10 lg:py-4 hover:bg-[#1E293B]/50 hover:border-white/10'}
-                                                ${myData?.displayId === coder.displayId ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''}
+                                                relative bg-[#0F172A]/60 border border-white/5 rounded-xl transition-all duration-300 group
+                                                ${viewMode === 'grid' && !isMobile ? 'p-5 flex flex-col items-center hover:-translate-y-1 hover:shadow-xl hover:border-blue-500/20' : 'p-3 lg:px-8 lg:py-3 hover:bg-[#1E293B]/50 hover:border-white/10'}
+                                                ${myData?.displayId === coder.displayId ? 'ring-1 ring-blue-500/50 bg-blue-500/5' : ''}
                                             `}
                                         >
                                             {isMobile ? (
                                                 <div className="flex items-center justify-between gap-3 p-1">
-                                                    {/* LEFT: Rank, Avatar, Name */}
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         <span className="font-mono font-bold text-slate-500 text-sm w-6 text-center">#{coder.rank}</span>
                                                         <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="sm" />
@@ -592,7 +550,6 @@ const LeaderBoardPage = () => {
                                                             <div className="text-[10px] text-slate-500 font-mono">{coder.displayId}</div>
                                                         </div>
                                                     </div>
-                                                    {/* RIGHT: Just Total Score */}
                                                     <div className="shrink-0 text-right pl-2">
                                                         <div className="font-black text-white text-base tracking-tight">
                                                             {coder.totalScore.toLocaleString()}
@@ -603,18 +560,18 @@ const LeaderBoardPage = () => {
                                                 viewMode === 'list' ? (
                                                     <div className="grid grid-cols-12 gap-6 items-center">
                                                         <div className="col-span-1 flex justify-center"><ListRankBadge rank={coder.rank} /></div>
-                                                        <div className="col-span-4 flex items-center gap-5 pl-2">
+                                                        <div className="col-span-4 flex items-center gap-4 pl-2">
                                                             <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="md" />
                                                             <div className="min-w-0">
-                                                                <h4 className="font-bold text-white text-lg truncate group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
-                                                                <div className="flex items-center gap-2 mt-1.5">
+                                                                <h4 className="font-bold text-white text-base truncate group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
+                                                                <div className="flex items-center gap-2 mt-1">
                                                                     <span className="text-xs font-mono font-bold text-slate-400">{coder.displayId}</span>
                                                                     <span className="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-blue-200 border border-white/10">{coder.batch}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div className="col-span-5 flex justify-center">
-                                                            <div className="grid grid-cols-4 gap-3 w-full max-w-xl">
+                                                            <div className="grid grid-cols-4 gap-2 w-full max-w-lg">
                                                                 <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
                                                                 <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
                                                                 <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
@@ -622,30 +579,29 @@ const LeaderBoardPage = () => {
                                                             </div>
                                                         </div>
                                                         <div className="col-span-2 text-right pr-4">
-                                                            <span className="text-2xl font-black text-white tracking-tighter tabular-nums drop-shadow-md">{(coder.totalScore || 0).toLocaleString()}</span>
+                                                            <span className="text-xl font-black text-white tracking-tighter tabular-nums">{(coder.totalScore || 0).toLocaleString()}</span>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <div className="absolute top-5 left-5"><ListRankBadge rank={coder.rank} /></div>
+                                                        <div className="absolute top-4 left-4"><ListRankBadge rank={coder.rank} /></div>
                                                         <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="lg" />
-                                                        <div className="mt-5 text-center w-full">
-                                                            <h4 className="font-bold text-white text-xl truncate px-2 group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
+                                                        <div className="mt-4 text-center w-full">
+                                                            <h4 className="font-bold text-white text-lg truncate px-1 group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
                                                             <div className="flex justify-center gap-2 mt-2">
-                                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-black/30 px-2 py-1 rounded border border-white/10">{coder.displayId}</span>
-                                                                <span className="text-[10px] font-mono font-bold text-blue-300 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">{coder.batch}</span>
+                                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-black/30 px-2 py-0.5 rounded border border-white/10">{coder.displayId}</span>
                                                             </div>
                                                         </div>
-                                                        <div className="w-full mt-6 space-y-3">
+                                                        <div className="w-full mt-4 space-y-3">
                                                             <div className="grid grid-cols-2 gap-2">
                                                                 <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
                                                                 <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
                                                                 <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
                                                                 <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
                                                             </div>
-                                                            <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Total Score</span>
-                                                                <span className="text-2xl font-black text-white">{(coder.totalScore || 0).toLocaleString()}</span>
+                                                            <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                                                                <span className="text-[9px] text-slate-400 font-bold uppercase">Total</span>
+                                                                <span className="text-xl font-black text-white">{(coder.totalScore || 0).toLocaleString()}</span>
                                                             </div>
                                                         </div>
                                                     </>
@@ -659,24 +615,24 @@ const LeaderBoardPage = () => {
 
                         {/* Bottom Pagination */}
                         {totalPages > 1 && (
-                            <div className="mt-12 flex justify-center pb-8">
-                                <div className="inline-flex bg-[#0F172A] rounded-full p-2 border border-white/10 shadow-2xl ring-1 ring-white/5 gap-4 items-center">
+                            <div className="mt-10 flex justify-center pb-8">
+                                <div className="inline-flex bg-[#0F172A] rounded-full p-2 border border-white/10 shadow-lg ring-1 ring-white/5 gap-4 items-center">
                                     <button 
                                         onClick={() => { setCurrentPage(p => Math.max(1, p-1)); }}
                                         disabled={currentPage === 1}
-                                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
                                     >
-                                        <ChevronLeft size={20} />
+                                        <ChevronLeft size={18} />
                                     </button>
-                                    <div className="flex items-center px-4 font-mono text-sm text-slate-400 border-x border-white/5 h-5">
+                                    <div className="flex items-center px-4 font-mono text-sm text-slate-400 border-x border-white/5 h-4">
                                         <span className="text-white font-bold mr-2">{currentPage}</span> / <span className="ml-2">{totalPages}</span>
                                     </div>
                                     <button 
                                         onClick={() => { setCurrentPage(p => Math.min(totalPages, p+1)); }}
                                         disabled={currentPage >= totalPages}
-                                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
                                     >
-                                        <ChevronRight size={20} />
+                                        <ChevronRight size={18} />
                                     </button>
                                 </div>
                             </div>

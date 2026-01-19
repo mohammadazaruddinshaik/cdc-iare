@@ -1,5 +1,3 @@
-const { fontFamily } = require("html2canvas/dist/types/css/property-descriptors/font-family");
-
 module.exports = {
   content: [
     "./index.html",

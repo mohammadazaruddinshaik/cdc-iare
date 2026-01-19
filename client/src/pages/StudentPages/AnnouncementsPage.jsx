@@ -1,3 +1,9 @@
+
+/**
+ * @file InboxPage.jsx
+ * @description Student Inbox/Announcements with unified styling and modal details.
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -15,48 +21,43 @@ import Loader from '../../components/Loader';
 const API_URL = import.meta.env.VITE_BASE_URL;
 
 // --- STYLING CONFIGURATION ---
+// Unified color palette to reduce visual noise
 const CATEGORY_STYLES = {
     GENERAL: {
-        gradient: 'from-blue-500/20 to-blue-600/5',
-        text: 'text-blue-300',
-        border: 'border-blue-500/30',
         bg: 'bg-blue-500/10',
-        icon: <Info className="w-4 h-4" />,
+        text: 'text-blue-300',
+        border: 'border-blue-500/20',
+        icon: <Info className="w-3.5 h-3.5" />,
     },
     EVENTS: {
-        gradient: 'from-fuchsia-500/20 to-purple-600/5',
-        text: 'text-fuchsia-300',
-        border: 'border-fuchsia-500/30',
-        bg: 'bg-fuchsia-500/10',
-        icon: <Calendar className="w-4 h-4" />,
+        bg: 'bg-purple-500/10',
+        text: 'text-purple-300',
+        border: 'border-purple-500/20',
+        icon: <Calendar className="w-3.5 h-3.5" />,
     },
     FORMS: {
-        gradient: 'from-amber-500/20 to-yellow-600/5',
-        text: 'text-amber-300',
-        border: 'border-amber-500/30',
         bg: 'bg-amber-500/10',
-        icon: <FileText className="w-4 h-4" />,
+        text: 'text-amber-300',
+        border: 'border-amber-500/20',
+        icon: <FileText className="w-3.5 h-3.5" />,
     },
     ASSESSMENTS: {
-        gradient: 'from-rose-500/20 to-red-600/5',
-        text: 'text-rose-300',
-        border: 'border-rose-500/30',
         bg: 'bg-rose-500/10',
-        icon: <ClipboardCheck className="w-4 h-4" />,
+        text: 'text-rose-300',
+        border: 'border-rose-500/20',
+        icon: <ClipboardCheck className="w-3.5 h-3.5" />,
     },
     REGISTRATIONS: {
-        gradient: 'from-emerald-500/20 to-green-600/5',
-        text: 'text-emerald-300',
-        border: 'border-emerald-500/30',
         bg: 'bg-emerald-500/10',
-        icon: <UserPlus className="w-4 h-4" />,
+        text: 'text-emerald-300',
+        border: 'border-emerald-500/20',
+        icon: <UserPlus className="w-3.5 h-3.5" />,
     },
     DEFAULT: {
-        gradient: 'from-slate-500/20 to-gray-600/5',
-        text: 'text-slate-300',
-        border: 'border-slate-500/30',
         bg: 'bg-slate-500/10',
-        icon: <Megaphone className="w-4 h-4" />,
+        text: 'text-slate-300',
+        border: 'border-slate-500/20',
+        icon: <Megaphone className="w-3.5 h-3.5" />,
     }
 };
 
@@ -90,15 +91,15 @@ const AnnouncementModal = ({ item, onClose }) => {
                 {/* Modal Header */}
                 <div className="p-8 border-b border-white/5 bg-[#1E293B]">
                     <div className="flex justify-between items-start mb-6">
-                        <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border ${style.bg} ${style.text} ${style.border}`}>
+                        <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${style.bg} ${style.text} ${style.border}`}>
                             {style.icon} {item.category || 'GENERAL'}
                         </span>
                         <button onClick={onClose} className="p-2 bg-black/20 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors">
                             <X size={20} />
                         </button>
                     </div>
-                    <h2 className="text-3xl font-black text-white leading-tight pr-4 mb-2">{item.title}</h2>
-                    <p className="text-white/60 text-sm font-medium flex items-center gap-2">
+                    <h2 className="text-2xl md:text-3xl font-black text-white leading-tight pr-4 mb-2">{item.title}</h2>
+                    <p className="text-slate-400 text-sm font-medium flex items-center gap-2">
                         <Clock size={14}/> Posted on {dateObj.toLocaleDateString(undefined, { dateStyle: 'full' })}
                     </p>
                 </div>
@@ -212,32 +213,32 @@ const InboxPage = () => {
         <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-20 relative overflow-hidden selection:bg-blue-500/30">
             
             {/* Header */}
-            <div className="px-4 sm:px-6 relative z-20">
+            <div className="relative px-6 sm:px-8 pt-4 pb-6 z-20">
                 <Header animate={animate} />
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-4"></div>
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
             </div>
 
-            <main className="relative z-10 px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-12">
+            <main className="relative z-10 px-6 sm:px-8 py-4 max-w-7xl mx-auto space-y-10">
                 
                 {/* 1. Page Title & Search */}
-                <div className={`flex flex-col md:flex-row justify-between items-end gap-8 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                <div className={`flex flex-col md:flex-row justify-between items-end gap-6 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
                             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
                                 Inbox
                             </span>
                         </h1>
                     </div>
 
-                    <div className="relative group w-full md:w-96">
-                        <div className="relative flex items-center bg-[#0F172A] border border-white/10 rounded-full shadow-xl hover:border-white/20 transition-colors h-14">
-                            <Search className="absolute left-5 w-5 h-5 text-slate-400" />
+                    <div className="relative group w-full md:w-80">
+                        <div className="relative flex items-center bg-[#0F172A] border border-white/10 rounded-full shadow-xl hover:border-white/20 transition-colors h-12 md:h-14">
+                            <Search className="absolute left-5 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="Search announcements..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-14 pr-12 py-3 bg-transparent text-base text-white placeholder-slate-500 focus:outline-none rounded-full font-medium"
+                                className="w-full pl-12 pr-12 py-3 bg-transparent text-sm md:text-base text-white placeholder-slate-500 focus:outline-none rounded-full font-medium"
                             />
                             {searchTerm && (
                                 <button onClick={() => setSearchTerm('')} className="absolute right-4 p-1.5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white">
@@ -249,16 +250,16 @@ const InboxPage = () => {
                 </div>
 
                 {/* 2. Filter Tabs */}
-                <div className={`flex flex-wrap gap-3 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                <div className={`flex flex-wrap gap-2 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     {availableCategories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => setActiveFilter(cat)}
                             className={`
-                                relative px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300
+                                relative px-6 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300
                                 border
                                 ${activeFilter === cat 
-                                    ? 'bg-white text-[#071225] border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] transform -translate-y-0.5' 
+                                    ? 'bg-white text-[#071225] border-white shadow-[0_0_15px_rgba(255,255,255,0.2)] transform -translate-y-0.5' 
                                     : 'bg-[#1E293B]/40 text-slate-400 border-white/5 hover:bg-[#1E293B] hover:text-white hover:border-white/20'}
                             `}
                         >
@@ -267,8 +268,8 @@ const InboxPage = () => {
                     ))}
                 </div>
 
-                {/* 3. Cards Grid (3 Columns) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* 3. Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <AnimatePresence mode="popLayout">
                         {filteredData.length > 0 ? (
                             filteredData.map((item, index) => {
@@ -288,33 +289,33 @@ const InboxPage = () => {
                                         <div 
                                             className={`
                                                 group relative h-full flex flex-col justify-between
-                                                bg-[#0F172A]/60 backdrop-blur-xl
+                                                bg-[#0F172A]/40 backdrop-blur-md
                                                 border border-white/5 hover:border-white/20
-                                                rounded-[2.5rem] p-8 min-h-[280px]
-                                                transition-all duration-500 hover:shadow-2xl hover:bg-[#0F172A]/80 cursor-pointer
+                                                rounded-[2rem] p-6 md:p-8 min-h-[260px]
+                                                transition-all duration-300 hover:shadow-2xl hover:bg-[#0F172A]/60 cursor-pointer
                                             `}
                                             onClick={() => setSelectedAnnouncement(item)}
                                         >
                                             
                                             <div className="relative z-10 flex flex-col h-full">
                                                 
-                                                {/* Header: Date & Category */}
-                                                <div className="flex justify-between items-start mb-8">
+                                                {/* Header: Category & Date Block */}
+                                                <div className="flex justify-between items-start mb-6">
                                                     {/* Clean Category Badge */}
                                                     <span className={`
-                                                        inline-flex items-center gap-2 px-4 py-2 rounded-full
+                                                        inline-flex items-center gap-2 px-3 py-1.5 rounded-full
                                                         text-[10px] font-black uppercase tracking-widest border
                                                         ${style.bg} ${style.text} ${style.border}
                                                     `}>
                                                         {style.icon} {item.category || 'GENERAL'}
                                                     </span>
                                                     
-                                                    {/* TIMETABLE STYLE DATE BOX (Modified here) */}
-                                                    <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-white/5 border border-white/10 shadow-inner backdrop-blur-md">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                    {/* Date Block (Matching Timetable Style) */}
+                                                    <div className="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 border border-white/10 shadow-inner backdrop-blur-md shrink-0">
+                                                        <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                                             {dateObj.toLocaleString('default', { month: 'short' })}
                                                         </span>
-                                                        <span className="text-xl font-black text-white leading-none mt-0.5">
+                                                        <span className="text-lg md:text-xl font-black text-white leading-none mt-0.5">
                                                             {dateObj.getDate()}
                                                         </span>
                                                     </div>
@@ -322,27 +323,27 @@ const InboxPage = () => {
 
                                                 {/* Content */}
                                                 <div className="mb-8 flex-1">
-                                                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight group-hover:text-blue-200 transition-colors line-clamp-2">
+                                                    <h3 className="text-xl font-bold text-white mb-3 leading-tight group-hover:text-blue-200 transition-colors line-clamp-2">
                                                         {item.title}
                                                     </h3>
-                                                    <p className="text-base text-slate-400 leading-relaxed font-medium line-clamp-3">
+                                                    <p className="text-sm text-slate-400 leading-relaxed font-medium line-clamp-3">
                                                         {item.description}
                                                     </p>
                                                 </div>
 
                                                 {/* Footer: View More */}
                                                 <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-5">
-                                                    {/* Updated Priority Indicator */}
+                                                    {/* Priority Indicator */}
                                                     {item.priority >= 2 ? (
-                                                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20">
+                                                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
                                                             <Star size={12} fill="currentColor" /> Important
                                                         </span>
                                                     ) : <span></span>}
 
                                                     <button 
-                                                        className="flex items-center gap-2 text-xs font-bold text-white bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-full transition-all group-hover:translate-x-1"
+                                                        className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full transition-all group-hover:translate-x-1"
                                                     >
-                                                        View Details <ArrowRight size={14} />
+                                                        Details <ArrowRight size={14} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -352,12 +353,12 @@ const InboxPage = () => {
                             })
                         ) : (
                             // Empty State
-                            <div className="col-span-full min-h-[50vh] flex flex-col items-center justify-center text-center p-12 border border-dashed border-white/10 rounded-[3rem] bg-white/5 backdrop-blur-sm">
-                                <div className="w-20 h-20 bg-gradient-to-tr from-slate-800 to-slate-700 rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-white/10">
-                                    <Bell className="w-8 h-8 text-slate-400" />
+                            <div className="col-span-full min-h-[40vh] flex flex-col items-center justify-center text-center p-8 md:p-12 border border-dashed border-white/10 rounded-[3rem] bg-white/5 backdrop-blur-sm">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-white/10">
+                                    <Bell className="w-6 h-6 text-slate-400" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">All Caught Up!</h3>
-                                <p className="text-slate-400 text-base max-w-md">
+                                <h3 className="text-xl font-bold text-white mb-2">All Caught Up!</h3>
+                                <p className="text-slate-400 text-sm max-w-md">
                                     {searchTerm 
                                         ? `No results found for "${searchTerm}"` 
                                         : "Your inbox is clear. Check back later for updates."}
@@ -365,7 +366,7 @@ const InboxPage = () => {
                                 {searchTerm && (
                                     <button 
                                         onClick={() => setSearchTerm('')}
-                                        className="mt-8 px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-bold transition-all"
+                                        className="mt-6 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-bold transition-all"
                                     >
                                         Clear Search
                                     </button>

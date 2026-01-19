@@ -80,30 +80,30 @@ const Header = ({ animate }) => {
         profilePath = '/faculty/profile';
         navLinks = [
             { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
-            { path: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
+
+            { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
+
             { path: '/faculty/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
+
             { path: '/faculty/students', label: 'Attendance', icon: <ClipboardCheck size={iconSize} /> },
+
+            { path: '/faculty/quiz', label: 'Quizzes', icon: <Puzzle size={iconSize} /> },
+
+            { path: '/faculty/sessions', label: 'Live Sessions', icon: <Radio size={iconSize} /> },
+
             { path: '/coding-contests', label: 'Contests', icon: <Code2 size={iconSize} /> },
-            // DROPDOWN CONFIGURATION FOR QUIZ
-            { 
-                label: 'Quiz', 
-                icon: <Puzzle size={iconSize} />, // Changed to Puzzle (Problem Solving)
-                children: [
-                    { path: '/faculty/quiz', label: 'Manage Quizzes', icon: <ListChecks size={16} /> }, // Changed to ListChecks (Management)
-                    { path: '/faculty/sessions', label: 'Live Sessions', icon: <Radio size={16} /> } // Changed to Radio (Broadcast/Live)
-                ]
-            }, 
-        ];
+         ]
     } else if (user?.role === 'student') {
         dashboardPath = '/student/dashboard';
         profilePath = '/student/profile';
         navLinks = [
             { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
-            { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
-            { path: '/timetable', label: 'Schedule', icon: <CalendarRange size={iconSize} /> },
-            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 
-            { path: '/inbox', label: 'Inbox', icon: <InboxIcon size={iconSize} /> }, 
             { path: '/contests', label: 'Contests', icon: <Code2 size={iconSize} /> },
+            { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
+            { path: '/timetable', label: 'Schedule', icon: <CalendarRange size={iconSize} /> },            
+            { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 
+            { path: '/inbox', label: 'Inbox', icon: <InboxIcon size={iconSize} /> },
+
         ];
     } else if (user?.role === 'admin') {
         dashboardPath = '/admin/dashboard';
