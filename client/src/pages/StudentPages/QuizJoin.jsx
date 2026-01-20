@@ -105,7 +105,7 @@ const QuizJoinPage = () => {
                 setStatus('SUCCESS');
             } else {
                 setStatus('ERROR');
-                setErrorMsg(data.message || 'Invalid Session Code');
+                setErrorMsg(data.error || 'Invalid Session Code');
             }
         } catch (error) {
             console.error("Join Error:", error);
@@ -133,12 +133,10 @@ const QuizJoinPage = () => {
     // --- NAVIGATION HANDLER (SECURITY UPDATE) ---
    const handleStartQuiz = () => {
     if (apiData) {
-        navigate('/quiz/instructions', { 
+        navigate('/student/quiz/instructions', { 
             state: { 
                 ...apiData,
                 sessionCode: sessionCode,
-                // [SECURITY] Timestamp Stamping
-                // This creates a "Freshness Ticket". The next page can check this.
                 _security_timestamp: Date.now() 
             } 
         });
@@ -188,8 +186,8 @@ const QuizJoinPage = () => {
                     </h1>
                     
                     <p className="text-slate-500 font-medium text-lg tracking-tight">
-                        Enter your code to fetch session details.
-                    </p>
+    Every question counts. Every second matters.
+</p>
                 </motion.div>
 
                 {/* --- CARD CONTAINER --- */}
@@ -275,7 +273,6 @@ const QuizJoinPage = () => {
                                                 <div className="h-10 w-1 rounded-full bg-gradient-to-b from-indigo-500 to-blue-400"></div>
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <UserCheck size={14} className="text-indigo-600" />
                                                         <p className="text-sm font-bold text-slate-700">
                                                             {apiData.student.name}
                                                         </p>
@@ -296,7 +293,7 @@ const QuizJoinPage = () => {
                                         <div className="flex flex-col items-center gap-1">
                                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full border border-amber-200 shadow-sm">
                                                 <Zap size={14} className="fill-amber-500 text-amber-600" />
-                                                <span className="text-[10px] font-black uppercase tracking-wider">Charged</span>
+                                                <span className="text-[10px] font-black uppercase tracking-wider">Joined</span>
                                             </div>
                                         </div>
                                     </div>

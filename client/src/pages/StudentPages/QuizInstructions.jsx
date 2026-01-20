@@ -150,7 +150,7 @@ const QuizInstructions = () => {
         // PASS DATA TO ACTIVE PAGE WITH 'replace: true'
         // This destroys the 'Instructions' page from history.
         // Hitting 'Back' from the quiz will skip this page entirely.
-        navigate('/quiz/active', { 
+        navigate('/student/quiz/active', { 
             state: { 
                 ...apiData, 
                 theme: selectedTheme, 

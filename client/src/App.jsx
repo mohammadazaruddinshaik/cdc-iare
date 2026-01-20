@@ -51,7 +51,7 @@ import QuizActive from './pages/StudentPages/QuizActive.jsx';
 import FacultySessionPage from './pages/FacultyPages/FacultySessionPage.jsx';
 import FacultySessionAnalytics from './pages/FacultyPages/FacultySessionAnalytics.jsx';
 import StudentResultPage from './pages/StudentPages/StudentResultsPage.jsx';
-
+import QuizDashboard from './pages/StudentPages/QuizDashboard.jsx';
 
 // --- 1. NEW COMPONENT: HANDLES AUTH CONTEXT & LOADING ---
 // This wrapper ensures AuthProvider only loads for pages INSIDE it.
@@ -137,24 +137,18 @@ const AppRoutes = () => {
             <Route path="/student/profile" element={<StudentProfilePage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/inbox" element={<AnnouncementsPage />} />
-            {/* 1. Main List: View all contests */}
+
+
             <Route path="/contests" element={<StudentContestPage />} />
-
-
-            {/* 2. Contest Landing/Lobby: View specific contest details & Register */}
-            {/* Example: /contests/101 */}
             <Route path="/contests/:contestId" element={<EnterContest />} />
             <Route path="/contest/:contestId/instructions" element={<ContestInstructions />} />
-            {/* 3. Live Dashboard: The main hub when the contest is running */}
-            {/* Example: /contests/101/live */}
             <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
-
-            {/* 4. Problem Solver: Solving a specific problem within a contest */}
-            {/* Example: /contests/101/problem/5 */}
             <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
-            <Route path="/join" element={<QuizJoin />} />
-            <Route path="/quiz/instructions" element={<QuizInstructions />} />
-            <Route path="/quiz/active" element={<QuizActive />} />
+
+            <Route path="/student/quiz" element={<QuizDashboard/>}/>
+            <Route path="/student/quiz/join" element={<QuizJoin />} />
+            <Route path="/student/quiz/instructions" element={<QuizInstructions />} />
+            <Route path="/student/quiz/active" element={<QuizActive />} />
             <Route path="/student/quiz/result" element={<StudentResultPage />} />
           </Route>
 

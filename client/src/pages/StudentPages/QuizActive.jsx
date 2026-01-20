@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const BACKEND_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000"; 
 
 const SECURITY_CONFIG = {
-    MAX_VIOLATIONS: 45,
+    MAX_VIOLATIONS: 5,
     VIOLATION_WEIGHTS: { TAB_SWITCH: 1, FULLSCREEN_EXIT: 1, RIGHT_CLICK: 0.5 }
 };
 
@@ -47,7 +47,7 @@ const slideVariants = {
 };
 
 /* --- 3. MODALS --- */
-const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDarkMode, jumpToQuestion, isSubmitting }) => {
+const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDarkMode, jumpToQuestion, isSubmitting, submitError }) => {
     if (!isOpen) return null;
     const attempted = Object.keys(answers).length;
     const total = quizData.length;
@@ -71,6 +71,19 @@ const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDa
                         <div className="text-xs font-bold uppercase tracking-wider opacity-70">Skipped</div>
                     </div>
                 </div>
+
+                {/* ERROR DISPLAY IN MODAL */}
+                {submitError && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center flex items-center justify-center gap-2"
+                    >
+                        <ShieldAlert size={16} />
+                        {submitError}
+                    </motion.div>
+                )}
+
                 <div className="flex-1 overflow-y-auto min-h-[150px] mb-6 pr-2 custom-scrollbar">
                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
                         {quizData.map((q, idx) => {
@@ -85,7 +98,7 @@ const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDa
                 <div className="flex gap-3 mt-auto pt-4 border-t border-inherit">
                     <button onClick={onClose} disabled={isSubmitting} className={`flex-1 py-3.5 rounded-xl font-bold transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>Review Answers</button>
                     <button onClick={onConfirm} disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
-                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "Confirm Finish"}
+                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (submitError ? "Retry Submit" : "Confirm Finish")}
                     </button>
                 </div>
             </motion.div>
@@ -113,7 +126,6 @@ const LockoutModal = () => (
             <Ban size={64} className="text-red-500 mx-auto mb-6" />
             <h1 className="text-4xl font-black mb-4">Quiz Locked</h1>
             <p className="text-slate-400 mb-8">Maximum security violations exceeded. Your session has been auto-submitted.</p>
-            <button onClick={() => window.location.replace('/student/dashboard')} className="px-8 py-3 bg-slate-800 rounded-xl font-bold border border-slate-700">Return Home</button>
         </div>
     </div>
 );
@@ -157,6 +169,7 @@ const QuizActivePage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null); // NEW: Error state
   const [connectionStatus, setConnectionStatus] = useState({ online: true, effectiveType: '4g' });
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [timeLeft, setTimeLeft] = useState((session?.durationMinutes || 45) * 60);
@@ -214,10 +227,11 @@ const QuizActivePage = () => {
       setMobileMenuOpen(false);
   };
 
-  /* --- [SECURITY 2] DESTRUCTIVE SUBMISSION --- */
+  /* --- [SECURITY 2] DESTRUCTIVE SUBMISSION (UPDATED) --- */
   const finishQuiz = useCallback(async () => {
       if(isSubmitting) return; 
       setIsSubmitting(true);
+      setSubmitError(null); // Clear previous errors
       
       try {
           const response = await fetch(`${BACKEND_URL}/api/student/quiz/finish`, {
@@ -230,17 +244,26 @@ const QuizActivePage = () => {
           
           if (result.success) {
               if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-              navigate('/student/quiz/result', { state: result.data, replace: true });
+              
+              // PASS THEME AND DATA TO RESULT PAGE
+              navigate('/student/quiz/result', { 
+                  state: { 
+                      ...result.data, // Spread report card data
+                      theme: isDarkMode ? 'dark' : 'light' // Pass the current theme
+                  }, 
+                  replace: true 
+              });
           } else {
-              alert("Submission Failed: " + result.message);
+              // Show error in modal instead of alert
+              setSubmitError(result.message || "Submission failed. Please try again.");
               setIsSubmitting(false);
           }
       } catch (error) {
           console.error("Finish Error", error);
-          alert("Network Error. Please check your connection.");
+          setSubmitError("Network connection failed. Please check internet.");
           setIsSubmitting(false);
       }
-  }, [activeSessionCode, navigate, isSubmitting]);
+  }, [activeSessionCode, navigate, isSubmitting, isDarkMode]);
 
   /* --- NETWORK & SECURITY EFFECTS --- */
   useEffect(() => {
@@ -320,10 +343,13 @@ const QuizActivePage = () => {
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const isUrgent = timeLeft < 300; 
 
+  // --- OPTION LAYOUT LOGIC ---
+  const hasLongText = currentQ.options.some(opt => opt.text.length > 60);
+  const useGridLayout = !hasLongText && currentQ.options.length > 1;
+
   /* --- RENDER COMPONENTS --- */
   const NetworkIndicator = () => {
       const isWeak = connectionStatus.effectiveType === '2g' || connectionStatus.effectiveType === 'slow-2g';
-      // UPDATED COLOR PALETTE FOR LIGHT MODE GREEN
       return (
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300
               ${!connectionStatus.online ? 'bg-red-500/10 text-red-500 border-red-500/20' : isDarkMode 
@@ -344,8 +370,6 @@ const QuizActivePage = () => {
 
     return (
         <div className={`flex flex-col h-full border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0F172A] border-slate-800' : 'bg-white border-slate-200'}`}>
-          
-          {/* --- MINIMAL ROW BY ROW PROFILE --- */}
           <div className="p-8 flex flex-col items-center text-center gap-3 border-b border-inherit">
               <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-blue-500/50 bg-slate-200 shadow-inner flex-shrink-0">
                   <img 
@@ -372,8 +396,6 @@ const QuizActivePage = () => {
                  const isActive = currentQIndex === idx;
                  const isAnswered = answers[q._id];
                  const isLocked = lockedQuestions.has(q._id);
-
-                 // UPDATED COLOR PALETTE FOR SIDEBAR
                  let btnClass = isActive 
                     ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400 scale-105"
                     : isLocked ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-800 border border-emerald-300")
@@ -381,11 +403,7 @@ const QuizActivePage = () => {
                     : (isDarkMode ? "bg-[#1E293B] text-slate-500 border border-slate-800" : "bg-white text-slate-400 border border-slate-200");
                  
                  return ( 
-                    <button 
-                        key={q._id} 
-                        onClick={() => navigateQuestion(idx)} 
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all relative ${btnClass}`}
-                    >
+                    <button key={q._id} onClick={() => navigateQuestion(idx)} className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all relative ${btnClass}`}>
                         {idx + 1}
                     </button> 
                  )
@@ -412,14 +430,30 @@ const QuizActivePage = () => {
   };
 
   return (
-    <div className={`h-screen flex flex-col font-sans overflow-hidden transition-colors duration-500 ${t.text} select-none`}>
+    <div className={`h-[100dvh] flex flex-col font-sans overflow-hidden transition-colors duration-500 ${t.text} select-none`}>
       {!hasStarted && <FullscreenGate onEnter={enterFullscreen} />}
       {isLocked && <LockoutModal />}
       <WarningModal isOpen={showWarning} onClose={() => { setShowWarning(false); enterFullscreen(); }} violationCount={violationCount} maxViolations={SECURITY_CONFIG.MAX_VIOLATIONS} />
-      <SubmitReviewModal isOpen={isReviewing} onClose={() => setIsReviewing(false)} onConfirm={finishQuiz} answers={answers} quizData={questions} isDarkMode={isDarkMode} jumpToQuestion={(idx) => { navigateQuestion(idx); setIsReviewing(false); }} isSubmitting={isSubmitting} />
+      
+      {/* UPDATE 1: Clear error on close */}
+      <SubmitReviewModal 
+        isOpen={isReviewing} 
+        onClose={() => { 
+            setIsReviewing(false); 
+            setSubmitError(null); 
+        }} 
+        onConfirm={finishQuiz} 
+        answers={answers} 
+        quizData={questions} 
+        isDarkMode={isDarkMode} 
+        jumpToQuestion={(idx) => { navigateQuestion(idx); setIsReviewing(false); }} 
+        isSubmitting={isSubmitting} 
+        submitError={submitError} 
+      />
+      
       <Atmosphere isDarkMode={isDarkMode} />
 
-      <header className={`h-20 border-b flex items-center justify-between px-6 z-20 relative backdrop-blur-md ${isDarkMode ? 'bg-[#0F172A]/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+      <header className={`h-20 border-b flex items-center justify-between px-6 z-20 relative backdrop-blur-md flex-shrink-0 ${isDarkMode ? 'bg-[#0F172A]/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="flex items-center gap-4">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex p-2 rounded-xl text-slate-400">{sidebarOpen ? <PanelLeftClose size={24} /> : <PanelLeftOpen size={24} />}</button>
             <button className="lg:hidden p-2 rounded-xl" onClick={() => setMobileMenuOpen(true)}><Menu size={24} /></button>
@@ -454,14 +488,14 @@ const QuizActivePage = () => {
                     animate={{ width: 280, opacity: 1 }} 
                     exit={{ width: 0, opacity: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="hidden lg:block h-full border-r border-inherit overflow-hidden whitespace-nowrap"
+                    className="hidden lg:block h-full border-r border-inherit overflow-hidden whitespace-nowrap flex-shrink-0"
                 >
                     <QuizAtlas />
                 </motion.aside> 
             )}
         </AnimatePresence>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-10 pb-24 md:pb-24 scroll-smooth custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-4 md:p-10 pb-24 md:pb-32 scroll-smooth custom-scrollbar">
             <AnimatePresence mode="wait" custom={direction}>
                 <motion.div 
                     key={currentQ._id} 
@@ -509,7 +543,7 @@ const QuizActivePage = () => {
                         </div>
 
                         {/* --- OPTIONS LIST --- */}
-                        <div className="space-y-3 mb-auto">
+                        <div className={useGridLayout ? "grid grid-cols-1 md:grid-cols-2 gap-4 mb-auto" : "space-y-3 mb-auto"}>
                         {currentQ.options.map((opt) => {
                             const isSelected = answers[currentQ._id] === opt._id;
                             const isLocked = lockedQuestions.has(currentQ._id);

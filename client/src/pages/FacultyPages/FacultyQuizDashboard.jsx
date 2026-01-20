@@ -220,6 +220,9 @@ const SectionHeader = ({ title, animate, delay }) => (
 
 // --- MODAL: QUIZ WIZARD ---
 const QuizWizardModal = ({ isOpen, onClose, onQuizCreated, onShowStatus }) => {
+    // 1. Get user from AuthContext
+    const { user } = useAuth();
+    
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [genMode, setGenMode] = useState('AI');
@@ -228,10 +231,24 @@ const QuizWizardModal = ({ isOpen, onClose, onQuizCreated, onShowStatus }) => {
     const [excelFile, setExcelFile] = useState(null);
     const fileInputRef = useRef(null);
 
-    const [metaData, setMetaData] = useState({ title: '', subject: '', facultyId: 'iare1024', totalMarks: 30, durationMinutes: 45 });
+    // 2. Initialize facultyId dynamically from user.username
+    const [metaData, setMetaData] = useState({ 
+        title: '', 
+        subject: '', 
+        facultyId: user?.username || '', 
+        totalMarks: 30, 
+        durationMinutes: 45 
+    });
     const [aiConfig, setAiConfig] = useState({ topic: '', difficulty: 'Medium', count: 10 });
     const [questions, setQuestions] = useState([]);
     const [createdQuizData, setCreatedQuizData] = useState(null);
+
+    // 3. Ensure facultyId is synced if user loads late or modal re-opens
+    useEffect(() => {
+        if (isOpen && user?.username) {
+            setMetaData(prev => ({ ...prev, facultyId: user.username }));
+        }
+    }, [isOpen, user]);
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -330,6 +347,12 @@ const QuizWizardModal = ({ isOpen, onClose, onQuizCreated, onShowStatus }) => {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div className="bg-white p-8 rounded-[1.5rem] border border-gray-100 shadow-sm space-y-6">
                                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} /> Basic Details</h4>
+                                    
+                                    {/* Faculty ID Display */}
+                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">
+                                        Faculty ID: <span className="text-blue-600">{metaData.facultyId}</span>
+                                    </div>
+
                                     <div><label className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Title *</label><input value={metaData.title} onChange={(e) => setMetaData({...metaData, title: e.target.value})} className={`w-full px-4 py-3 border rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all ${errors.title ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`} placeholder="e.g. Mid-Sem Exam"/></div>
                                     <div><label className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Subject *</label><input value={metaData.subject} onChange={(e) => setMetaData({...metaData, subject: e.target.value})} className={`w-full px-4 py-3 border rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all ${errors.subject ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`} placeholder="e.g. CP"/></div>
                                     <div className="grid grid-cols-2 gap-4">

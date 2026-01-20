@@ -4,7 +4,7 @@ import {
     User, LogOut, Menu, X, ChevronDown, ShieldCheck, GraduationCap, Briefcase, 
     LayoutDashboard, Trophy, CalendarDays, ClipboardCheck, FileClock, 
     Inbox as InboxIcon, Megaphone, CalendarRange, BrainCircuit, Code2, 
-    ListOrdered, Activity, FileText,
+    ListOrdered, Activity, FileText,Swords,
     // --- NEW ICONS ADDED HERE ---
     Puzzle,       // For Quiz Category
     ListChecks,   // For Manage Quizzes
@@ -51,11 +51,11 @@ const Header = ({ animate }) => {
 
         switch (user.role) {
             case 'faculty':
-                label = 'Faculty Member';
+                label = 'Faculty';
                 icon = <Briefcase size={14} />;
                 break;
             case 'student':
-                label = 'Student Scholar';
+                label = 'Student';
                 icon = <GraduationCap size={14} />;
                 break;
             case 'admin':
@@ -98,7 +98,12 @@ const Header = ({ animate }) => {
         profilePath = '/student/profile';
         navLinks = [
             { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
-            { path: '/contests', label: 'Contests', icon: <Code2 size={iconSize} /> },
+            { 
+        path: '/contests', 
+        label: 'Arena', 
+        icon: <Swords size={iconSize} /> 
+    },
+            { path: '/student/quiz', label: 'Quiz', icon: <Code2 size={iconSize} /> },
             { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
             { path: '/timetable', label: 'Schedule', icon: <CalendarRange size={iconSize} /> },            
             { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 

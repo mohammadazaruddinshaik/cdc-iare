@@ -317,9 +317,8 @@ const ContestPage = () => {
                 <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div>
                         <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400">Contest Arena</span>
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400">Arena</span>
                         </h1>
-                        <p className="text-slate-400 font-medium text-sm">Compete, solve, and climb the leaderboard.</p>
                     </div>
                 </div>
 

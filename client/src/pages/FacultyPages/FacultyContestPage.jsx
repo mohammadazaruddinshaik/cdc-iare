@@ -141,7 +141,7 @@ const ProblemEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
         title: '', description: '', inputFormat: '', outputFormat: '',
         problemType: 'ARRAY_INT', marks: 10, difficulty: 'Medium', timeAllocated: 20,
         constraints: '', 
-        maxConstraints: { n: 100, minVal: 1, maxVal: 1000, charset: 'a-z' },
+        maxConstraints: { n: 100, minVal: 1, maxVal: 1000, charset: 'abcdefghijklmnopqrstuvwxyz' },
         testCases: [{ input: '', output: '', explanation: '', isPublic: true }],
         referenceSolution: '', solutionLanguage: 'python'
     });
@@ -159,7 +159,7 @@ const ProblemEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                     title: '', description: '', inputFormat: '', outputFormat: '',
                     problemType: 'ARRAY_INT', marks: 10, difficulty: 'Medium', timeAllocated: 20,
                     constraints: '',
-                    maxConstraints: { n: 100, minVal: 1, maxVal: 1000, charset: 'a-z' },
+                    maxConstraints: { n: 100, minVal: 1, maxVal: 1000, charset: 'abcdefghijklmnopqrstuvwxyz' },
                     testCases: [{ input: '', output: '', explanation: '', isPublic: true }],
                     referenceSolution: '', solutionLanguage: 'python'
                 });
@@ -337,7 +337,7 @@ const ProblemEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                                     <div><label className="text-[10px] font-bold text-gray-700 block mb-1.5">Min Value</label><input type="number" value={problem.maxConstraints.minVal} onChange={e => handleConstraintChange('minVal', parseInt(e.target.value))} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"/></div>
                                                     <div><label className="text-[10px] font-bold text-gray-700 block mb-1.5">Max Value</label><input type="number" value={problem.maxConstraints.maxVal} onChange={e => handleConstraintChange('maxVal', parseInt(e.target.value))} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"/></div>
                                                 </div>}
-                                                {config.showCharset && <div><label className="text-[10px] font-bold text-gray-700 block mb-1.5">Charset</label><input type="text" value={problem.maxConstraints.charset} onChange={e => handleConstraintChange('charset', e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-mono bg-white" placeholder="a-z"/></div>}
+                                                {config.showCharset && <div><label className="text-[10px] font-bold text-gray-700 block mb-1.5">Charset</label><input type="text" value={problem.maxConstraints.charset} onChange={e => handleConstraintChange('charset', e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-mono bg-white" placeholder='abcdefghijklmnopqrstuvwxyz' /></div>}
                                             </div>
                                         </div>
                                     )}
@@ -676,7 +676,7 @@ const ContestWizardModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                 className="px-10 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg hover:from-emerald-600 hover:to-teal-700 shadow-emerald-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {submittingAction === 'Published' ? <Loader2 className="animate-spin" size={18}/> : initialData ? <RefreshCw size={18}/> : <Send size={18}/>} 
-                                {initialData ? 'Update Exam' : 'Publish Exam'}
+                                {initialData ? 'Update/Publish Exam' : 'Publish Exam'}
                             </button>
                         </div>
                     )}
@@ -748,7 +748,7 @@ const FacultyContestPage = () => {
                         n: p.maxConstraints?.maxN || 100, 
                         minVal: p.maxConstraints?.minValue || 1, 
                         maxVal: p.maxConstraints?.maxValue || 1000, 
-                        charset: p.maxConstraints?.charset || 'a-z' 
+                        charset: p.maxConstraints?.charset || 'abcdefghijklmnopqrstuvwxyz' 
                     },
                     testCases: (p.testCases || []).filter(tc => tc.isPublic),
                     referenceSolution: p.referenceSolution?.code || '',
