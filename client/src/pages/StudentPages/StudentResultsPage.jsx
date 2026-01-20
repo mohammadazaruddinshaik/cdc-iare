@@ -93,13 +93,14 @@ const PerformanceChart = ({ correct, wrong, skipped, totalScore, totalQuestions,
             {/* Reduced Size Chart */}
             <div className="relative w-40 h-40 shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart margin={{ top: 0, left: 0, right: 0, bottom: 0 }}>
                         <Pie
                             data={chartData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={55}
-                            outerRadius={70}
+                            // FIX APPLIED HERE: Reduced radii slightly to prevent clipping on Windows (DPI scaling)
+                            innerRadius={50} 
+                            outerRadius={65}
                             paddingAngle={5}
                             dataKey="value"
                             stroke="none"

@@ -1,1348 +1,968 @@
-// import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-// import Editor from "@monaco-editor/react";
-// import { 
-//     Terminal, ChevronLeft, Timer, Settings,
-//     ChevronDown, RotateCcw, Play, Loader2, Rocket,
-//     Check, Minus, Plus, AlertTriangle, Code2, X,
-//     Sun, Moon, Trophy, CheckCircle2, XCircle
-// } from 'lucide-react';
-// import { clsx } from 'clsx';
-// import { twMerge } from 'tailwind-merge';
-// import { useParams, useNavigate } from 'react-router-dom';
-
-// // --- UTILS ---
-// function cn(...inputs) {
-//   return twMerge(clsx(inputs));
-// }
-
-// // --- CONSTANTS ---
-// const API_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
-
-// const LANGUAGE_ID_MAP = {
-//     'cpp': 54,
-//     'java': 91,
-//     'python': 71,
-//     'javascript': 63
-// };
-
-// const LANGUAGES = [
-//     { id: 'cpp', name: 'C++' },
-//     { id: 'java', name: 'Java' },
-//     { id: 'python', name: 'Python' },
-//     { id: 'javascript', name: 'JavaScript' },
-// ];
-
-// const STARTER_CODE = {
-//     cpp: `#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    // Read input and print output\n    return 0;\n}`,
-//     java: `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Read input and print output\n    }\n}`,
-//     python: `import sys\n\ndef solve():\n    # Read input from sys.stdin\n    pass\n\nsolve()`,
-//     javascript: `// Read input from stdin\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8');\n// Write solution`
-// };
-
-// const ProblemSolverPage = () => {
-//     // --- ROUTING CONTEXT ---
-//     const { contestId, problemId } = useParams(); 
-//     const navigate = useNavigate();
-
-//     // --- STATE ---
-//     const [isDarkMode, setIsDarkMode] = useState(true); 
-//     const [leftWidth, setLeftWidth] = useState(40); 
-//     const [bottomHeight, setBottomHeight] = useState(35); 
-//     const [timeLeft, setTimeLeft] = useState(45 * 60); 
-//     const [isDragging, setIsDragging] = useState(false); 
-    
-//     // Problem Data State
-//     const [problemDetails, setProblemDetails] = useState(null);
-//     const [loadingProblem, setLoadingProblem] = useState(true);
-//     const [contestName, setContestName] = useState("Loading Contest...");
-
-//     // Editor State
-//     const [language, setLanguage] = useState('python'); 
-//     const [code, setCode] = useState(STARTER_CODE['python']);
-//     const [fontSize, setFontSize] = useState(14);
-    
-//     // UI Toggles
-//     const [showLangMenu, setShowLangMenu] = useState(false);
-//     const [showSettings, setShowSettings] = useState(false);
-//     const [showResetModal, setShowResetModal] = useState(false); 
-//     const [resetSuccess, setResetSuccess] = useState(false);
-
-//     // Execution & Test Case State
-//     const [testCases, setTestCases] = useState([]);
-//     const [activeTab, setActiveTab] = useState('cases'); 
-    
-//     // STATUS: 'idle' | 'running' | 'submitting' | 'success'
-//     const [status, setStatus] = useState('idle');
-//     const [executionResults, setExecutionResults] = useState(null); // For Run Code
-//     const [submissionResult, setSubmissionResult] = useState(null); // For Submit Code
-//     const [selectedCaseId, setSelectedCaseId] = useState(null);
-
-//     // Refs
-//     const leftWidthRef = useRef(leftWidth);
-//     const bottomHeightRef = useRef(bottomHeight);
-//     const textareaRef = useRef(null);
-//     const dragDirectionRef = useRef(null); 
-
-//     // --- THEME ENGINE ---
-//     const theme = isDarkMode ? {
-//         mode: 'dark',
-//         appBg: "bg-[#0f172a]",
-//         cardBg: "bg-[#1e293b]",
-//         headerBg: "bg-[#1e293b]/90",
-//         textMain: "text-gray-100",
-//         textSec: "text-slate-400",
-//         border: "border-slate-700",
-//         inputBg: "bg-black/40",
-//         accentPrimary: "bg-blue-600 text-white hover:bg-blue-500", 
-//         accentSecondary: "bg-slate-700/60 text-white hover:bg-slate-700",
-//         success: "text-green-400",
-//         successBg: "bg-green-600 text-white hover:bg-green-500 shadow-green-900/40", 
-//         error: "text-rose-500",
-//         timerAlert: "bg-rose-500 text-white border-rose-600",
-//         tabActive: "text-white font-bold",
-//         tabInactive: "text-slate-500",
-//         tabLine: "bg-blue-500",
-//         prose: "prose-invert", 
-//         codeBlock: "bg-black/40 border-slate-700 text-white",
-//         monaco: "vs-dark",
-//         exampleCard: "bg-[#0f172a]/50 border-slate-700"
-//     } : {
-//         mode: 'light',
-//         appBg: "bg-white",
-//         cardBg: "bg-gray-50",
-//         headerBg: "bg-white/90",
-//         textMain: "text-black",
-//         textSec: "text-gray-500",
-//         border: "border-gray-200",
-//         inputBg: "bg-white border border-gray-300",
-//         accentPrimary: "bg-black text-white hover:bg-gray-800", 
-//         accentSecondary: "bg-gray-200 text-black hover:bg-gray-300", 
-//         success: "text-black",
-//         successBg: "bg-green-500 text-white hover:bg-green-600 shadow-green-200", 
-//         error: "text-black",
-//         timerAlert: "bg-black text-white border-black", 
-//         tabActive: "text-black font-bold",
-//         tabInactive: "text-gray-400",
-//         tabLine: "bg-black",
-//         prose: "prose-stone", 
-//         codeBlock: "bg-white border-gray-300 text-black",
-//         monaco: "light",
-//         exampleCard: "bg-white border-gray-200"
-//     };
-
-//     useLayoutEffect(() => {
-//         if (textareaRef.current) {
-//             textareaRef.current.style.height = 'auto'; 
-//             textareaRef.current.style.height = `${Math.max(80, textareaRef.current.scrollHeight)}px`; 
-//         }
-//     }, [selectedCaseId, testCases, activeTab]);
-
-//     useEffect(() => { leftWidthRef.current = leftWidth; }, [leftWidth]);
-//     useEffect(() => { bottomHeightRef.current = bottomHeight; }, [bottomHeight]);
-
-//     // --- FETCH DATA ---
-//     useEffect(() => {
-//         const fetchData = async () => {
-//             setLoadingProblem(true);
-//             try {
-//                 if(contestId) setContestName(contestId.replace(/-/g, ' '));
-//                 const res = await fetch(`${API_URL}/api/student/get-problem-details/${problemId}`, {credentials: 'include'});
-//                 const data = await res.json();
-                
-//                 if (data.success && data.data) {
-//                     setProblemDetails(data.data);
-                    
-//                     if (data.data.publicTestCases) {
-//                         const formattedCases = data.data.publicTestCases.map((tc, index) => ({
-//                             id: index + 1,
-//                             type: 'sample',
-//                             input: tc.input,
-//                             expected: tc.output,
-//                             explanation: tc.explanation || ''
-//                         }));
-//                         setTestCases(formattedCases);
-//                         setSelectedCaseId(formattedCases[0]?.id || 1);
-//                     } else {
-//                         setTestCases([{ id: 1, type: 'custom', input: '', expected: '' }]);
-//                     }
-
-//                     if (data.data.lastCode && data.data.lastCode.trim() !== "") {
-//                         setCode(data.data.lastCode);
-//                     } else {
-//                         setCode(STARTER_CODE[language]);
-//                     }
-//                 }
-//             } catch (error) {
-//                 console.error("Failed to fetch data", error);
-//             } finally {
-//                 setLoadingProblem(false);
-//             }
-//         };
-
-//         if(problemId) fetchData();
-//     }, [problemId, contestId]);
-
-//     // --- HANDLERS ---
-//     const handleMouseDown = (direction) => (e) => {
-//         e.preventDefault();
-//         setIsDragging(true);
-//         dragDirectionRef.current = direction;
-        
-//         const startX = e.clientX;
-//         const startY = e.clientY;
-//         const startWidth = leftWidthRef.current;
-//         const startHeight = bottomHeightRef.current;
-//         const winWidth = window.innerWidth;
-//         const winHeight = window.innerHeight;
-
-//         const onMouseMove = (moveEvent) => {
-//             if (dragDirectionRef.current === 'horizontal') {
-//                 const delta = moveEvent.clientX - startX;
-//                 const newWidth = startWidth + (delta / winWidth) * 100;
-//                 if (newWidth > 20 && newWidth < 80) setLeftWidth(newWidth);
-//             } else {
-//                 const delta = startY - moveEvent.clientY; 
-//                 const newHeight = startHeight + (delta / winHeight) * 100;
-//                 if (newHeight > 10 && newHeight < 80) setBottomHeight(newHeight);
-//             }
-//         };
-
-//         const onMouseUp = () => {
-//             setIsDragging(false);
-//             dragDirectionRef.current = null;
-//             document.removeEventListener('mousemove', onMouseMove);
-//             document.removeEventListener('mouseup', onMouseUp);
-//         };
-//         document.addEventListener('mousemove', onMouseMove);
-//         document.addEventListener('mouseup', onMouseUp);
-//     };
-
-//     useEffect(() => {
-//         const timer = setInterval(() => setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
-//         return () => clearInterval(timer);
-//     }, []);
-
-//     const formatTime = (seconds) => {
-//         const m = Math.floor(seconds / 60);
-//         const s = seconds % 60;
-//         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-//     };
-
-//     const handleLanguageChange = (langId) => {
-//         setLanguage(langId);
-//         setCode(STARTER_CODE[langId]);
-//         setShowLangMenu(false);
-//     };
-
-//     const handleResetClick = () => setShowResetModal(true);
-
-//     const confirmReset = () => {
-//         setCode(STARTER_CODE[language]);
-//         setShowResetModal(false);
-//         setResetSuccess(true);
-//         setTimeout(() => setResetSuccess(false), 1200);
-//     };
-
-//     const handleTestCaseChange = (e) => {
-//         const newVal = e.target.value;
-//         setTestCases(prev => prev.map(tc => 
-//             tc.id === selectedCaseId ? { ...tc, input: newVal } : tc
-//         ));
-//     };
-
-//     const handleAddTestCase = () => {
-//         if (testCases.length >= 5) {
-//             alert("Maximum 5 test cases allowed.");
-//             return;
-//         }
-//         const newId = testCases.length > 0 ? Math.max(...testCases.map(t => t.id)) + 1 : 1;
-//         const newCase = { id: newId, type: 'custom', input: '', expected: '' };
-//         setTestCases([...testCases, newCase]);
-//         setSelectedCaseId(newId);
-//     };
-
-//     const handleDeleteTestCase = (id, e) => {
-//         e.stopPropagation();
-//         if (testCases.length <= 1) return;
-//         const newCases = testCases.filter(t => t.id !== id);
-//         setTestCases(newCases);
-//         if (selectedCaseId === id) setSelectedCaseId(newCases[0].id);
-//     };
-
-//     // --- EXECUTE CODE LOGIC (RUN & SUBMIT) ---
-//     const executeCode = async (mode) => {
-//         if (!problemDetails) return;
-
-//         if (mode === 'run') {
-//             setStatus('running');
-//             setActiveTab('result');
-//             setExecutionResults(null);
-//             setSubmissionResult(null); 
-            
-//             try {
-//                 // Filter out 'sample' types if the backend automatically adds the public case
-//                 // Map 'expected' to 'output' for the API contract
-//                 const customCases = testCases
-//                     .filter(tc => tc.type !== 'sample')
-//                     .map(tc => ({
-//                         input: tc.input,
-//                         output: tc.expected
-//                     }));
-
-//                 const payload = {
-//                     examId: contestId,
-//                     problemId: problemId,
-//                     languageId: LANGUAGE_ID_MAP[language],
-//                     code: code,
-//                     customTestCases: customCases
-//                 };
-
-//                 const res = await fetch(`${API_URL}/api/student/run`, {
-//                     method: 'POST',
-//                     headers: { 'Content-Type': 'application/json' },
-//                     body: JSON.stringify(payload),
-//                     credentials: 'include'
-//                 });
-
-//                 const data = await res.json();
-
-//                 if (data.success) {
-//                     setExecutionResults(data.results);
-//                 } else {
-//                     setExecutionResults([{ 
-//                         status: 'Error', 
-//                         stderr: data.message || 'Execution failed.',
-//                         passed: false 
-//                     }]);
-//                 }
-
-//             } catch (error) {
-//                 console.error("Run error", error);
-//                 setExecutionResults([{ status: 'Network Error', stderr: 'Failed to connect.', passed: false }]);
-//             } finally {
-//                 setStatus('idle');
-//             }
-
-//         } else if (mode === 'submit') {
-//             setStatus('submitting');
-//             setActiveTab('result');
-//             setExecutionResults(null);
-//             setSubmissionResult(null);
-
-//             try {
-//                 const payload = {
-//                     examId: contestId,
-//                     problemId: problemId,
-//                     languageId: LANGUAGE_ID_MAP[language],
-//                     code: code
-//                 };
-
-//                 const res = await fetch(`${API_URL}/api/student/submit-problem`, {
-//                     method: 'POST',
-//                     headers: { 'Content-Type': 'application/json' },
-//                     body: JSON.stringify(payload),
-//                     credentials: 'include'
-//                 });
-
-//                 const data = await res.json();
-
-//                 if (data.success) {
-//                     setSubmissionResult({
-//                         success: true,
-//                         passedCount: data.passedCount,
-//                         totalPrivateCases: data.totalPrivateCases,
-//                         marksEarned: data.marksEarned,
-//                         status: data.status
-//                     });
-//                     setStatus('success');
-//                 } else {
-//                     setSubmissionResult({
-//                         success: false,
-//                         status: "Submission Failed",
-//                         message: data.message || "An unknown error occurred."
-//                     });
-//                     setStatus('idle');
-//                 }
-
-//             } catch (error) {
-//                 console.error("Submit error", error);
-//                 setSubmissionResult({
-//                     success: false,
-//                     status: "Network Error",
-//                     message: "Failed to submit code. Check connection."
-//                 });
-//                 setStatus('idle');
-//             } finally {
-//                 if(status !== 'idle') {
-//                     setTimeout(() => setStatus('idle'), 3000);
-//                 }
-//             }
-//         }
-//     };
-
-//     const currentLangObj = LANGUAGES.find(l => l.id === language);
-//     const currentTestCase = testCases.find(c => c.id === selectedCaseId);
-
-//     if (loadingProblem) {
-//         return (
-//             <div className={cn("flex items-center justify-center h-screen w-full", theme.appBg, theme.textMain)}>
-//                 <Loader2 size={32} className="animate-spin text-blue-500" />
-//             </div>
-//         );
-//     }
-
-//     return (
-//         <div className={cn("flex flex-col h-screen w-full font-sans overflow-hidden selection:bg-gray-500/30 relative transition-colors duration-300", theme.appBg, theme.textMain)}>
-            
-//             {isDragging && (
-//                 <div className={cn(
-//                     "absolute inset-0 z-[9999]",
-//                     dragDirectionRef.current === 'horizontal' ? 'cursor-col-resize' : 'cursor-row-resize'
-//                 )}></div>
-//             )}
-
-//             {/* RESET MODAL */}
-//             {showResetModal && (
-//                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-//                     <div className={cn("w-[400px] p-6 rounded-3xl border shadow-2xl transition-colors", theme.cardBg, theme.border)}>
-//                         <div className="flex flex-col items-center text-center gap-4">
-//                             <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", isDarkMode ? "bg-rose-500/20 text-rose-500" : "bg-black text-white")}>
-//                                 <AlertTriangle size={24} />
-//                             </div>
-//                             <div>
-//                                 <h3 className={cn("text-lg font-bold mb-1", theme.textMain)}>Reset Code?</h3>
-//                                 <p className={cn("text-xs", theme.textSec)}>Revert to default template? This cannot be undone.</p>
-//                             </div>
-//                             <div className="grid grid-cols-2 gap-3 w-full mt-2">
-//                                 <button onClick={() => setShowResetModal(false)} className={cn("px-4 py-2.5 rounded-xl text-xs font-bold transition-colors", isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-500 hover:bg-gray-200")}>Cancel</button>
-//                                 <button onClick={confirmReset} className={cn("px-4 py-2.5 rounded-xl text-xs font-bold transition-colors shadow-lg", isDarkMode ? "bg-rose-600 text-white hover:bg-rose-700 shadow-rose-900/20" : "bg-black text-white hover:bg-gray-800")}>Yes, Reset</button>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-//             )}
-
-//             {/* HEADER */}
-//             <header className={cn("h-14 flex items-center justify-between px-4 shrink-0 z-40 border-b backdrop-blur-sm transition-colors relative", theme.headerBg, theme.border)}>
-//                 <div className="flex items-center gap-4">
-//                     <button 
-//                         onClick={() => navigate(`/contests/${contestId}`)}
-//                         className={cn("p-2 rounded-xl border transition-all active:scale-95 group", theme.cardBg, theme.border)}
-//                     >
-//                         <ChevronLeft size={18} className={cn("transition-transform group-hover:-translate-x-0.5", theme.textSec)} />
-//                     </button>
-//                     <h1 className="font-bold text-base tracking-tight uppercase">{contestName}</h1>
-//                 </div>
-
-//                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-//                     <div className={cn(
-//                         "flex items-center gap-3 px-6 py-2 rounded-full border shadow-sm transition-all duration-300", 
-//                         timeLeft < 300 ? theme.timerAlert : cn(theme.cardBg, theme.border)
-//                     )}>
-//                         <Timer size={16} className={timeLeft < 300 ? "animate-pulse" : ""} />
-//                         <span className="text-xl font-mono font-bold tracking-widest tabular-nums leading-none mt-[2px]">
-//                             {formatTime(timeLeft)}
-//                         </span>
-//                     </div>
-//                 </div>
-
-//                 <div className="flex items-center gap-2">
-//                     <button 
-//                         onClick={() => setIsDarkMode(!isDarkMode)} 
-//                         className={cn("p-2 rounded-xl border transition-all hover:bg-opacity-80", theme.cardBg, theme.border, theme.textMain)}
-//                     >
-//                         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-//                     </button>
-//                 </div>
-//             </header>
-
-//             {/* WORKSPACE */}
-//             <div className="flex-1 flex overflow-hidden p-2 gap-2 relative">
-                
-//                 {/* LEFT PANEL */}
-//                 <div 
-//                     style={{ width: `${leftWidth}%` }} 
-//                     className={cn("h-full flex flex-col rounded-3xl overflow-hidden border relative z-10 transition-colors", theme.cardBg, theme.border, isDragging && "pointer-events-none select-none")}
-//                 >
-//                     <div className={cn("p-5 border-b flex items-center justify-between", theme.border)}>
-//                         <h1 className="text-xl font-black">{problemDetails?.problemNo}. {problemDetails?.title}</h1>
-//                         <span className={cn(
-//                             "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border",
-//                             isDarkMode ? "bg-amber-900/20 text-amber-500 border-amber-800" : "bg-black text-white border-black"
-//                         )}>
-//                             {problemDetails?.difficulty}
-//                         </span>
-//                     </div>
-//                     <div className="flex-1 overflow-y-auto no-scrollbar custom-scrollbar p-6">
-//                         <style>{`
-//                             .prose code { color: ${isDarkMode ? '#e2e8f0' : '#000'} !important; background: ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}; padding: 2px 4px; rounded: 4px; }
-//                         `}</style>
-                        
-//                         <div className={cn("prose prose-sm max-w-none space-y-8", theme.prose)}>
-//                             {/* 1. DESCRIPTION */}
-//                             <div>
-//                                 <h3 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-2">Description</h3>
-//                                 <div className="leading-relaxed whitespace-pre-wrap">{problemDetails?.description}</div>
-//                             </div>
-                            
-//                             {/* 2. EXAMPLES / TEST CASES */}
-//                             {problemDetails?.publicTestCases && problemDetails.publicTestCases.length > 0 && (
-//                                 <div className="space-y-4 pt-2">
-//                                     <h3 className="text-xs font-bold uppercase tracking-widest opacity-50 flex items-center gap-2">
-//                                         <CheckCircleIcon /> Examples
-//                                     </h3>
-//                                     {problemDetails.publicTestCases.map((tc, idx) => (
-//                                         <div key={idx} className={cn("rounded-xl border overflow-hidden", theme.exampleCard)}>
-//                                             <div className={cn("px-4 py-2 border-b flex items-center justify-between", theme.border, isDarkMode ? "bg-black/20" : "bg-gray-100")}>
-//                                                 <span className="text-[10px] font-bold uppercase opacity-70">Example {idx + 1}</span>
-//                                             </div>
-//                                             <div className="p-4 grid grid-cols-1 gap-4">
-//                                                 <div>
-//                                                     <div className="text-[10px] uppercase opacity-50 mb-1">Input</div>
-//                                                     <div className={cn("font-mono text-sm p-2 rounded-lg whitespace-pre-wrap", theme.codeBlock)}>{tc.input}</div>
-//                                                 </div>
-//                                                 <div>
-//                                                     <div className="text-[10px] uppercase opacity-50 mb-1">Output</div>
-//                                                     <div className={cn("font-mono text-sm p-2 rounded-lg whitespace-pre-wrap", theme.codeBlock)}>{tc.output}</div>
-//                                                 </div>
-//                                                 {tc.explanation && (
-//                                                     <div className="text-xs opacity-80 italic mt-1 border-l-2 border-blue-500 pl-3">
-//                                                         <span className="font-bold">Explanation:</span> {tc.explanation}
-//                                                     </div>
-//                                                 )}
-//                                             </div>
-//                                         </div>
-//                                     ))}
-//                                 </div>
-//                             )}
-
-//                             {/* 3. FORMATS & CONSTRAINTS */}
-//                             <div className="grid grid-cols-1 gap-4 border-t pt-6 border-dashed border-gray-500/30">
-//                                 <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-//                                     <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2">Input Format</h3>
-//                                     <div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.inputFormat}</div>
-//                                 </div>
-//                                  <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-//                                     <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2">Output Format</h3>
-//                                     <div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.outputFormat}</div>
-//                                 </div>
-//                                 <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-//                                     <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2 flex items-center gap-2"><AlertTriangle size={12}/> Constraints</h3>
-//                                     <div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.constraints}</div>
-//                                 </div>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 {/* H-DRAG */}
-//                 <div onMouseDown={handleMouseDown('horizontal')} className="w-2 -ml-2 -mr-2 cursor-col-resize z-50 flex items-center justify-center group hover:scale-110 transition-transform">
-//                     <div className={cn("w-1 h-8 rounded-full transition-colors", isDarkMode ? "bg-slate-700 group-hover:bg-blue-500" : "bg-gray-300 group-hover:bg-black")}></div>
-//                 </div>
-
-//                 {/* RIGHT PANEL */}
-//                 <div style={{ width: `${100 - leftWidth}%` }} className="flex flex-col h-full gap-2 relative">
-                    
-//                     {/* TOP: EDITOR */}
-//                     <div className={cn("flex-1 flex flex-col rounded-3xl overflow-hidden border relative z-10 transition-colors", theme.cardBg, theme.border)}>
-//                         <div className={cn("h-12 flex items-center justify-between px-4 border-b", theme.border, isDarkMode ? "bg-black/20" : "bg-gray-100/50")}>
-//                             <div className="flex items-center gap-3">
-//                                 <div className={cn("flex items-center gap-2 text-xs font-bold uppercase tracking-wider", isDarkMode ? "text-green-400" : "text-black")}>
-//                                     <Code2 size={14} />
-//                                     <span>Code</span>
-//                                 </div>
-//                                 <div className={cn("h-4 w-[1px]", isDarkMode ? "bg-slate-700" : "bg-gray-300")}></div>
-//                                 <div className="relative">
-//                                     <button onClick={() => setShowLangMenu(!showLangMenu)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase transition-colors", theme.border, theme.inputBg)}>
-//                                         {currentLangObj.name} <ChevronDown size={12} />
-//                                     </button>
-//                                     {showLangMenu && (
-//                                         <div className={cn("absolute top-full left-0 mt-2 w-40 rounded-2xl border shadow-xl p-1 z-50 flex flex-col backdrop-blur-xl", theme.cardBg, theme.border)}>
-//                                             {LANGUAGES.map(lang => (
-//                                                 <button key={lang.id} onClick={() => handleLanguageChange(lang.id)} className={cn("w-full px-4 py-2.5 rounded-xl text-xs font-bold text-left flex justify-between items-center transition-colors", isDarkMode ? "hover:bg-slate-800" : "hover:bg-gray-200")}>
-//                                                     {lang.name} {language === lang.id && <Check size={12} className={isDarkMode ? "text-blue-400" : "text-black"} />}
-//                                                 </button>
-//                                             ))}
-//                                         </div>
-//                                     )}
-//                                 </div>
-//                             </div>
-
-//                             <div className="flex items-center gap-2 relative">
-//                                 <button onClick={() => setShowSettings(!showSettings)} className={cn("p-1.5 rounded-xl transition-all", showSettings ? theme.accentPrimary : `${theme.textSec} hover:bg-gray-200/20`)}>
-//                                     <Settings size={16} />
-//                                 </button>
-//                                 {showSettings && (
-//                                     <div className={cn("absolute top-full right-0 mt-2 w-48 rounded-2xl border shadow-xl p-4 z-50 backdrop-blur-xl", theme.cardBg, theme.border)}>
-//                                         <div className="flex flex-col gap-3">
-//                                             <p className={cn("text-[10px] font-bold uppercase tracking-wider", theme.textSec)}>Font Size</p>
-//                                             <div className={cn("flex items-center justify-between rounded-lg p-1 border", isDarkMode ? "bg-black/30 border-white/5" : "bg-white border-gray-200")}>
-//                                                 <button onClick={() => setFontSize(Math.max(12, fontSize - 1))} className="p-1 hover:opacity-70"><Minus size={14}/></button>
-//                                                 <span className="text-xs font-mono font-bold">{fontSize}px</span>
-//                                                 <button onClick={() => setFontSize(Math.min(22, fontSize + 1))} className="p-1 hover:opacity-70"><Plus size={14}/></button>
-//                                             </div>
-//                                         </div>
-//                                     </div>
-//                                 )}
-//                                 <button onClick={handleResetClick} className={cn("p-1.5 rounded-xl transition-colors", theme.textSec, isDarkMode ? "hover:bg-rose-500 hover:text-white" : "hover:bg-gray-200 hover:text-black")}>
-//                                     {resetSuccess ? <Check size={16} className={theme.success} /> : <RotateCcw size={16} />}
-//                                 </button>
-//                             </div>
-//                         </div>
-                        
-//                         <div className={cn("flex-1 relative group overflow-hidden", isDragging && "pointer-events-none")}>
-//                             <Editor
-//                                 height="100%"
-//                                 language={language}
-//                                 value={code}
-//                                 onChange={setCode}
-//                                 theme={theme.monaco}
-//                                 options={{
-//                                     minimap: { enabled: false },
-//                                     fontSize: fontSize,
-//                                     fontFamily: "'JetBrains Mono', monospace",
-//                                     padding: { top: 16, bottom: 60 },
-//                                     scrollBeyondLastLine: false,
-//                                     smoothScrolling: true,
-//                                 }}
-//                             />
-                            
-//                             <div className="absolute bottom-4 right-6 flex items-center gap-3 z-20 pointer-events-none">
-//                                 <button 
-//                                     onClick={() => executeCode('run')} 
-//                                     disabled={status !== 'idle'} 
-//                                     className={cn("pointer-events-auto px-5 py-2.5 rounded-xl font-bold text-[10px] transition-all uppercase tracking-wider flex items-center gap-2 shadow-xl backdrop-blur-md border border-white/5", theme.accentSecondary)}
-//                                 >
-//                                     {status === 'running' ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} fill="currentColor" />}
-//                                     Run
-//                                 </button>
-
-//                                 <button 
-//                                     onClick={() => executeCode('submit')} 
-//                                     disabled={status !== 'idle'} 
-//                                     className={cn(
-//                                         "pointer-events-auto px-6 py-2.5 rounded-xl font-bold text-[10px] transition-all duration-500 shadow-xl uppercase tracking-wider flex items-center gap-2 backdrop-blur-md border overflow-hidden relative min-w-[100px] justify-center", 
-//                                         status === 'success' ? theme.successBg : cn("border-white/10", theme.accentPrimary),
-//                                         (status === 'submitting' || status === 'success') ? "scale-105" : "hover:scale-105"
-//                                     )}
-//                                 >
-//                                     <div className="relative w-4 h-4 mr-1">
-//                                         <div className={cn("absolute inset-0 transition-all duration-500 ease-in-out", status === 'submitting' ? "-translate-y-12 opacity-0" : "translate-y-0 opacity-100")}>
-//                                             {status !== 'success' && <Rocket size={14} />}
-//                                         </div>
-//                                         <div className={cn("absolute inset-0 transition-all duration-500 ease-in-out flex items-center justify-center", status === 'submitting' ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0")}>
-//                                              <Loader2 size={14} className="animate-spin" />
-//                                         </div>
-//                                         <div className={cn("absolute inset-0 transition-all duration-300 ease-out flex items-center justify-center", status === 'success' ? "scale-100 opacity-100" : "scale-0 opacity-0")}>
-//                                              <Check size={16} strokeWidth={3} />
-//                                         </div>
-//                                     </div>
-//                                     <span className="relative">
-//                                         {status === 'idle' && "Submit"}
-//                                         {status === 'submitting' && "Sending..."}
-//                                         {status === 'success' && "Success"}
-//                                     </span>
-//                                 </button>
-//                             </div>
-//                         </div>
-//                     </div>
-
-//                     {/* V-DRAG */}
-//                     <div onMouseDown={handleMouseDown('vertical')} className="h-2 -mt-2 -mb-2 cursor-row-resize z-50 flex items-center justify-center group hover:scale-110 transition-transform">
-//                          <div className={cn("w-12 h-1 rounded-full transition-colors", isDarkMode ? "bg-slate-700 group-hover:bg-blue-500" : "bg-gray-300 group-hover:bg-black")}></div>
-//                     </div>
-
-//                     {/* BOTTOM PANEL: TEST CASES & OUTPUT */}
-//                     <div style={{ height: `${bottomHeight}%` }} className={cn("flex flex-col rounded-3xl overflow-hidden border shadow-sm transition-all relative z-10", theme.cardBg, theme.border)}>
-//                         <div className={cn("flex items-center px-6 border-b h-10 shrink-0 gap-6", theme.border, isDarkMode ? "bg-black/20" : "bg-gray-100/50")}>
-//                             <button onClick={() => setActiveTab('cases')} className={cn("h-full text-[10px] uppercase tracking-wider relative transition-colors", activeTab === 'cases' ? theme.tabActive : theme.tabInactive)}>
-//                                 Test Cases {activeTab === 'cases' && <span className={cn("absolute bottom-0 left-0 w-full h-0.5 rounded-t-full", theme.tabLine)}></span>}
-//                             </button>
-//                             <button onClick={() => setActiveTab('result')} className={cn("h-full text-[10px] uppercase tracking-wider relative transition-colors", activeTab === 'result' ? theme.tabActive : theme.tabInactive)}>
-//                                 Output {activeTab === 'result' && <span className={cn("absolute bottom-0 left-0 w-full h-0.5 rounded-t-full", theme.tabLine)}></span>}
-//                             </button>
-//                         </div>
-                        
-//                         <div className="flex-1 overflow-y-auto no-scrollbar custom-scrollbar p-4 flex flex-col">
-//                             {activeTab === 'cases' ? (
-//                                 <div className="space-y-3 flex flex-col">
-//                                     <div className="flex gap-2 shrink-0 items-center overflow-x-auto no-scrollbar pb-1">
-//                                         {testCases.map((c, i) => (
-//                                             <button 
-//                                                 key={c.id} 
-//                                                 onClick={() => setSelectedCaseId(c.id)} 
-//                                                 className={cn(
-//                                                     "px-4 py-1.5 rounded-lg text-[10px] font-bold border transition-all whitespace-nowrap group flex items-center gap-2", 
-//                                                     selectedCaseId === c.id 
-//                                                         ? theme.accentPrimary
-//                                                         : cn("hover:opacity-100", theme.inputBg, theme.textSec)
-//                                                 )}
-//                                             >
-//                                                 <span>Case {i + 1}</span>
-//                                                 {c.type !== 'sample' && testCases.length > 1 && (
-//                                                     <span 
-//                                                         onClick={(e) => handleDeleteTestCase(c.id, e)}
-//                                                         className={cn("p-0.5 rounded-md text-current opacity-0 group-hover:opacity-100 transition-all", isDarkMode ? "hover:bg-white/20 hover:text-white" : "hover:bg-black/10 hover:text-black")}
-//                                                     >
-//                                                         <X size={10} strokeWidth={3} />
-//                                                     </span>
-//                                                 )}
-//                                             </button>
-//                                         ))}
-//                                         <button onClick={handleAddTestCase} className={cn("px-3 py-1.5 rounded-lg border border-dashed transition-all flex items-center justify-center hover:opacity-100", theme.border, theme.textSec, isDarkMode ? "hover:text-white hover:border-slate-400" : "hover:text-black hover:border-black")}>
-//                                             <Plus size={12} />
-//                                         </button>
-//                                     </div>
-                                    
-//                                     <div className={cn("w-full rounded-xl border relative overflow-hidden group shrink-0 transition-colors", theme.inputBg, theme.border)}>
-//                                          <div className="p-4">
-//                                             <textarea
-//                                                 ref={textareaRef}
-//                                                 value={currentTestCase?.input || ''}
-//                                                 onChange={handleTestCaseChange}
-//                                                 className={cn("w-full bg-transparent text-xs font-mono resize-none outline-none border-none overflow-hidden leading-relaxed", isDarkMode ? "text-slate-300 placeholder:text-slate-600" : "text-black placeholder:text-gray-400")}
-//                                                 spellCheck={false}
-//                                                 placeholder="Enter input here..."
-//                                             />
-//                                          </div>
-//                                     </div>
-//                                     {/* Expected Output removed here as requested */}
-//                                 </div>
-//                             ) : (
-//                                 <div className="h-full flex flex-col">
-//                                     {/* 1. If Submission Result Exists (Submit Clicked) */}
-//                                     {submissionResult ? (
-//                                         <div className="flex flex-col items-center justify-center h-full gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-//                                             {/* Status Icon */}
-//                                             <div className={cn(
-//                                                 "w-16 h-16 rounded-full flex items-center justify-center shadow-xl border-4",
-//                                                 submissionResult.status === 'Accepted' 
-//                                                     ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-emerald-500/20"
-//                                                     : "bg-red-500/10 text-red-500 border-red-500/20 shadow-red-500/20"
-//                                             )}>
-//                                                 {submissionResult.status === 'Accepted' ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
-//                                             </div>
-
-//                                             <div className="text-center space-y-1">
-//                                                 <h3 className={cn("text-2xl font-black tracking-tight", submissionResult.status === 'Accepted' ? "text-emerald-400" : "text-red-400")}>
-//                                                     {submissionResult.status}
-//                                                 </h3>
-//                                                 <p className="text-xs font-bold uppercase tracking-widest opacity-60">Submission Result</p>
-//                                             </div>
-
-//                                             {/* Stats Grid */}
-//                                             {submissionResult.success && (
-//                                                 <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-//                                                     <div className={cn("p-4 rounded-2xl border text-center space-y-1", theme.inputBg, theme.border)}>
-//                                                         <div className="text-[10px] font-bold uppercase opacity-50">Test Cases</div>
-//                                                         <div className="text-xl font-mono font-bold flex items-center justify-center gap-2">
-//                                                             <Check size={16} className="text-emerald-500" />
-//                                                             {submissionResult.passedCount} <span className="opacity-30">/</span> {submissionResult.totalPrivateCases}
-//                                                         </div>
-//                                                     </div>
-//                                                     <div className={cn("p-4 rounded-2xl border text-center space-y-1", theme.inputBg, theme.border)}>
-//                                                         <div className="text-[10px] font-bold uppercase opacity-50">Marks</div>
-//                                                         <div className="text-xl font-mono font-bold flex items-center justify-center gap-2">
-//                                                             <Trophy size={16} className="text-amber-500" />
-//                                                             {submissionResult.marksEarned}
-//                                                         </div>
-//                                                     </div>
-//                                                 </div>
-//                                             )}
-
-//                                             {!submissionResult.success && submissionResult.message && (
-//                                                  <div className="max-w-md p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xs font-mono text-center">
-//                                                     {submissionResult.message}
-//                                                  </div>
-//                                             )}
-//                                         </div>
-
-//                                     /* 2. If Run Results Exist (Run Clicked) */
-//                                     ) : executionResults ? (
-//                                         <div className="space-y-4">
-//                                             {executionResults.map((res, i) => (
-//                                                 <div key={i} className={cn("p-4 rounded-xl border text-xs font-mono", theme.inputBg, theme.border)}>
-//                                                     <div className="flex justify-between items-center mb-3 border-b pb-2 border-white/10">
-//                                                         <span className="font-bold opacity-70">Test Case {i + 1}</span>
-//                                                         <span className={cn(
-//                                                             "px-2 py-0.5 rounded text-[10px] uppercase font-bold", 
-//                                                             res.passed ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-//                                                         )}>
-//                                                             {res.status || 'Unknown Status'}
-//                                                         </span>
-//                                                     </div>
-//                                                     {res.input && (
-//                                                         <div className="mb-3">
-//                                                             <div className="text-[10px] uppercase opacity-50 mb-1">Input</div>
-//                                                             <div className="bg-black/20 p-2 rounded whitespace-pre-wrap">{res.input}</div>
-//                                                         </div>
-//                                                     )}
-//                                                     <div className="grid grid-cols-2 gap-4">
-//                                                         <div>
-//                                                             <div className="text-[10px] uppercase opacity-50 mb-1">Expected Output</div>
-//                                                             <div className="bg-black/20 p-2 rounded whitespace-pre-wrap min-h-[30px]">{res.expectedOutput || '-'}</div>
-//                                                         </div>
-//                                                         <div>
-//                                                             <div className="text-[10px] uppercase opacity-50 mb-1">Your Output</div>
-//                                                             <div className={cn("p-2 rounded whitespace-pre-wrap min-h-[30px]", res.passed ? "bg-black/20" : "bg-red-500/10 text-red-400")}>
-//                                                                 {res.actualOutput || '-'}
-//                                                             </div>
-//                                                         </div>
-//                                                     </div>
-//                                                     {res.stderr && (
-//                                                         <div className="mt-3 text-rose-500 bg-rose-500/10 p-2 rounded border border-rose-500/20">
-//                                                             <div className="text-[10px] uppercase opacity-70 mb-1 font-bold flex items-center gap-1"><AlertTriangle size={10}/> Runtime Error</div>
-//                                                             <pre className="whitespace-pre-wrap">{res.stderr}</pre>
-//                                                         </div>
-//                                                     )}
-//                                                 </div>
-//                                             ))}
-//                                         </div>
-
-//                                     /* 3. Empty State */
-//                                     ) : (
-//                                         <div className="h-full flex flex-col items-center justify-center opacity-40">
-//                                             <Terminal size={24} className="mb-2" />
-//                                             {status === 'running' || status === 'submitting' ? (
-//                                                 <p className="text-[10px] font-bold uppercase tracking-widest animate-pulse">
-//                                                     {status === 'running' ? 'Running Code...' : 'Submitting Solution...'}
-//                                                 </p>
-//                                             ) : (
-//                                                 <p className="text-[10px] font-bold uppercase tracking-widest">Execute code to see output</p>
-//                                             )}
-//                                         </div>
-//                                     )}
-//                                 </div>
-//                             )}
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
-            
-//             <style>{`
-//                 .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-//                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-//                 .custom-scrollbar::-webkit-scrollbar-thumb { background: ${isDarkMode ? '#334155' : '#cbd5e1'}; border-radius: 10px; transition: background 0.3s; }
-//                 .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: ${isDarkMode ? '#475569' : '#94a3b8'}; }
-//                 .no-scrollbar::-webkit-scrollbar { display: none; }
-//                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-//             `}</style>
-//         </div>
-//     );
-// };
-
-// const CheckCircleIcon = () => (
-//     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
-//         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-//         <polyline points="22 4 12 14.01 9 11.01"></polyline>
-//     </svg>
-// );
-
-// export default ProblemSolverPage;
-
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor from "@monaco-editor/react";
 import { 
-    Terminal, ChevronLeft, Timer, Settings,
-    ChevronDown, RotateCcw, Play, Loader2, Rocket,
-    Check, Minus, Plus, AlertTriangle, Code2, X,
-    Sun, Moon, Trophy, CheckCircle2, XCircle
+    ChevronLeft, Timer, ChevronDown, RotateCcw, Play, Loader2, Rocket,
+    Check, AlertTriangle, X,
+    Copy, Info, Hash, Edit3,
+    Plus, Terminal,
+    Cpu, Zap, CornerDownRight, Box, LayoutTemplate, Columns, Minus, AlertOctagon, Trash2, CheckCircle2, Clock
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+
+const backendUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
 
 // --- UTILS ---
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-// --- CONSTANTS ---
-const API_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
+const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+};
 
-const LANGUAGE_ID_MAP = {
-    'cpp': 54, 'java': 91, 'python': 71, 'javascript': 63
+// --- LANGUAGE MAPPING ---
+const LANGUAGE_MAP = {
+    'cpp': 54,
+    'java': 62,
+    'python': 71,
 };
 
 const LANGUAGES = [
-    { id: 'cpp', name: 'C++' }, { id: 'java', name: 'Java' },
-    { id: 'python', name: 'Python' }, { id: 'javascript', name: 'JavaScript' },
+    { id: 'cpp', name: 'C++', label: 'C++ (GCC 9.2)' },
+    { id: 'java', name: 'Java', label: 'Java (OpenJDK 13)' },
+    { id: 'python', name: 'Python', label: 'Python (3.8.1)' },
 ];
 
+// --- THEME DEFINITIONS ---
+const THEMES = {
+    light: {
+        id: 'light',
+        isDark: false,
+        appBg: "bg-[#F1F5F9]",
+        panelBg: "bg-[#FFFFFF]",
+        headerBg: "bg-[#FFFFFF]/90 backdrop-blur-xl border-b border-slate-200/50",
+        textMain: "text-slate-700",
+        textHead: "text-slate-900",
+        textSec: "text-slate-500",
+        border: "border-slate-200",
+        inputBg: "bg-[#F8FAFC]",
+        codeBlock: "bg-[#F8FAFC] border-slate-200",
+        codeHeader: "bg-[#f1f5f9] border-b border-slate-200",
+        accentPrimary: "bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-slate-400/20",
+        monaco: "light",
+        scrollTrack: "bg-slate-100",
+        modalOverlay: "bg-slate-900/20",
+        successBadge: "bg-emerald-100 text-emerald-700 border-emerald-200",
+        errorBadge: "bg-rose-100 text-rose-700 border-rose-200"
+    },
+    midnight: {
+        id: 'midnight',
+        isDark: true,
+        appBg: "bg-[#020617]",
+        panelBg: "bg-[#0F172A]",
+        headerBg: "bg-[#0F172A]/90 backdrop-blur-xl border-b border-white/5",
+        textMain: "text-slate-300",
+        textHead: "text-white",
+        textSec: "text-slate-400",
+        border: "border-white/10",
+        inputBg: "bg-[#020617]",
+        codeBlock: "bg-[#020617] border-white/5",
+        codeHeader: "bg-[#1e293b]/50 border-b border-white/5",
+        accentPrimary: "bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-900/20",
+        monaco: "vs-dark",
+        scrollTrack: "bg-slate-800/20",
+        modalOverlay: "bg-[#020617]/80",
+        successBadge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        errorBadge: "bg-rose-500/10 text-rose-400 border-rose-500/20"
+    },
+    dark: {
+        id: 'dark',
+        isDark: true,
+        appBg: "bg-[#050505]",
+        panelBg: "bg-[#171717]",
+        headerBg: "bg-[#171717]/90 backdrop-blur-xl border-b border-neutral-800",
+        textMain: "text-neutral-300",
+        textHead: "text-neutral-100",
+        textSec: "text-neutral-500",
+        border: "border-neutral-800",
+        inputBg: "bg-[#0a0a0a]",
+        codeBlock: "bg-[#0a0a0a] border-neutral-800",
+        codeHeader: "bg-[#171717] border-b border-neutral-800",
+        accentPrimary: "bg-neutral-800 border border-neutral-700 text-white hover:bg-neutral-700",
+        monaco: "vs-dark",
+        scrollTrack: "bg-neutral-900",
+        modalOverlay: "bg-black/80",
+        successBadge: "bg-emerald-900/20 text-emerald-500 border-emerald-900/30",
+        errorBadge: "bg-rose-900/20 text-rose-500 border-rose-900/30"
+    }
+};
+
 const STARTER_CODE = {
-    cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}`,
-    java: `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n    }\n}`,
-    python: `import sys\n\ndef solve():\n    pass\n\nif __name__ == "__main__":\n    solve()`,
-    javascript: `const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8');`
+    cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // code here\n    return 0;\n}`,
+    java: `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // code here\n    }\n}`,
+    python: `import sys\n\n# Reading input from stdin\ninput_data = sys.stdin.read().split()\n\n# Your logic here\n# n = int(input_data[0])\n# ...\n`,
+    javascript: `const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8');\n// code here`
 };
 
 const ProblemSolverPage = () => {
     const { contestId, problemId } = useParams(); 
-    const navigate = useNavigate();
     const location = useLocation();
+    const navigate = useNavigate();
 
-    // --- 1. CONTEXT FROM DASHBOARD ---
-    const passedTheme = location.state?.theme; 
-    const passedContestData = location.state?.contestData;
-    
-    // Theme State
-    const [isDarkMode, setIsDarkMode] = useState(passedTheme ? passedTheme === 'dark' : true);
-    const [contestName, setContestName] = useState(passedContestData?.examName || "Contest");
+    // --- CONTEXT ---
+    const { contestData, theme: initialThemeId } = location.state || {};
+    const themeId = THEMES[initialThemeId] ? initialThemeId : 'light';
+    const theme = THEMES[themeId];
 
-    // --- 2. LAYOUT STATE ---
-    const [leftWidth, setLeftWidth] = useState(40); 
-    const [bottomHeight, setBottomHeight] = useState(35); 
+    // --- STATE ---
+    const [layoutMode, setLayoutMode] = useState('classic'); 
+    const [showLangSelector, setShowLangSelector] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(35); 
+    const [consoleSize, setConsoleSize] = useState(40); 
     const [isDragging, setIsDragging] = useState(false); 
     
-    // --- 3. PROBLEM DATA ---
+    // Data
     const [problemDetails, setProblemDetails] = useState(null);
     const [loadingProblem, setLoadingProblem] = useState(true);
+    const [copiedId, setCopiedId] = useState(null); 
 
-    // --- 4. EDITOR & EXECUTION STATE ---
+    // Editor & Execution
     const [language, setLanguage] = useState('python'); 
     const [code, setCode] = useState("");
     const [fontSize, setFontSize] = useState(14);
     const [status, setStatus] = useState('idle');
+    const [timeLeftDisplay, setTimeLeftDisplay] = useState('00:00:00');
+    const [cursorPosition, setCursorPosition] = useState({ ln: 1, col: 1 });
     
-    // --- 5. TIMER STATE (Synced with Contest) ---
-    const [timeLeft, setTimeLeft] = useState(0);
-
-    // Cooldowns
-    const [runCooldown, setRunCooldown] = useState(0);
-    const [submitCooldown, setSubmitCooldown] = useState(0);
+    // Timer Logic State
+    const [secondsRemaining, setSecondsRemaining] = useState(null);
+    const isAutoSubmitting = useRef(false);
+    
+    // Refs for Auto-Submit (To avoid stale closures in setInterval)
+    const codeRef = useRef(code);
+    const languageRef = useRef(language);
 
     // Results
     const [executionResults, setExecutionResults] = useState(null); 
     const [submissionResult, setSubmissionResult] = useState(null);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
-
-    // Test Case UI
+    const [showResetModal, setShowResetModal] = useState(false);
+    
+    // Test Case Management
     const [testCases, setTestCases] = useState([]);
-    const [selectedCaseId, setSelectedCaseId] = useState(null);
-    const [activeTab, setActiveTab] = useState('cases'); 
+    const [selectedCaseId, setSelectedCaseId] = useState(1);
 
-    // Toggles
-    const [showLangMenu, setShowLangMenu] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-    const [showResetModal, setShowResetModal] = useState(false); 
+    // Refs
+    const sidebarWidthRef = useRef(sidebarWidth);
+    const consoleSizeRef = useRef(consoleSize);
+    const dragTargetRef = useRef(null); 
+    const textareaRef = useRef(null); 
+    const textareaRefs = useRef({}); 
+    const editorRef = useRef(null);
 
-    const leftWidthRef = useRef(leftWidth);
-    const bottomHeightRef = useRef(bottomHeight);
-    const textareaRef = useRef(null);
-    const dragDirectionRef = useRef(null); 
+    // Update refs whenever code/language changes
+    useEffect(() => { codeRef.current = code; }, [code]);
+    useEffect(() => { languageRef.current = language; }, [language]);
 
-    // --- THEME ENGINE ---
-    const theme = isDarkMode ? {
-        appBg: "bg-[#0f172a]", cardBg: "bg-[#1e293b]", headerBg: "bg-[#1e293b]/90",
-        textMain: "text-gray-100", textSec: "text-slate-400", border: "border-slate-700",
-        inputBg: "bg-black/40", accentPrimary: "bg-blue-600 text-white hover:bg-blue-500", 
-        accentSecondary: "bg-slate-700/60 text-white hover:bg-slate-700",
-        monaco: "vs-dark", prose: "prose-invert", exampleCard: "bg-[#0f172a]/50 border-slate-700"
-    } : {
-        // Light Mode Config
-        appBg: "bg-[#F3F4F6]", cardBg: "bg-white", headerBg: "bg-white/90",
-        textMain: "text-gray-900", textSec: "text-gray-500", border: "border-gray-200",
-        inputBg: "bg-gray-50 border border-gray-200", accentPrimary: "bg-gray-900 text-white hover:bg-gray-800", 
-        accentSecondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
-        monaco: "light", prose: "prose-stone", exampleCard: "bg-gray-50 border-gray-200"
-    };
-
-    // --- SYNCED TIMER LOGIC ---
-    useEffect(() => {
-        if (!passedContestData?.endTime) return;
-
-        const interval = setInterval(() => {
-            const end = new Date(passedContestData.endTime).getTime();
-            const now = new Date().getTime();
-            // Calculate difference in seconds
-            const diff = Math.max(0, Math.floor((end - now) / 1000));
-            setTimeLeft(diff);
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [passedContestData]);
-
-    const formatTime = (seconds) => {
-        if (seconds <= 0) return "00:00:00";
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    };
-
-    // --- COOLDOWN TIMERS ---
-    useEffect(() => {
-        const timer = setInterval(() => {
-            if (runCooldown > 0) setRunCooldown(prev => prev - 1);
-            if (submitCooldown > 0) setSubmitCooldown(prev => prev - 1);
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [runCooldown, submitCooldown]);
-
-    // --- FETCH PROBLEM DATA ---
-    useEffect(() => {
-        const fetchProblem = async () => {
-            setLoadingProblem(true);
-            try {
-                // Fallback name if context is lost
-                if(!passedContestData && contestId) setContestName(contestId);
-
-                const res = await fetch(`${API_URL}/api/student/get-problem-details/${problemId}`, { credentials: 'include' });
-                const json = await res.json();
-                
-                if (json.success && json.data) {
-                    setProblemDetails(json.data);
-                    
-                    const formatted = (json.data.publicTestCases || []).map((tc, i) => ({
-                        id: i + 1, type: 'sample', input: tc.input, expected: tc.output
-                    }));
-                    setTestCases(formatted.length ? formatted : [{ id: 1, type: 'custom', input: '', expected: '' }]);
-                    setSelectedCaseId(1);
-                    
-                    // Load previous code or starter template
-                    setCode(json.data.lastCode?.trim() ? json.data.lastCode : STARTER_CODE[language]);
-                }
-            } catch (err) { console.error(err); } 
-            finally { setLoadingProblem(false); }
-        };
-        if (problemId) fetchProblem();
-    }, [problemId, language]);
-
-    // --- HANDLERS ---
-    const handleBack = () => {
-        // Navigate back to dashboard with the same context to prevent reloading
-        navigate(`/contests/${contestId}/live`, { 
-            state: { contestData: passedContestData, theme: isDarkMode ? 'dark' : 'light' } 
+    // --- MONACO SETUP ---
+    const handleEditorDidMount = (editor, monaco) => {
+        editorRef.current = editor;
+        editor.onDidChangeCursorPosition((e) => {
+            setCursorPosition({ ln: e.position.lineNumber, col: e.position.column });
         });
     };
 
-    // Drag Resizing
-    const handleMouseDown = (direction) => (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-        dragDirectionRef.current = direction;
-        
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startWidth = leftWidthRef.current;
-        const startHeight = bottomHeightRef.current;
-        const winWidth = window.innerWidth;
-        const winHeight = window.innerHeight;
-
-        const onMouseMove = (moveEvent) => {
-            if (dragDirectionRef.current === 'horizontal') {
-                const delta = moveEvent.clientX - startX;
-                const newWidth = startWidth + (delta / winWidth) * 100;
-                if (newWidth > 20 && newWidth < 80) setLeftWidth(newWidth);
-            } else {
-                const delta = startY - moveEvent.clientY; 
-                const newHeight = startHeight + (delta / winHeight) * 100;
-                if (newHeight > 10 && newHeight < 80) setBottomHeight(newHeight);
-            }
-        };
-
-        const onMouseUp = () => {
-            setIsDragging(false);
-            dragDirectionRef.current = null;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    };
-
-    useEffect(() => { leftWidthRef.current = leftWidth; }, [leftWidth]);
-    useEffect(() => { bottomHeightRef.current = bottomHeight; }, [bottomHeight]);
-
-    // --- EXECUTION LOGIC (RUN) ---
-    const handleRun = async () => {
-        if (!problemDetails || status !== 'idle' || runCooldown > 0) return;
-        
-        setStatus('running');
-        setActiveTab('result');
-        setRunCooldown(45); 
-        setExecutionResults(null);
-
-        try {
-            const payload = {
-                examId: contestId,
-                problemId: problemId,
-                languageId: LANGUAGE_ID_MAP[language],
-                code: code,
-                customTestCases: testCases.map(tc => ({ input: tc.input, output: tc.expected || "" }))
-            };
-
-            const res = await fetch(`${API_URL}/api/student/run`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                credentials: 'include'
-            });
-
-            const data = await res.json();
-            if (data.success) setExecutionResults(data.results);
-            else setExecutionResults([{ status: 'Error', stderr: data.message || 'Execution Failed', passed: false }]);
-        } catch (err) { 
-            setExecutionResults([{ status: 'Network Error', stderr: 'Failed to connect.', passed: false }]);
-        } finally { 
-            setStatus('idle'); 
+    // --- RESIZE LOGIC ---
+    const adjustTextareaHeight = (id = null) => {
+        if (id !== null) {
+            const el = textareaRefs.current[id];
+            if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
+        } else {
+            if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; }
         }
     };
 
-    // --- EXECUTION LOGIC (SUBMIT) ---
-    const handleSubmit = async () => {
-        if (!problemDetails || status !== 'idle' || submitCooldown > 0) return;
+    useEffect(() => {
+        if (layoutMode === 'classic') adjustTextareaHeight();
+        else testCases.forEach(tc => adjustTextareaHeight(tc.id));
+    }, [testCases, selectedCaseId, layoutMode]);
 
-        setStatus('submitting');
-        setSubmitCooldown(90); 
-        setSubmissionResult(null);
-
+    // --- EXECUTE SUBMISSION (AUTO & MANUAL) ---
+    const executeSubmission = async (isAuto = false) => {
+        if (status === 'submitting' || status === 'autosubmitting') return;
+        
+        setStatus(isAuto ? 'autosubmitting' : 'submitting');
+        
         try {
-            const payload = { examId: contestId, problemId: problemId, languageId: LANGUAGE_ID_MAP[language], code: code };
-            const res = await fetch(`${API_URL}/api/student/submit-problem`, {
+            // 1. Always submit the current problem code first to save progress
+            const submitResponse = await fetch(`${backendUrl}/api/student/submit-problem`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                credentials: 'include'
+                credentials: 'include',
+                body: JSON.stringify({
+                    examId: contestId,
+                    problemId: problemId,
+                    languageId: LANGUAGE_MAP[languageRef.current], // Use Ref for latest value
+                    code: codeRef.current // Use Ref for latest value
+                })
             });
 
-            const data = await res.json();
-            if (data.success) {
-                setSubmissionResult(data);
-                setShowSubmitModal(true); 
-                setStatus('success');
-                setTimeout(() => setStatus('idle'), 3000);
+            const submitJson = await submitResponse.json();
+
+            // 2. If Auto-Submit, trigger Final Submit for the Exam
+            if (isAuto) {
+                const finalResponse = await fetch(`${backendUrl}/api/student/final-submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ examId: contestId }),
+                    credentials: 'include'
+                });
+                
+                const finalJson = await finalResponse.json();
+
+                if (finalJson.success) {
+                    setSubmissionResult({
+                        status: "Time's Up",
+                        passedCount: submitJson.passedCount || 0,
+                        totalCases: submitJson.totalPrivateCases || 0,
+                        marksEarned: submitJson.marksEarned || 0,
+                        message: "Exam auto-submitted successfully.",
+                        isAuto: true
+                    });
+                    setShowSubmitModal(true);
+                    
+                    // Navigate to dashboard after 3 seconds
+                    setTimeout(() => navigate('/student/dashboard'), 3000); 
+                }
             } else {
-                 setSubmissionResult({ status: 'Error', message: data.message || "Submission failed" });
-                 setShowSubmitModal(true);
-                 setStatus('idle');
+                // Manual Submission Logic
+                if (submitJson.success) {
+                    setSubmissionResult({
+                        status: submitJson.status, 
+                        passedCount: submitJson.passedCount,
+                        totalCases: submitJson.totalPrivateCases,
+                        marksEarned: submitJson.marksEarned,
+                        isAuto: false
+                    });
+                    setShowSubmitModal(true);
+                } else {
+                    // Using modal for errors instead of alert
+                    setSubmissionResult({
+                        status: "Error",
+                        passedCount: 0,
+                        totalCases: 0,
+                        message: submitJson.message || "Submission Failed"
+                    });
+                    setShowSubmitModal(true);
+                }
             }
-        } catch (err) { setStatus('idle'); }
+
+        } catch (err) {
+            console.error("Submit error:", err);
+            if(!isAuto) {
+                setSubmissionResult({
+                    status: "Network Error",
+                    message: "Please check your connection"
+                });
+                setShowSubmitModal(true);
+            }
+        } finally {
+            setStatus('idle');
+        }
     };
 
-    if (loadingProblem) return (
-        <div className={cn("flex items-center justify-center h-screen w-full", theme.appBg, theme.textMain)}>
-            <Loader2 size={32} className="animate-spin text-blue-500" />
-        </div>
-    );
+    // --- TIMER SYNCHRONIZATION ---
+    useEffect(() => {
+        if (!contestData?.endTime) return;
+
+        const updateTimer = () => {
+            const end = new Date(contestData.endTime).getTime();
+            const now = new Date().getTime();
+            const distance = end - now;
+
+            if (distance <= 0) {
+                setTimeLeftDisplay("00:00:00");
+                setSecondsRemaining(0);
+                
+                // Trigger Auto Submit once
+                if (!isAutoSubmitting.current) {
+                    isAutoSubmitting.current = true;
+                    executeSubmission(true); 
+                }
+                return;
+            }
+
+            setSecondsRemaining(Math.floor(distance / 1000));
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            setTimeLeftDisplay(`${hours < 10 ? '0'+hours : hours}:${minutes < 10 ? '0'+minutes : minutes}:${seconds < 10 ? '0'+seconds : seconds}`);
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [contestData]);
+
+    // --- TIMER STYLE LOGIC ---
+    const getTimerStyles = () => {
+        if (secondsRemaining === null) return cn(theme.panelBg, theme.border, theme.textMain);
+        
+        // Critical: Less than 60 seconds (Red + Pulse)
+        if (secondsRemaining < 60) {
+            return "bg-rose-500/10 text-rose-600 border-rose-500/30 animate-pulse shadow-[0_0_15px_rgba(225,29,72,0.3)]";
+        }
+        // Warning: Less than 5 minutes (Amber)
+        if (secondsRemaining < 300) {
+            return "bg-amber-500/10 text-amber-500 border-amber-500/30";
+        }
+        // Normal
+        return cn(theme.panelBg, theme.border, theme.textSec);
+    };
+
+    // --- FETCH PROBLEM DETAILS ---
+    useEffect(() => {
+        const fetchProblem = async () => {
+            try {
+                setLoadingProblem(true);
+                const response = await fetch(`${backendUrl}/api/student/get-problem-details/${problemId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                const json = await response.json();
+
+                if (json.success && json.data) {
+                    setProblemDetails(json.data);
+                    
+                    const formattedCases = (json.data.publicTestCases || []).map((tc, i) => ({
+                        id: i + 1, 
+                        type: 'sample', 
+                        input: tc.input, 
+                        output: tc.output, 
+                        explanation: tc.explanation
+                    }));
+
+                    setTestCases(formattedCases);
+                    if (formattedCases.length > 0) setSelectedCaseId(1);
+                    
+                    if (!code) {
+                        const backendCode = json.data.lastCode || STARTER_CODE[language];
+                        setCode(backendCode);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoadingProblem(false);
+            }
+        };
+        if (problemId) fetchProblem();
+    }, [problemId]); 
+
+    // --- ACTIONS ---
+    const handleCopy = (text, id) => {
+        copyToClipboard(text);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    // --- EXECUTE RUN CODE ---
+    const handleRun = async () => {
+        setStatus('running');
+        setExecutionResults(null);
+
+        const customTestCasesPayload = testCases
+            .filter(tc => tc.type === 'custom')
+            .map(tc => ({
+                input: tc.input,
+                output: tc.output || "" 
+            }));
+
+        try {
+            const response = await fetch(`${backendUrl}/api/student/run`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    examId: contestId,
+                    problemId: problemId,
+                    languageId: LANGUAGE_MAP[language],
+                    code: code,
+                    customTestCases: customTestCasesPayload 
+                })
+            });
+
+            const json = await response.json();
+
+            if (json.success && json.results) {
+                const results = json.results.map((res, index) => {
+                    const originalCase = testCases[index];
+                    return {
+                        id: originalCase ? originalCase.id : index + 1,
+                        status: res.status, 
+                        passed: res.passed, 
+                        input: res.input,
+                        expectedOutput: res.expectedOutput,
+                        actualOutput: res.actualOutput,
+                        stderr: res.stderr, 
+                        compileOutput: res.compile_output, 
+                        time: `${res.time}s`,
+                        memory: `${Math.round(res.memory / 1024)}MB` 
+                    };
+                });
+                setExecutionResults(results);
+            }
+        } catch (err) {
+            console.error("Run error:", err);
+        } finally {
+            setStatus('idle');
+        }
+    };
+
+    // --- UI HELPERS ---
+    const handleLayoutChange = (mode) => {
+        setLayoutMode(mode);
+        if (mode === 'replit') {
+            setSidebarWidth(30);
+            setConsoleSize(42.85); 
+        } else {
+            setSidebarWidth(35);
+            setConsoleSize(40);
+        }
+    };
+
+    const handleAddCase = () => {
+        if (testCases.length < 4) {
+            const maxId = testCases.length > 0 ? Math.max(...testCases.map(t => t.id)) : 0;
+            const newId = maxId + 1;
+            setTestCases([...testCases, { id: newId, input: "", type: 'custom' }]);
+            setSelectedCaseId(newId);
+            setExecutionResults(null); 
+        }
+    };
+
+    const handleDeleteCase = (id) => {
+        const targetCase = testCases.find(t => t.id === id);
+        if (targetCase?.type === 'sample') return; 
+
+        const newCases = testCases.filter(t => t.id !== id);
+        setTestCases(newCases);
+        
+        if (selectedCaseId === id && newCases.length > 0) {
+            setSelectedCaseId(newCases[0].id);
+        }
+    };
+
+    const clearResults = () => {
+        setExecutionResults(null);
+    };
+
+    const getCaseLabel = (tc) => {
+        if (tc.type === 'sample') {
+            const idx = testCases.filter(t => t.type === 'sample').findIndex(t => t.id === tc.id);
+            return `Sample ${idx + 1}`;
+        } else {
+            const idx = testCases.filter(t => t.type === 'custom').findIndex(t => t.id === tc.id);
+            return `Case ${idx + 1}`;
+        }
+    };
+
+    // Drag Logic
+    const handleMouseDown = (target) => (e) => {
+        e.preventDefault(); 
+        setIsDragging(true); 
+        dragTargetRef.current = target;
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startSidebarW = sidebarWidthRef.current;
+        const startConsoleS = consoleSizeRef.current;
+
+        const onMove = (e) => {
+            if (dragTargetRef.current === 'sidebar') {
+                const newWidth = Math.min(60, Math.max(20, startSidebarW + ((e.clientX - startX) / window.innerWidth) * 100));
+                setSidebarWidth(newWidth);
+            } else if (dragTargetRef.current === 'console') {
+                if (layoutMode === 'classic') {
+                    const newHeight = Math.min(85, Math.max(10, startConsoleS + ((startY - e.clientY) / window.innerHeight) * 100));
+                    setConsoleSize(newHeight);
+                } else {
+                    const newWidth = Math.min(60, Math.max(20, startConsoleS + ((startX - e.clientX) / window.innerWidth) * 100));
+                    setConsoleSize(newWidth);
+                }
+            }
+        };
+        const onUp = () => { 
+            setIsDragging(false); 
+            document.removeEventListener('mousemove', onMove); 
+            document.removeEventListener('mouseup', onUp); 
+        };
+        document.addEventListener('mousemove', onMove); 
+        document.addEventListener('mouseup', onUp);
+    };
+
+    useEffect(() => { sidebarWidthRef.current = sidebarWidth; }, [sidebarWidth]);
+    useEffect(() => { consoleSizeRef.current = consoleSize; }, [consoleSize]);
+
+    if (loadingProblem) return <div className={cn("h-screen w-full flex items-center justify-center", theme.appBg)}><Loader2 className={cn("animate-spin", theme.isDark ? "text-indigo-500" : "text-slate-900")} size={40}/></div>;
+
+    const currentResult = executionResults ? (executionResults.find(r => r.id === selectedCaseId) || executionResults[0]) : null;
 
     return (
-        <div className={cn("flex flex-col h-screen w-full font-sans overflow-hidden transition-colors duration-300 relative", theme.appBg, theme.textMain)}>
+        <div className={cn("flex flex-col h-screen w-full font-sans overflow-hidden text-sm selection:bg-blue-500/30", theme.appBg, theme.textMain)}>
             
-            {/* Drag Overlay */}
-            {isDragging && <div className={cn("absolute inset-0 z-[9999]", dragDirectionRef.current === 'horizontal' ? 'cursor-col-resize' : 'cursor-row-resize')}></div>}
-
-            {/* --- SUBMISSION MODAL --- */}
-            {showSubmitModal && submissionResult && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className={cn("w-full max-w-md p-8 rounded-[40px] border shadow-2xl relative transition-colors", theme.cardBg, theme.border)}>
-                        <button onClick={() => setShowSubmitModal(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-black/5 transition-colors">
-                            <X size={20} className={theme.textSec} />
-                        </button>
-                        
-                        <div className="flex flex-col items-center text-center gap-6">
-                            <div className={cn("w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-lg", submissionResult.status === 'Accepted' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20")}>
-                                {submissionResult.status === 'Accepted' ? <CheckCircle2 size={40} /> : <Loader2 size={40} className="animate-spin" />}
+            {isDragging && <div className={cn("absolute inset-0 z-[100]", (dragTargetRef.current === 'sidebar' || (layoutMode === 'replit' && dragTargetRef.current === 'console')) ? 'cursor-col-resize' : 'cursor-row-resize')} />}
+            
+            {/* --- RESET MODAL --- */}
+            {showResetModal && (
+                <div className={cn("fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200", theme.modalOverlay)}>
+                    <div className={cn("w-[400px] rounded-2xl shadow-2xl border overflow-hidden", theme.panelBg, theme.border)}>
+                        <div className="p-6 flex flex-col items-center text-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                                <RotateCcw size={24} />
                             </div>
-
                             <div className="space-y-1">
-                                <h3 className={cn("text-3xl font-black tracking-tight", submissionResult.status === 'Accepted' ? "text-emerald-500" : "text-blue-500")}>{submissionResult.status}</h3>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Submission Result</p>
+                                <h3 className={cn("text-lg font-bold", theme.textHead)}>Reset Code?</h3>
+                                <p className={cn("text-xs opacity-70 px-4", theme.textSec)}>This will discard your current changes.</p>
                             </div>
+                        </div>
+                        <div className={cn("flex border-t divide-x h-12", theme.border, theme.isDark ? "divide-white/10" : "divide-slate-200")}>
+                            <button onClick={() => setShowResetModal(false)} className={cn("flex-1 text-xs font-bold hover:bg-black/5 transition-colors", theme.textSec)}>Cancel</button>
+                            <button onClick={() => { setCode(STARTER_CODE[language]); setShowResetModal(false); }} className="flex-1 text-xs font-bold text-rose-500 hover:bg-rose-500/5 transition-colors">Confirm Reset</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                            {submissionResult.success !== false ? (
-                                <div className="grid grid-cols-2 gap-4 w-full">
-                                    <div className={cn("p-5 rounded-3xl border text-center space-y-1", theme.inputBg, theme.border)}>
-                                        <div className="text-[10px] font-bold uppercase opacity-40">Cases Passed</div>
-                                        <div className="text-2xl font-mono font-bold">{submissionResult.passedCount} / {submissionResult.totalPrivateCases}</div>
-                                    </div>
-                                    <div className={cn("p-5 rounded-3xl border text-center space-y-1", theme.inputBg, theme.border)}>
-                                        <div className="text-[10px] font-bold uppercase opacity-40">Score</div>
-                                        <div className="text-2xl font-mono font-bold flex items-center justify-center gap-2"><Trophy size={18} className="text-amber-500" />{submissionResult.marksEarned}</div>
-                                    </div>
+            {/* --- SUBMISSION RESULT MODAL --- */}
+            {showSubmitModal && submissionResult && (
+                <div className={cn("fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-md animate-in fade-in zoom-in-95 duration-300", theme.modalOverlay)}>
+                    <div className={cn("w-full max-w-md rounded-3xl border shadow-2xl relative overflow-hidden flex flex-col", theme.panelBg, theme.border)}>
+                        <div className={cn("px-6 py-4 border-b flex items-center justify-between shrink-0", theme.border, theme.headerBg)}>
+                            <h3 className={cn("font-black text-lg tracking-tight flex items-center gap-2", theme.textHead)}>
+                                {submissionResult.isAuto && <Clock className="text-amber-500 mr-2" size={20} />}
+                                {submissionResult.isAuto ? "Time's Up!" : "Submission Result"}
+                            </h3>
+                            <button onClick={() => setShowSubmitModal(false)} className="p-2 rounded-full hover:bg-black/10 transition-colors"><X size={18}/></button>
+                        </div>
+                        <div className="p-12 flex flex-col items-center gap-8">
+                            
+                            {submissionResult.isAuto && (
+                                <div className="text-center -mt-4 mb-2">
+                                    <p className="text-amber-500 font-bold text-sm uppercase tracking-wide">Auto-Submitted Successfully</p>
                                 </div>
-                            ) : (
-                                <div className="p-4 rounded-xl bg-red-500/10 text-red-500 text-sm">{submissionResult.message}</div>
                             )}
 
-                            <button onClick={() => setShowSubmitModal(false)} className={cn("w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all", theme.accentPrimary)}>Return to Editor</button>
+                            <div className="relative shrink-0">
+                                {/* FIXED: Removed rotation to prevent cut-off */}
+                                <div className={cn("w-48 h-48 rounded-full border-[8px] flex flex-col items-center justify-center shadow-xl", 
+                                    submissionResult.status === "Error" ? "border-rose-500 text-rose-500 bg-rose-500/5" :
+                                    submissionResult.passedCount === submissionResult.totalCases ? "border-emerald-500 text-emerald-500 bg-emerald-500/5" : "border-amber-500 text-amber-500 bg-amber-500/5"
+                                )}>
+                                    {submissionResult.status === "Error" ? (
+                                        <AlertTriangle size={64} />
+                                    ) : (
+                                        <>
+                                            <span className="text-6xl font-black tracking-tighter">
+                                                {submissionResult.passedCount}
+                                                <span className="text-3xl opacity-60 font-bold">/{submissionResult.totalCases}</span>
+                                            </span>
+                                            <span className="text-sm font-bold uppercase tracking-widest mt-1 opacity-80">Passed</span>
+                                        </>
+                                    )}
+                                </div>
+                                <div className={cn("absolute -bottom-2 -right-4 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest border-2 shadow-md",
+                                     theme.panelBg,
+                                     submissionResult.status === "Error" ? "border-rose-500 text-rose-500" :
+                                     submissionResult.passedCount === submissionResult.totalCases ? "border-emerald-500 text-emerald-500" : "border-amber-500 text-amber-500"
+                                )}>{submissionResult.status}</div>
+                            </div>
+                            {submissionResult.message && <p className="text-center text-sm opacity-70 px-4">{submissionResult.message}</p>}
+                        </div>
+                        <div className={cn("p-4 border-t bg-black/5 flex gap-3 shrink-0", theme.border)}>
+                            <button onClick={() => setShowSubmitModal(false)} className={cn("flex-1 py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-colors hover:bg-black/5", theme.textSec)}>Close</button>
+                            {(submissionResult.passedCount === submissionResult.totalCases && submissionResult.status !== "Error" && !submissionResult.isAuto) && (
+                                <button onClick={() => setShowSubmitModal(false)} className={cn("flex-1 py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg transition-transform hover:-translate-y-0.5", theme.accentPrimary)}>Next Problem</button>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
 
             {/* --- HEADER --- */}
-            <header className={cn("h-14 flex items-center justify-between px-4 shrink-0 z-40 border-b backdrop-blur-sm", theme.headerBg, theme.border)}>
+            <header className={cn("h-16 shrink-0 border-b flex items-center justify-between px-6 z-20", theme.headerBg, theme.border)}>
                 <div className="flex items-center gap-4">
-                    <button onClick={handleBack} className={cn("p-2 rounded-xl border transition-all active:scale-95 group", theme.cardBg, theme.border)}>
-                        <ChevronLeft size={18} className={cn("transition-transform group-hover:-translate-x-0.5", theme.textSec)} />
-                    </button>
-                    <h1 className="font-bold text-sm tracking-tight uppercase">{contestName}</h1>
+                    <button onClick={() => navigate(-1)} className={cn("p-2 rounded-lg border hover:scale-105 active:scale-95 transition-all", theme.panelBg, theme.border, theme.textSec)}><ChevronLeft size={20}/></button>
+                    <div><h1 className={cn("font-bold text-base tracking-tight uppercase opacity-80", theme.textHead)}>
+                        {contestData?.examName || "Contest"}
+                    </h1></div>
                 </div>
-                <div className={cn("flex items-center gap-3 px-6 py-1.5 rounded-full border shadow-sm", timeLeft <= 300 ? "bg-rose-500 text-white" : cn(theme.cardBg, theme.border))}>
-                    <Timer size={16} />
-                    <span className="text-lg font-mono font-bold">{formatTime(timeLeft)}</span>
+                
+                {/* --- ENHANCED TIMER DISPLAY --- */}
+                <div className={cn("absolute left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-2 rounded-2xl border font-mono font-black transition-all duration-500", getTimerStyles())}>
+                    <Timer size={20} className={cn(secondsRemaining < 300 && "animate-pulse")} /> 
+                    <span className="text-3xl tracking-widest">{timeLeftDisplay}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => setIsDarkMode(!isDarkMode)} className={cn("p-2 rounded-xl border transition-all hover:bg-black/5", theme.cardBg, theme.border)}>
-                        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
+
+                <div className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border opacity-50", theme.border)}>
+                    {themeId} Mode
                 </div>
             </header>
 
-            {/* --- MAIN LAYOUT --- */}
-            <div className="flex-1 flex overflow-hidden p-2 gap-2">
+            {/* --- WORKSPACE (Maintains Previous Logic) --- */}
+            <div className="flex-1 flex overflow-hidden p-1 gap-1">
+                {/* ... (Rest of the Workspace Layout Remains the Same as previous successful step) ... */}
+                {/* I am omitting the repetitive layout code here for brevity as it is identical to the previous improved version, just ensure you paste this Header/Logic into that file structure. */}
+                {/* IF YOU NEED THE FULL FILE AGAIN WITH LAYOUT, I CAN PROVIDE IT. BUT THIS HEADER + LOGIC IS THE KEY CHANGE. */}
                 
-                {/* LEFT: PROBLEM INFO */}
-                <div style={{ width: `${leftWidth}%` }} className={cn("h-full flex flex-col rounded-3xl overflow-hidden border transition-colors", theme.cardBg, theme.border)}>
-                    <div className={cn("p-5 border-b flex items-center justify-between", theme.border)}>
-                        <h1 className="text-xl font-black">{problemDetails.problemNo}. {problemDetails.title}</h1>
-                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border", isDarkMode ? "bg-amber-900/20 text-amber-500 border-amber-800" : "bg-black text-white")}>
-                            {problemDetails.difficulty}
-                        </span>
+                {/* 1. LEFT PANEL: PROBLEM INFO */}
+                <div style={{ width: `${sidebarWidth}%` }} className={cn("h-full flex flex-col rounded-2xl overflow-hidden border relative group", theme.panelBg, theme.border)}>
+                    <div className={cn("p-6 border-b shrink-0 bg-opacity-50", theme.border)}>
+                         <div className="flex items-start justify-between gap-4">
+                            <h1 className={cn("text-2xl font-bold leading-tight", theme.textHead)}>{problemDetails?.problemNo}. {problemDetails?.title}</h1>
+                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shrink-0", theme.isDark ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-black text-white")}>{problemDetails?.difficulty}</span>
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 no-scrollbar custom-scrollbar">
-                        <div className={cn("prose prose-sm max-w-none space-y-8", theme.prose)}>
-                            <div><h3 className="text-xs font-bold uppercase opacity-50 mb-2">Description</h3><p className="whitespace-pre-wrap leading-relaxed">{problemDetails.description}</p></div>
-                            
-                            <div className="grid grid-cols-1 gap-4 border-t pt-6 border-dashed border-gray-500/30">
-                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2">Input Format</h3><div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.inputFormat}</div>
-                                </div>
-                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2">Output Format</h3><div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.outputFormat}</div>
-                                </div>
-                                <div className={cn("p-4 rounded-xl border text-xs", theme.exampleCard)}>
-                                    <h3 className="font-bold text-[10px] uppercase opacity-70 mb-2">Constraints</h3><div className="opacity-90 font-mono whitespace-pre-wrap">{problemDetails?.constraints}</div>
-                                </div>
-                            </div>
-
-                            {problemDetails.publicTestCases?.map((tc, idx) => (
-                                <div key={idx} className={cn("rounded-xl border overflow-hidden", theme.exampleCard)}>
-                                    <div className={cn("px-4 py-2 border-b text-[10px] font-bold uppercase tracking-widest", theme.border, isDarkMode ? "bg-black/20" : "bg-gray-100")}>Example {idx + 1}</div>
-                                    <div className="p-4 space-y-3">
-                                        <div><div className="text-[10px] opacity-40 mb-1 uppercase">Input</div><div className={cn("font-mono text-xs p-3 rounded-xl", theme.inputBg)}>{tc.input}</div></div>
-                                        <div><div className="text-[10px] opacity-40 mb-1 uppercase">Output</div><div className={cn("font-mono text-xs p-3 rounded-xl", theme.inputBg)}>{tc.output}</div></div>
+                    <div className={cn("flex-1 overflow-y-auto p-8 custom-scrollbar", theme.scrollTrack)}>
+                        <div className={cn("space-y-6 text-sm leading-7 font-medium", theme.textMain)}>
+                            <p className="whitespace-pre-wrap">{problemDetails?.description}</p>
+                            <div className="pt-2"><h3 className={cn("text-xs font-black uppercase tracking-widest mb-2 opacity-90", theme.textHead)}>Input Format</h3><p className="opacity-90 whitespace-pre-wrap">{problemDetails?.inputFormat}</p></div>
+                            <div className="pt-2"><h3 className={cn("text-xs font-black uppercase tracking-widest mb-2 opacity-90", theme.textHead)}>Constraints</h3><ul className="list-disc pl-4 space-y-1 opacity-90">{problemDetails?.constraints?.split(',').map((c, i) => <li key={i}>{c.trim()}</li>)}</ul></div>
+                        </div>
+                        <div className={cn("my-10 border-t border-dashed opacity-30", theme.border)}></div>
+                         <div className="space-y-6">
+                             <div className={cn("flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-40", theme.textHead)}><Hash size={14} /> Examples</div>
+                            {testCases.filter(tc => tc.type === 'sample').map((tc, idx) => (
+                                <div key={idx} className={cn("rounded-2xl border overflow-hidden shadow-sm transition-all hover:shadow-md", theme.panelBg, theme.border)}>
+                                    <div className={cn("px-4 py-3 border-b flex justify-between items-center", theme.border, theme.isDark ? "bg-black/20" : "bg-gray-50/80")}>
+                                        <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Example {idx + 1}</div>
+                                        <button onClick={() => handleCopy(tc.input, `in-${idx}`)} className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors", copiedId === `in-${idx}` ? "bg-emerald-500/10 text-emerald-500" : "hover:bg-black/5 opacity-50 hover:opacity-100")}>{copiedId === `in-${idx}` ? <Check size={12}/> : <Copy size={12}/>} {copiedId === `in-${idx}` ? "Copied" : "Copy Input"}</button>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <div className="space-y-1.5"><div className="text-[10px] font-bold uppercase tracking-wider opacity-40 pl-1">Input</div><div className={cn("font-mono text-sm p-3 rounded-xl whitespace-pre overflow-x-auto", theme.isDark ? "bg-[#020617] text-slate-300 border border-slate-800" : "bg-gray-50 text-gray-700 border border-gray-200")}>{tc.input}</div></div>
+                                        <div className="space-y-1.5"><div className="text-[10px] font-bold uppercase tracking-wider opacity-40 pl-1">Output</div><div className={cn("font-mono text-sm p-3 rounded-xl relative overflow-hidden whitespace-pre overflow-x-auto", theme.isDark ? "bg-[#020617] text-emerald-400 border border-emerald-900/30" : "bg-gray-50 text-emerald-700 border border-emerald-200")}><div className={cn("absolute left-0 top-0 bottom-0 w-1", theme.isDark ? "bg-emerald-500/50" : "bg-emerald-500")}></div><div className="pl-2">{tc.output}</div></div></div>
+                                        {tc.explanation && (<div className={cn("mt-4 text-xs p-3 rounded-xl flex gap-3", theme.isDark ? "bg-blue-500/5 text-blue-200" : "bg-blue-50 text-blue-800")}><Info size={16} className="shrink-0 opacity-60 mt-0.5" /><div className="leading-relaxed opacity-90"><span className="font-bold opacity-70 block mb-1 text-[10px] uppercase">Explanation</span>{tc.explanation}</div></div>)}
                                     </div>
                                 </div>
                             ))}
                         </div>
+                        <div className="h-10"></div>
                     </div>
                 </div>
-                
-                <div onMouseDown={handleMouseDown('horizontal')} className="w-2 -ml-2 -mr-2 cursor-col-resize z-50 flex items-center justify-center group hover:scale-110 transition-transform">
-                    <div className={cn("w-1 h-8 rounded-full transition-colors", isDarkMode ? "bg-slate-700 group-hover:bg-blue-500" : "bg-gray-300 group-hover:bg-black")}></div>
-                </div>
 
-                {/* RIGHT: EDITOR + OUTPUT */}
-                <div style={{ width: `${100 - leftWidth}%` }} className="flex flex-col h-full gap-2">
-                    <div className={cn("flex-1 flex flex-col rounded-3xl overflow-hidden border", theme.cardBg, theme.border)}>
-                        <div className={cn("h-12 flex items-center justify-between px-4 border-b", theme.border, isDarkMode ? "bg-black/20" : "bg-gray-100/50")}>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setShowLangMenu(!showLangMenu)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase", theme.border, theme.inputBg)}>
-                                    {LANGUAGES.find(l => l.id === language)?.name} <ChevronDown size={12} />
+                <div onMouseDown={handleMouseDown('sidebar')} className={cn("w-2 -ml-1 -mr-1 z-30 cursor-col-resize flex flex-col justify-center items-center group opacity-0 hover:opacity-100 transition-opacity", theme.textSec)}><div className={cn("w-1 h-8 rounded-full transition-colors", theme.isDark ? "bg-slate-600 group-hover:bg-blue-500" : "bg-gray-300 group-hover:bg-black")}></div></div>
+
+                {/* 2. RIGHT CONTAINER */}
+                <div style={{ width: `${100 - sidebarWidth}%` }} className={cn("flex h-full gap-1", layoutMode === 'classic' ? "flex-col" : "flex-row")}>
+                    
+                    {/* --- EDITOR PANEL --- */}
+                    <div className={cn("flex-1 flex flex-col rounded-2xl overflow-hidden border shadow-sm relative", theme.panelBg, theme.border)}>
+                        <div className={cn("h-14 flex items-center justify-between px-4 border-b shrink-0 relative z-20", theme.border, theme.headerBg)}>
+                            
+                            <div className="relative">
+                                <button 
+                                    onClick={() => { setShowLangSelector(!showLangSelector); }}
+                                    className={cn("flex items-center gap-2 px-3 py-2 rounded-lg border transition-all hover:bg-black/5", theme.border, theme.inputBg)}
+                                >
+                                    <span className="text-xs font-bold">{LANGUAGES.find(l => l.id === language)?.name}</span>
+                                    <ChevronDown size={12} className={cn("opacity-50 transition-transform", showLangSelector && "rotate-180")}/>
                                 </button>
-                                {showLangMenu && (
-                                    <div className={cn("absolute top-12 left-4 w-40 rounded-2xl border shadow-xl p-1 z-50 flex flex-col backdrop-blur-xl", theme.cardBg, theme.border)}>
-                                        {LANGUAGES.map(lang => (
-                                            <button key={lang.id} onClick={() => { setLanguage(lang.id); setCode(STARTER_CODE[lang.id]); setShowLangMenu(false); }} className={cn("w-full px-4 py-2.5 rounded-xl text-xs font-bold text-left flex justify-between items-center transition-colors", isDarkMode ? "hover:bg-slate-800" : "hover:bg-gray-100")}>
-                                                {lang.name} {language === lang.id && <Check size={12} />}
-                                            </button>
-                                        ))}
-                                    </div>
+                                {showLangSelector && (
+                                    <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setShowLangSelector(false)}></div>
+                                        <div className={cn("absolute top-full left-0 mt-2 w-56 rounded-xl border shadow-xl py-1 z-20 animate-in fade-in zoom-in-95 duration-100 overflow-hidden", theme.panelBg, theme.border)}>
+                                            {LANGUAGES.map(lang => (
+                                                <button 
+                                                    key={lang.id} 
+                                                    onClick={() => { setLanguage(lang.id); setCode(STARTER_CODE[lang.id]); setShowLangSelector(false); }} 
+                                                    className={cn("w-full px-4 py-2.5 text-xs font-medium text-left flex justify-between items-center transition-colors", language === lang.id ? "bg-blue-500 text-white" : "hover:bg-black/5")}
+                                                >
+                                                    {lang.label}
+                                                    {language === lang.id && <Check size={12}/>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
                                 )}
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setFontSize(s => Math.max(12, s-1))} className="p-1.5 hover:opacity-70"><Minus size={14}/></button>
-                                <span className="text-xs self-center font-mono opacity-50">{fontSize}px</span>
-                                <button onClick={() => setFontSize(s => Math.min(24, s+1))} className="p-1.5 hover:opacity-70"><Plus size={14}/></button>
-                                <div className="w-px h-4 bg-white/10 self-center mx-2"></div>
-                                <button onClick={() => setShowResetModal(true)} className={cn("p-1.5 rounded-xl transition-colors hover:bg-black/5", theme.textSec)}><RotateCcw size={16} /></button>
-                            </div>
-                        </div>
-                        <div className="flex-1 relative overflow-hidden">
-                            <Editor height="100%" language={language} value={code} onChange={setCode} theme={theme.monaco} options={{ minimap: { enabled: false }, fontSize, padding: { top: 16, bottom: 60 }, scrollBeyondLastLine: false }} />
-                            <div className="absolute bottom-6 right-8 flex items-center gap-3 z-20">
-                                <button onClick={handleRun} disabled={status !== 'idle' || runCooldown > 0} className={cn("px-6 py-3 rounded-2xl font-bold text-[10px] uppercase flex items-center gap-2 shadow-xl border border-white/5 transition-all active:scale-95 backdrop-blur-md", runCooldown > 0 ? "opacity-40 cursor-not-allowed bg-slate-800" : theme.accentSecondary)}>
-                                    {status === 'running' ? <Loader2 size={12} className="animate-spin" /> : runCooldown > 0 ? <span>{runCooldown}s</span> : <Play size={12} fill="currentColor" />} Run
+
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowResetModal(true)} className={cn("p-2 rounded-lg transition-colors hover:bg-rose-500/10 hover:text-rose-500 text-slate-500", theme.textSec)} title="Reset Code">
+                                    <RotateCcw size={16} />
                                 </button>
-                                <button onClick={handleSubmit} disabled={status !== 'idle' || submitCooldown > 0} className={cn("px-7 py-3 rounded-2xl font-bold text-[10px] uppercase flex items-center gap-2 shadow-xl border border-white/5 transition-all active:scale-95 backdrop-blur-md", submitCooldown > 0 ? "opacity-40 cursor-not-allowed bg-slate-800" : theme.accentPrimary)}>
-                                    {status === 'submitting' ? <Loader2 size={12} className="animate-spin" /> : submitCooldown > 0 ? <span>{submitCooldown}s</span> : <Rocket size={14} />} Submit
+                                <div className={cn("flex items-center gap-1 p-1 rounded-lg border", theme.border, theme.inputBg)}>
+                                    <button onClick={() => setFontSize(Math.max(10, fontSize - 1))} className={cn("p-1.5 rounded-md hover:bg-black/5 transition-colors", theme.textMain)}><Minus size={12}/></button>
+                                    <span className="text-[10px] font-mono w-8 text-center">{fontSize}px</span>
+                                    <button onClick={() => setFontSize(Math.min(24, fontSize + 1))} className={cn("p-1.5 rounded-md hover:bg-black/5 transition-colors", theme.textMain)}><Plus size={12}/></button>
+                                </div>
+                                <button onClick={() => handleLayoutChange(layoutMode === 'classic' ? 'replit' : 'classic')} className={cn("p-2 rounded-lg border hover:bg-black/5 transition-colors text-blue-500 bg-blue-500/5 border-blue-500/20", theme.panelBg)} title={`Switch Layout`}>
+                                    {layoutMode === 'classic' ? <LayoutTemplate size={16} /> : <Columns size={16} />}
                                 </button>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div onMouseDown={handleMouseDown('vertical')} className="h-2 -mt-2 -mb-2 cursor-row-resize z-50 flex items-center justify-center group hover:scale-110 transition-transform">
-                         <div className={cn("w-12 h-1 rounded-full transition-colors", isDarkMode ? "bg-slate-700 group-hover:bg-blue-500" : "bg-gray-300 group-hover:bg-black")}></div>
+                        
+                        <div className="flex-1 relative">
+                            <Editor 
+                                height="100%" 
+                                language={language} 
+                                value={code} 
+                                onMount={handleEditorDidMount}
+                                onChange={setCode} 
+                                theme={theme.monaco} 
+                                options={{ 
+                                    minimap: { enabled: false }, 
+                                    fontSize, 
+                                    padding: { top: 20, bottom: 80 }, 
+                                    fontFamily: 'JetBrains Mono, monospace', 
+                                    scrollBeyondLastLine: false, 
+                                    smoothScrolling: true,
+                                    cursorBlinking: 'smooth',
+                                    cursorSmoothCaretAnimation: 'on',
+                                    cursorStyle: 'line'
+                                }} 
+                            />
+                            <div className={cn("absolute bottom-2 left-6 z-10 text-[10px] font-mono opacity-40 pointer-events-none transition-opacity", theme.textMain)}>
+                                Ln {cursorPosition.ln}, Col {cursorPosition.col}
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-6 right-8 flex items-center gap-3 z-50 pointer-events-auto">
+                            <button onClick={() => executeSubmission(false)} disabled={status !== 'idle'} className={cn("h-10 px-5 rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center gap-2 border shadow-lg backdrop-blur-md transition-all hover:-translate-y-0.5 active:translate-y-0", theme.isDark ? "bg-slate-800/90 border-slate-700 text-white hover:bg-slate-700" : "bg-white/90 border-white text-gray-800 hover:bg-white")}>
+                                {status === 'running' ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} className="fill-current" />} Run
+                            </button>
+                            <button onClick={() => executeSubmission(false)} disabled={status !== 'idle'} className={cn("h-10 px-6 rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-500/20 backdrop-blur-md transition-all hover:-translate-y-0.5 active:translate-y-0", theme.accentPrimary)}>
+                                {(status === 'submitting' || status === 'autosubmitting') ? <Loader2 size={13} className="animate-spin" /> : <Rocket size={13} />} Submit
+                            </button>
+                        </div>
                     </div>
 
-                    <div style={{ height: `${bottomHeight}%` }} className={cn("flex flex-col rounded-3xl overflow-hidden border", theme.cardBg, theme.border)}>
-                        <div className={cn("flex items-center px-6 border-b h-10 shrink-0 gap-6", theme.border, isDarkMode ? "bg-black/20" : "bg-gray-100/50")}>
-                            <button onClick={() => setActiveTab('cases')} className={cn("h-full text-[10px] uppercase font-bold relative transition-colors", activeTab === 'cases' ? "text-blue-500" : theme.textSec)}>Test Cases {activeTab === 'cases' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 rounded-t-full"></span>}</button>
-                            <button onClick={() => setActiveTab('result')} className={cn("h-full text-[10px] uppercase font-bold relative transition-colors", activeTab === 'result' ? "text-blue-500" : theme.textSec)}>Output {activeTab === 'result' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 rounded-t-full"></span>}</button>
-                        </div>
-                        <div className="flex-1 p-4 overflow-y-auto no-scrollbar custom-scrollbar">
-                            {activeTab === 'cases' ? (
-                                <div className="space-y-4">
-                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                                        {testCases.map((tc, i) => {
-                                            const res = executionResults?.[i];
-                                            const passed = res?.passed;
-                                            return (
-                                                <button key={tc.id} onClick={() => setSelectedCaseId(tc.id)} className={cn("px-4 py-2 rounded-xl text-[10px] font-bold border flex items-center gap-2 transition-all whitespace-nowrap", selectedCaseId === tc.id ? "ring-1 ring-blue-500" : "hover:opacity-100", res && passed ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : res && !passed ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : selectedCaseId === tc.id ? "bg-blue-600 text-white border-transparent" : cn(theme.inputBg, theme.textSec))}>
-                                                    {res ? (passed ? <Check size={12} strokeWidth={3}/> : <X size={12} strokeWidth={3}/>) : null} Case {i + 1}
-                                                    {tc.type !== 'sample' && testCases.length > 1 && <span onClick={(e) => { e.stopPropagation(); setTestCases(testCases.filter(t => t.id !== tc.id)); }} className="ml-2 hover:bg-black/20 rounded p-0.5"><X size={10}/></span>}
+                    <div onMouseDown={handleMouseDown('console')} className={cn("z-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group", layoutMode === 'classic' ? "h-2 w-full -mt-1 -mb-1 cursor-row-resize flex-col" : "w-2 h-full -ml-1 -mr-1 cursor-col-resize flex-col")}>
+                        <div className={cn("rounded-full transition-colors", layoutMode === 'classic' ? "w-12 h-1" : "w-1 h-12", theme.isDark ? "bg-slate-600 group-hover:bg-blue-500" : "bg-gray-300 group-hover:bg-black")}></div>
+                    </div>
+
+                    {/* === CONSOLE PANEL === */}
+                    <div style={layoutMode === 'classic' ? { height: `${consoleSize}%` } : { width: `${consoleSize}%` }} className={cn("flex flex-col rounded-2xl overflow-hidden border transition-all ease-linear duration-75", theme.panelBg, theme.border)}>
+                        
+                        {/* CLASSIC MODE HEADER (TABS) */}
+                        {layoutMode === 'classic' && (
+                            <div className={cn("h-10 border-b flex items-center justify-between px-2 shrink-0 select-none bg-opacity-50 z-10 overflow-hidden", theme.border, theme.headerBg)}>
+                                <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar mask-gradient pr-4 pl-2">
+                                    {testCases.map((tc, i) => {
+                                        const res = executionResults && executionResults.find(r => r.id === tc.id);
+                                        return (
+                                            <div key={tc.id} className="relative group">
+                                                <button 
+                                                    onClick={() => setSelectedCaseId(tc.id)} 
+                                                    className={cn("px-3 py-1.5 rounded-md text-[10px] font-bold transition-all border flex items-center gap-2 whitespace-nowrap shrink-0 pr-6", 
+                                                        selectedCaseId === tc.id ? (theme.isDark ? "bg-blue-500/10 border-blue-500/40 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-700") : "border-transparent opacity-60 hover:opacity-100 hover:bg-black/5"
+                                                    )}
+                                                >
+                                                    <span className="uppercase tracking-wider opacity-70">{getCaseLabel(tc)}</span>
+                                                    {res && <div className={cn("w-1.5 h-1.5 rounded-full shadow-sm ml-1", res.passed ? "bg-emerald-500" : "bg-rose-500")} />}
                                                 </button>
-                                            );
-                                        })}
-                                        {testCases.length < 5 && <button onClick={() => setTestCases([...testCases, { id: Date.now(), type: 'custom', input: '' }])} className={cn("px-3 py-2 rounded-xl border border-dashed transition-colors hover:text-blue-500 hover:border-blue-500", theme.textSec, theme.border)}><Plus size={14}/></button>}
-                                    </div>
-                                    <div className={cn("w-full p-5 rounded-2xl border min-h-[120px] relative group", theme.inputBg, theme.border)}>
-                                        <div className="absolute top-3 right-4 text-[9px] font-bold uppercase opacity-30 pointer-events-none">Input</div>
-                                        <textarea className={cn("w-full h-full bg-transparent text-xs font-mono outline-none resize-none leading-relaxed placeholder:opacity-30", isDarkMode ? "text-slate-300" : "text-black")} rows={6} value={testCases.find(t => t.id === selectedCaseId)?.input || ""} onChange={(e) => { const val = e.target.value; setTestCases(prev => prev.map(t => t.id === selectedCaseId ? { ...t, input: val } : t)); }} placeholder="Enter input here..." spellCheck={false} />
-                                    </div>
+                                                
+                                                {/* DELETE BUTTON (CLASSIC MODE) */}
+                                                {tc.type === 'custom' && (
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteCase(tc.id); }}
+                                                        className={cn("absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500/20 hover:text-rose-500 text-slate-400")}
+                                                    >
+                                                        <X size={10} strokeWidth={3} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    {testCases.length < 4 && (
+                                        <button onClick={handleAddCase} className={cn("w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors border border-dashed hover:border-solid", theme.border, theme.textSec, "hover:bg-blue-500/10 hover:border-blue-500 hover:text-blue-500")}><Plus size={10} strokeWidth={3}/></button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* REPLIT MODE HEADER (NO TABS) */}
+                        {layoutMode === 'replit' && (
+                            <div className={cn("h-10 border-b flex items-center justify-between px-4 shrink-0 select-none bg-opacity-50 z-10", theme.border, theme.headerBg)}>
+                                <span className="text-xs font-black uppercase tracking-widest opacity-70">Test Cases</span>
+                                {testCases.length < 4 && (
+                                    <button onClick={handleAddCase} className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-black/5", theme.textSec)}><Plus size={14}/></button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* CONTENT AREA */}
+                        <div className="flex-1 flex flex-col p-4 overflow-hidden relative min-h-0">
+                            
+                            {/* REPLIT VIEW: VERTICAL CARD LIST */}
+                            {layoutMode === 'replit' ? (
+                                <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 pb-10">
+                                    {testCases.map((tc, i) => {
+                                        const res = executionResults && executionResults.find(r => r.id === tc.id);
+                                        return (
+                                            <div key={tc.id} className={cn("rounded-xl border overflow-hidden transition-all relative group", theme.border, theme.isDark ? "bg-white/5" : "bg-white")}>
+                                                {/* Header */}
+                                                <div className={cn("px-4 py-2.5 flex items-center justify-between border-b bg-opacity-50", theme.border, theme.headerBg)}>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[11px] font-black uppercase tracking-widest opacity-80">{getCaseLabel(tc)}</span>
+                                                        {res && (
+                                                            <>
+                                                                <div className={cn("w-[1px] h-3 bg-current opacity-20")}></div>
+                                                                <div className="flex items-center gap-2 text-[10px] font-mono opacity-60">
+                                                                    <span className="flex items-center gap-1"><Zap size={10}/> {res.time}</span>
+                                                                    <span className="flex items-center gap-1"><Cpu size={10}/> {res.memory}</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {res ? (
+                                                            <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border", 
+                                                                res.passed ? theme.successBadge : theme.errorBadge
+                                                            )}>
+                                                                {res.passed ? <Check size={10} strokeWidth={3}/> : <X size={10} strokeWidth={3}/>}
+                                                                {res.passed ? "Passed" : "Failed"}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-2 h-2 rounded-full bg-current opacity-20"></div>
+                                                        )}
+                                                        {/* DELETE BUTTON (REPLIT MODE) */}
+                                                        {tc.type === 'custom' && (
+                                                            <button 
+                                                                onClick={() => handleDeleteCase(tc.id)} 
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-rose-500/20 hover:text-rose-500 rounded-md text-slate-400"
+                                                                title="Delete Case"
+                                                            >
+                                                                <Trash2 size={12}/>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-4 space-y-4">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-2 opacity-50"><CornerDownRight size={12}/><span className="text-[10px] font-bold uppercase tracking-widest">Input</span></div>
+                                                        <div className={cn("rounded-lg p-3 border transition-colors focus-within:ring-2 focus-within:ring-blue-500/20", theme.border, theme.inputBg)}>
+                                                            <textarea 
+                                                                ref={el => textareaRefs.current[tc.id] = el}
+                                                                value={tc.input} 
+                                                                onChange={e => { const val = e.target.value; setTestCases(prev => prev.map(t => t.id === tc.id ? {...t, input: val} : t)); adjustTextareaHeight(tc.id); }}
+                                                                rows={1}
+                                                                className={cn("w-full bg-transparent outline-none font-mono text-xs resize-none placeholder:opacity-20 block leading-relaxed whitespace-pre overflow-x-auto", theme.textMain)}
+                                                                placeholder="Enter test case input..."
+                                                                spellCheck={false}
+                                                                style={{ minHeight: '20px', overflow: 'hidden' }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {res && (
+                                                        <div className="space-y-4">
+                                                            {(res.stderr || (!res.passed && res.status !== 'Wrong Answer')) ? (
+                                                                <div className={cn("rounded-xl border overflow-hidden shadow-sm transition-all border-rose-500/30 shadow-rose-900/10")}>
+                                                                    <div className={cn("px-3 py-2 flex items-center justify-between", theme.isDark ? "bg-rose-950/30" : "bg-rose-50")}><div className="flex items-center gap-2"><AlertOctagon size={12} className="text-rose-500"/><span className="text-[10px] font-black uppercase tracking-widest opacity-70 text-rose-500">Error Log</span></div></div>
+                                                                    <div className={cn("p-3 font-mono text-xs overflow-x-auto custom-scrollbar text-rose-500", theme.isDark ? "bg-[#0B1221]" : "bg-white")}>
+                                                                        <pre className="whitespace-pre">{res.stderr || res.compileOutput || "Unknown Error"}</pre>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2 mb-2 opacity-50"><Terminal size={12}/><span className="text-[10px] font-bold uppercase tracking-widest">Your Output</span></div>
+                                                                        <div className={cn("font-mono text-xs p-3 rounded-lg border break-all whitespace-pre overflow-x-auto", theme.border, res.passed ? (theme.isDark ? "text-emerald-400 bg-emerald-500/5" : "text-emerald-700 bg-emerald-50") : (theme.isDark ? "text-rose-400 bg-rose-500/5" : "text-rose-700 bg-rose-50"))}>{res.actualOutput}</div>
+                                                                    </div>
+                                                                    {/* Only show Expected Output if it's a sample case or custom case with output defined */}
+                                                                    {(tc.type === 'sample' || tc.output) && (
+                                                                        <div>
+                                                                            <div className="flex items-center gap-2 mb-2 opacity-50"><Box size={12}/><span className="text-[10px] font-bold uppercase tracking-widest">Expected Output</span></div>
+                                                                            <div className={cn("font-mono text-xs p-3 rounded-lg border break-all opacity-70 whitespace-pre overflow-x-auto", theme.border, theme.isDark ? "bg-white/5" : "bg-gray-100")}>{res.expectedOutput || tc.output}</div>
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {executionResults ? executionResults.map((res, i) => (
-                                        <div key={i} className={cn("p-5 rounded-2xl border text-xs font-mono", theme.inputBg, theme.border)}>
-                                            <div className="flex justify-between border-b pb-3 mb-3 border-white/5 items-center">
-                                                <span className="opacity-40 font-bold uppercase text-[9px] tracking-widest">Case {i + 1}</span>
-                                                <span className={cn("font-black text-[10px] uppercase px-2 py-0.5 rounded", res.passed ? "text-emerald-500 bg-emerald-500/10" : "text-rose-500 bg-rose-500/10")}>{res.status}</span>
+                                /* CLASSIC VIEW: SINGLE ACTIVE CASE */
+                                currentResult ? (
+                                    <div className="flex-1 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 overflow-hidden">
+                                        <div className="flex items-center justify-between shrink-0 bg-opacity-50 p-1">
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn("px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-sm border", currentResult.passed ? theme.successBadge : theme.errorBadge)}>
+                                                    {currentResult.passed ? <Check size={14} strokeWidth={3}/> : <X size={14} strokeWidth={3}/>} {currentResult.status}
+                                                </div>
+                                                <div className="h-4 w-[1px] bg-current opacity-10"></div>
+                                                <div className="flex gap-2">
+                                                    <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-mono", theme.border, theme.isDark ? "bg-slate-800/50" : "bg-slate-100")}><Zap size={10} className="text-amber-500"/><span className="font-bold">{currentResult.time}</span></div>
+                                                    <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-mono", theme.border, theme.isDark ? "bg-slate-800/50" : "bg-slate-100")}><Cpu size={10} className="text-blue-500"/><span className="font-bold">{currentResult.memory}</span></div>
+                                                </div>
                                             </div>
-                                            {res.input && <div className="mb-4"><div className="text-[9px] opacity-30 mb-1 uppercase font-bold">Input</div><div className="bg-black/20 p-2 rounded-lg opacity-80 whitespace-pre-wrap">{res.input}</div></div>}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div><div className="text-[9px] opacity-30 mb-1 uppercase font-bold">Expected Output</div><div className="bg-black/20 p-3 rounded-xl min-h-[40px] whitespace-pre-wrap">{res.expectedOutput || '-'}</div></div>
-                                                <div><div className="text-[9px] opacity-30 mb-1 uppercase font-bold">Your Output</div><div className={cn("p-3 rounded-xl min-h-[40px] whitespace-pre-wrap", res.passed ? "bg-black/20" : "bg-rose-500/10 text-rose-300 border border-rose-500/20")}>{res.actualOutput || '-'}</div></div>
-                                            </div>
-                                            {res.stderr && <div className="mt-4"><div className="text-[9px] text-rose-400 mb-1 uppercase font-bold flex items-center gap-1"><AlertTriangle size={10}/> Stderr</div><pre className="p-3 bg-rose-500/10 text-rose-400 rounded-xl overflow-x-auto text-[10px] border border-rose-500/20">{res.stderr}</pre></div>}
+                                            <button onClick={clearResults} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm", theme.panelBg, theme.border, "hover:bg-blue-500/5 hover:border-blue-500/30 hover:text-blue-500")}><Edit3 size={12}/> Edit Input</button>
                                         </div>
-                                    )) : <div className="h-full flex flex-col items-center justify-center opacity-20 py-10"><Terminal size={32} className="mb-2"/><p className="text-[10px] font-bold uppercase tracking-[0.3em]">No logs</p></div>}
-                                </div>
+
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-10">
+                                            <div className="flex flex-col gap-4">
+                                                <div className={cn("rounded-xl border overflow-hidden shadow-sm", theme.border)}>
+                                                    <div className={cn("px-3 py-2 flex items-center gap-2", theme.codeHeader)}><CornerDownRight size={12} className="opacity-50"/><span className="text-[10px] font-black uppercase tracking-widest opacity-70">Input</span></div>
+                                                    <div className={cn("p-3 font-mono text-xs overflow-x-auto custom-scrollbar whitespace-pre overflow-x-auto", theme.codeBlock, theme.textMain)}>{currentResult.input}</div>
+                                                </div>
+                                                
+                                                {(currentResult.stderr || (!currentResult.passed && currentResult.status !== 'Wrong Answer')) ? (
+                                                    <div className={cn("rounded-xl border overflow-hidden shadow-sm transition-all border-rose-500/30 shadow-rose-900/10")}>
+                                                        <div className={cn("px-3 py-2 flex items-center justify-between", theme.isDark ? "bg-rose-950/30" : "bg-rose-50")}><div className="flex items-center gap-2"><AlertOctagon size={12} className="text-rose-500"/><span className="text-[10px] font-black uppercase tracking-widest opacity-70 text-rose-500">Error Log</span></div></div>
+                                                        <div className={cn("p-3 font-mono text-xs overflow-x-auto custom-scrollbar text-rose-500", theme.isDark ? "bg-[#0B1221]" : "bg-white")}>
+                                                            <pre className="whitespace-pre">{currentResult.stderr || currentResult.compileOutput || "Unknown Error"}</pre>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className={cn("rounded-xl border overflow-hidden shadow-sm transition-all", currentResult.passed ? (theme.isDark ? "border-emerald-500/30 shadow-emerald-900/10" : "border-emerald-200 shadow-emerald-100") : (theme.isDark ? "border-rose-500/30 shadow-rose-900/10" : "border-rose-200 shadow-rose-100"))}>
+                                                            <div className={cn("px-3 py-2 flex items-center justify-between", theme.isDark ? "bg-black/20" : "bg-gray-50")}><div className="flex items-center gap-2"><Terminal size={12} className={currentResult.passed ? "text-emerald-500" : "text-rose-500"}/><span className={cn("text-[10px] font-black uppercase tracking-widest opacity-70", currentResult.passed ? "text-emerald-500" : "text-rose-500")}>Your Output</span></div></div>
+                                                            <div className={cn("p-3 font-mono text-xs overflow-x-auto custom-scrollbar whitespace-pre overflow-x-auto", theme.isDark ? "bg-[#0B1221]" : "bg-white")}>{currentResult.actualOutput}</div>
+                                                        </div>
+                                                        {/* Only show Expected Output if it's a sample or has been defined */}
+                                                        {(testCases.find(t => t.id === selectedCaseId)?.type === 'sample' || currentResult.expectedOutput) && (
+                                                            <div className={cn("rounded-xl border overflow-hidden shadow-sm", theme.border)}>
+                                                                <div className={cn("px-3 py-2 flex items-center gap-2", theme.codeHeader)}><Box size={12} className="opacity-50"/><span className="text-[10px] font-black uppercase tracking-widest opacity-70">Expected Output</span></div>
+                                                                <div className={cn("p-3 font-mono text-xs overflow-x-auto custom-scrollbar whitespace-pre overflow-x-auto", theme.codeBlock, theme.textSec)}>{currentResult.expectedOutput}</div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 flex flex-col h-full animate-in fade-in duration-200 pt-2">
+                                        <div className="flex justify-between items-end mb-2 shrink-0 px-1"><span className={cn("text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2", theme.textHead)}><Edit3 size={12}/> Custom Input</span></div>
+                                        <div className={cn("w-full relative group transition-all rounded-xl border overflow-hidden p-1 focus-within:ring-4 focus-within:ring-blue-500/10 shadow-inner overflow-y-auto custom-scrollbar", theme.inputBg, theme.border)}>
+                                            <textarea ref={textareaRef} value={testCases.find(t => t.id === selectedCaseId)?.input || ""} onChange={e => { const val = e.target.value; setTestCases(prev => prev.map(t => t.id === selectedCaseId ? {...t, input: val} : t)); adjustTextareaHeight(); }} rows={1} className={cn("w-full bg-transparent outline-none p-4 font-mono text-xs resize-none placeholder:opacity-20 block whitespace-pre overflow-x-auto", theme.textMain)} placeholder="Enter your test case input here..." spellCheck={false} style={{ minHeight: '40px', overflow: 'hidden' }} />
+                                        </div>
+                                    </div>
+                                )
                             )}
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* --- RESET MODAL --- */}
-            {showResetModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className={cn("w-[340px] p-8 rounded-[40px] border shadow-2xl", theme.cardBg, theme.border)}>
-                        <div className="flex flex-col items-center text-center gap-4">
-                            <div className="w-12 h-12 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center"><AlertTriangle size={24} /></div>
-                            <div><h3 className="text-xl font-black mb-1">Reset Code?</h3><p className="text-xs opacity-50 leading-relaxed">This will revert your editor. Current work will be lost.</p></div>
-                        </div>
-                        <div className="flex gap-3 mt-8">
-                            <button onClick={() => setShowResetModal(false)} className="flex-1 py-3 text-xs font-bold opacity-50 hover:opacity-100 transition-opacity">Cancel</button>
-                            <button onClick={() => { setCode(STARTER_CODE[language]); setShowResetModal(false); }} className="flex-1 py-3 bg-rose-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-rose-900/20 hover:bg-rose-500 transition-colors">Reset</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }`}</style>
+            
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: ${theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}; border-radius: 99px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${theme.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .mask-gradient { -webkit-mask-image: linear-gradient(to right, black 95%, transparent 100%); mask-image: linear-gradient(to right, black 95%, transparent 100%); }
+            `}</style>
         </div>
     );
 };
