@@ -11,11 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 /* --- 0. CONFIGURATION --- */
 const BACKEND_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000"; 
-
-const SECURITY_CONFIG = {
-    MAX_VIOLATIONS: 5,
-    VIOLATION_WEIGHTS: { TAB_SWITCH: 1, FULLSCREEN_EXIT: 1, RIGHT_CLICK: 0.5 }
-};
+const ASSET_BASE_URL = import.meta.env.VITE_ASSET_URL || "https://iare-data.s3.ap-south-1.amazonaws.com/uploads";
 
 /* --- 1. ATMOSPHERE & THEME --- */
 const Atmosphere = ({ isDarkMode }) => (
@@ -72,7 +68,6 @@ const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDa
                     </div>
                 </div>
 
-                {/* ERROR DISPLAY IN MODAL */}
                 {submitError && (
                     <motion.div 
                         initial={{ opacity: 0, y: -10 }} 
@@ -106,26 +101,36 @@ const SubmitReviewModal = ({ isOpen, onClose, onConfirm, answers, quizData, isDa
     );
 };
 
-const WarningModal = ({ isOpen, onClose, violationCount, maxViolations }) => {
+// Updated Warning Modal: Removed hardcoded "/5" logic, now uses dynamic warningsLeft
+const WarningModal = ({ isOpen, onClose, warningsLeft, message }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-md p-6 rounded-2xl border-2 border-red-500 bg-[#0F172A] text-white text-center shadow-2xl">
                 <ShieldAlert size={48} className="text-red-500 mx-auto mb-4" />
                 <h2 className="text-2xl font-black mb-2">Security Warning</h2>
-                <p className="text-slate-300 mb-6">Focus lost detected. Warning <span className="text-red-400 font-bold">{violationCount}/{maxViolations}</span>.</p>
-                <button onClick={onClose} className="w-full py-3 bg-red-600 rounded-xl font-bold uppercase tracking-wider">Resume Quiz</button>
+                <p className="text-slate-300 mb-6">
+                    {message || "Focus lost detected."}
+                </p>
+                {warningsLeft !== undefined && (
+                     <div className="inline-block px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-sm mb-6">
+                        {warningsLeft} warning{warningsLeft !== 1 ? 's' : ''} remaining
+                     </div>
+                )}
+                <button onClick={onClose} className="w-full py-3 bg-red-600 rounded-xl font-bold uppercase tracking-wider hover:bg-red-500 transition-colors">Resume Quiz</button>
             </motion.div>
         </div>
     );
 };
 
-const LockoutModal = () => (
+const LockoutModal = ({ message }) => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
         <div className="text-center text-white max-w-lg">
             <Ban size={64} className="text-red-500 mx-auto mb-6" />
             <h1 className="text-4xl font-black mb-4">Quiz Locked</h1>
-            <p className="text-slate-400 mb-8">Maximum security violations exceeded. Your session has been auto-submitted.</p>
+            <p className="text-slate-400 mb-8">
+                {message || "Security violation limit exceeded. Your session is being auto-submitted."}
+            </p>
         </div>
     </div>
 );
@@ -136,7 +141,7 @@ const FullscreenGate = ({ onEnter }) => (
             <Maximize size={48} className="text-indigo-400 mx-auto mb-6" />
             <h1 className="text-3xl font-black mb-4">Secure Environment</h1>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">This assessment requires full-screen mode. Exiting full-screen or switching tabs will be recorded as a violation.</p>
-            <button onClick={onEnter} className="w-full py-4 px-8 bg-indigo-600 rounded-xl font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/30">Enable Fullscreen</button>
+            <button onClick={onEnter} className="w-full py-4 px-8 bg-indigo-600 rounded-xl font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-colors">Enable Fullscreen</button>
         </div>
     </div>
 );
@@ -169,23 +174,25 @@ const QuizActivePage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null); // NEW: Error state
+  const [submitError, setSubmitError] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState({ online: true, effectiveType: '4g' });
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
-  const [timeLeft, setTimeLeft] = useState((session?.durationMinutes || 45) * 60);
+  const [timeLeft, setTimeLeft] = useState(session?.durationMinutes ? session.durationMinutes * 60 : 2700); // 45min fallback if null
 
   // Security State
   const [hasStarted, setHasStarted] = useState(false);
-  const [violationCount, setViolationCount] = useState(0);
+  // REMOVED: violationCount (local counting). 
+  // ADDED: warningsLeft (server state).
+  const [warningsLeft, setWarningsLeft] = useState(undefined); 
   const [isLocked, setIsLocked] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const [serverMessage, setServerMessage] = useState(null);
   
   const t = getTheme(isDarkMode);
   const currentQ = questions ? questions[currentQIndex] : null;
 
   /* --- HANDLERS --- */
   
-  // Non-blocking submission handler
   const submitAnswerBackground = async (qId, selectedOption, timeTaken) => {
       try {
           await fetch(`${BACKEND_URL}/api/student/quiz/submit-answer`, {
@@ -199,7 +206,6 @@ const QuizActivePage = () => {
                   timeTaken: timeTaken
               })
           });
-          // Update locked state silently
           setLockedQuestions(prev => new Set(prev).add(qId));
       } catch (error) { 
           console.error("Background Save Error:", error); 
@@ -214,7 +220,6 @@ const QuizActivePage = () => {
   const navigateQuestion = (newIndex) => {
       if (newIndex === currentQIndex) return;
       
-      // FIRE AND FORGET - Submit current question before moving
       const currentAnswer = answers[currentQ._id];
       if (currentAnswer && !lockedQuestions.has(currentQ._id)) {
           const timeTaken = Math.max(1, Math.floor((Date.now() - questionStartTime) / 1000));
@@ -227,11 +232,10 @@ const QuizActivePage = () => {
       setMobileMenuOpen(false);
   };
 
-  /* --- [SECURITY 2] DESTRUCTIVE SUBMISSION (UPDATED) --- */
   const finishQuiz = useCallback(async () => {
       if(isSubmitting) return; 
       setIsSubmitting(true);
-      setSubmitError(null); // Clear previous errors
+      setSubmitError(null); 
       
       try {
           const response = await fetch(`${BACKEND_URL}/api/student/quiz/finish`, {
@@ -244,23 +248,17 @@ const QuizActivePage = () => {
           
           if (result.success) {
               if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-              
-              // PASS THEME AND DATA TO RESULT PAGE
               navigate('/student/quiz/result', { 
-                  state: { 
-                      ...result.data, // Spread report card data
-                      theme: isDarkMode ? 'dark' : 'light' // Pass the current theme
-                  }, 
+                  state: { ...result.data, theme: isDarkMode ? 'dark' : 'light' }, 
                   replace: true 
               });
           } else {
-              // Show error in modal instead of alert
-              setSubmitError(result.message || "Submission failed. Please try again.");
+              setSubmitError(result.message || "Submission failed.");
               setIsSubmitting(false);
           }
       } catch (error) {
           console.error("Finish Error", error);
-          setSubmitError("Network connection failed. Please check internet.");
+          setSubmitError("Network connection failed.");
           setIsSubmitting(false);
       }
   }, [activeSessionCode, navigate, isSubmitting, isDarkMode]);
@@ -294,30 +292,65 @@ const QuizActivePage = () => {
     };
   }, [isSubmitting]);
 
-  const handleViolation = useCallback((type) => {
+  // --- DYNAMIC VIOLATION HANDLER ---
+  const handleViolation = useCallback(async (type) => {
       if (isLocked || !hasStarted || isSubmitting) return;
-      const weight = SECURITY_CONFIG.VIOLATION_WEIGHTS[type] || 1;
-      setViolationCount(prev => {
-          const newCount = prev + weight;
-          if (newCount >= SECURITY_CONFIG.MAX_VIOLATIONS) { 
-              setIsLocked(true); finishQuiz(); return newCount; 
-          }
-          setShowWarning(true); return newCount;
-      });
-  }, [isLocked, hasStarted, isSubmitting, finishQuiz]);
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/student/quiz/violation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                sessionCode: activeSessionCode,
+                violationType: type
+            })
+        });
+
+        const data = await response.json();
+
+        // 1. DYNAMIC WARNING
+        if (data.action === "WARN") {
+            setServerMessage(data.message);
+            // Server dictates how many are left. No hardcoded config needed.
+            setWarningsLeft(data.warningsLeft); 
+            setShowWarning(true);
+        }
+        
+        // 2. DYNAMIC TERMINATION
+        else if (data.action === "TERMINATE") {
+            setServerMessage(data.message);
+            setIsLocked(true);
+            finishQuiz();
+        }
+
+      } catch (error) {
+          console.error("Violation logging error:", error);
+          // If server is unreachable during a violation, we default to a generic warning
+          // without locking out immediately to prevent unfair kick-outs during glitches.
+          setServerMessage("Please return to the quiz immediately.");
+          setShowWarning(true);
+      }
+  }, [isLocked, hasStarted, isSubmitting, activeSessionCode, finishQuiz]);
 
   useEffect(() => {
       if (!hasStarted) return;
-      const handleFS = () => { if (!document.fullscreenElement) handleViolation('FULLSCREEN_EXIT'); };
-      const handleVis = () => { if (document.hidden) handleViolation('TAB_SWITCH'); };
-      const handleBlur = () => handleViolation('TAB_SWITCH');
+      
+      const handleFS = () => { if (!document.fullscreenElement) handleViolation('fullscreen'); };
+      const handleVis = () => { if (document.hidden) handleViolation('tabswitch'); };
+      const handleBlur = () => handleViolation('tabswitch');
+      const handleContextMenu = (e) => { e.preventDefault(); handleViolation('contextmenu'); };
+
       document.addEventListener('fullscreenchange', handleFS);
       document.addEventListener('visibilitychange', handleVis);
       window.addEventListener('blur', handleBlur);
+      document.addEventListener('contextmenu', handleContextMenu);
+      
       return () => {
           document.removeEventListener('fullscreenchange', handleFS);
           document.removeEventListener('visibilitychange', handleVis);
           window.removeEventListener('blur', handleBlur);
+          document.removeEventListener('contextmenu', handleContextMenu);
       };
   }, [hasStarted, handleViolation]);
 
@@ -343,7 +376,6 @@ const QuizActivePage = () => {
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const isUrgent = timeLeft < 300; 
 
-  // --- OPTION LAYOUT LOGIC ---
   const hasLongText = currentQ.options.some(opt => opt.text.length > 60);
   const useGridLayout = !hasLongText && currentQ.options.length > 1;
 
@@ -366,7 +398,8 @@ const QuizActivePage = () => {
   };
 
   const QuizAtlas = () => {
-    const avatarUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${student?.rollno}/${student?.rollno}.jpg`;
+    // Dynamic URL construction
+    const avatarUrl = `${ASSET_BASE_URL}/STUDENTS/${student?.rollno}/${student?.rollno}.jpg`;
 
     return (
         <div className={`flex flex-col h-full border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0F172A] border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -432,16 +465,17 @@ const QuizActivePage = () => {
   return (
     <div className={`h-[100dvh] flex flex-col font-sans overflow-hidden transition-colors duration-500 ${t.text} select-none`}>
       {!hasStarted && <FullscreenGate onEnter={enterFullscreen} />}
-      {isLocked && <LockoutModal />}
-      <WarningModal isOpen={showWarning} onClose={() => { setShowWarning(false); enterFullscreen(); }} violationCount={violationCount} maxViolations={SECURITY_CONFIG.MAX_VIOLATIONS} />
+      {isLocked && <LockoutModal message={serverMessage} />}
+      <WarningModal 
+        isOpen={showWarning} 
+        onClose={() => { setShowWarning(false); enterFullscreen(); }} 
+        warningsLeft={warningsLeft}
+        message={serverMessage}
+      />
       
-      {/* UPDATE 1: Clear error on close */}
       <SubmitReviewModal 
         isOpen={isReviewing} 
-        onClose={() => { 
-            setIsReviewing(false); 
-            setSubmitError(null); 
-        }} 
+        onClose={() => { setIsReviewing(false); setSubmitError(null); }} 
         onConfirm={finishQuiz} 
         answers={answers} 
         quizData={questions} 

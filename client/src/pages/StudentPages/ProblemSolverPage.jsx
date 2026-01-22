@@ -181,18 +181,72 @@ const ProblemSolverPage = () => {
     const editorRef = useRef(null);
 
     // --- DISABLE INSPECT & CONTEXT MENU ---
+
     useEffect(() => {
-        const handleContextMenu = (e) => { e.preventDefault(); };
+        // 1. Disable Right Click
+        const handleContextMenu = (e) => {
+            e.preventDefault();
+        };
+
+        // 2. Disable Keyboard Shortcuts (Ctrl/Cmd + Key)
         const handleKeyDown = (e) => {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) || (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+            // Check for Ctrl (Windows) or Meta (Mac Command key)
+            if (e.ctrlKey || e.metaKey) {
+                const char = e.key.toLowerCase();
+                
+                // Block: C (Copy), V (Paste), X (Cut), A (Select All), 
+                // P (Print), S (Save), U (View Source)
+                if (['c', 'v', 'x', 'a', 'p', 's', 'u'].includes(char)) {
+                    e.preventDefault();
+                }
+            }
+
+            // Block F12 (Dev Tools)
+            if (e.key === 'F12') {
                 e.preventDefault();
             }
+
+            // Block Ctrl+Shift+I/J/C (Dev Tools shortcuts)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+                const char = e.key.toLowerCase();
+                if (['i', 'j', 'c'].includes(char)) {
+                    e.preventDefault();
+                }
+            }
         };
+
+        // 3. Prevent standard clipboard events 
+        // (This blocks usage via browser edit menu even if keys are bypassed)
+        const preventEvent = (e) => {
+            e.preventDefault();
+        };
+
+        // Add Event Listeners
         document.addEventListener('contextmenu', handleContextMenu);
         document.addEventListener('keydown', handleKeyDown);
+        
+        // Block Copy/Cut/Paste events directly
+        document.addEventListener('copy', preventEvent);
+        document.addEventListener('cut', preventEvent);
+        document.addEventListener('paste', preventEvent);
+        
+        // Block Dragging and Dropping
+        document.addEventListener('dragstart', preventEvent);
+        document.addEventListener('drop', preventEvent);
+
+        // Block Text Selection (Highlighting)
+        document.addEventListener('selectstart', preventEvent);
+
+        // Cleanup function
         return () => {
             document.removeEventListener('contextmenu', handleContextMenu);
             document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('copy', preventEvent);
+            document.removeEventListener('cut', preventEvent);
+            document.removeEventListener('paste', preventEvent);
+            document.removeEventListener('dragstart', preventEvent);
+            document.removeEventListener('drop', preventEvent);
+            document.removeEventListener('selectstart', preventEvent);
         };
     }, []);
 

@@ -30,10 +30,10 @@ const FacultySessionAnalytics = () => {
         setAnimate(true);
         fetchAnalytics();
         
-        // Strict 45-second polling interval
+        // Strict 25-second polling interval
         const interval = setInterval(() => {
             fetchAnalytics(true);
-        }, 45000); 
+        }, 25000); 
         
         return () => clearInterval(interval);
     }, [sessionCode]);
@@ -84,7 +84,7 @@ const FacultySessionAnalytics = () => {
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
                 <RefreshCw size={32} className="text-blue-500" />
             </motion.div>
-            <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-[10px] mt-6 animate-pulse">Syncing Insights Engine...</p>
+            <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-[10px] mt-6 animate-pulse">Syncing Insights...</p>
         </div>
     );
 
@@ -221,39 +221,46 @@ const FacultySessionAnalytics = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* --- 1. LEADERBOARD --- */}
-                                        {activeTab === 'leaderboard' && stats.leaderboard.map((entry, idx) => {
-                                            const prevIdx = prevLeaderboardRef.current.findIndex(p => p.value === entry.value);
-                                            const delta = prevIdx === -1 ? 0 : prevIdx - idx;
-                                            return (
-                                                <motion.tr layout key={entry.value} className="bg-slate-50/50 hover:bg-blue-50/50 transition-colors group">
-                                                    <td className="px-8 py-6 rounded-l-3xl">
-                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm 
-                                                            ${idx === 0 ? 'bg-amber-100 text-amber-600 shadow-sm border border-amber-200' : 'bg-white border border-slate-200 text-slate-500'}`}>
-                                                            {idx + 1}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-6 font-black text-slate-800 tracking-tight uppercase">{entry.value}</td>
-                                                    <td className="px-8 py-6">
-                                                        {delta > 0 ? (
-                                                            <span className="flex items-center gap-1.5 text-emerald-500 font-black text-[10px] uppercase">
-                                                                <ArrowUpRight size={14}/> +{delta} ranks
-                                                            </span>
-                                                        ) : delta < 0 ? (
-                                                            <span className="flex items-center gap-1.5 text-rose-500 font-black text-[10px] uppercase">
-                                                                <ArrowDownRight size={14}/> {Math.abs(delta)} ranks
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1.5 text-slate-300 font-black text-[10px] uppercase">
-                                                                <Minus size={14}/> Steady
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-8 py-6 text-right rounded-r-3xl">
-                                                        <span className="text-2xl font-black text-blue-600 tabular-nums">{entry.score}</span>
-                                                    </td>
-                                                </motion.tr>
-                                            );
+                                        {/* --- 1. LEADERBOARD (UPDATED FOR SORTING & SLIDING) --- */}
+                                        {activeTab === 'leaderboard' && [...stats.leaderboard]
+                                            .sort((a, b) => b.score - a.score) // Sort highest to lowest
+                                            .map((entry, idx) => {
+                                                const prevIdx = prevLeaderboardRef.current.findIndex(p => p.value === entry.value);
+                                                const delta = prevIdx === -1 ? 0 : prevIdx - idx;
+                                                return (
+                                                    <motion.tr 
+                                                        layout // <--- Enables Slide Up/Down Animation
+                                                        transition={{ type: "spring", stiffness: 45, damping: 15 }} // Smooth movement
+                                                        key={entry.value} 
+                                                        className="bg-slate-50/50 hover:bg-blue-50/50 transition-colors group"
+                                                    >
+                                                        <td className="px-8 py-6 rounded-l-3xl">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm 
+                                                                ${idx === 0 ? 'bg-amber-100 text-amber-600 shadow-sm border border-amber-200' : 'bg-white border border-slate-200 text-slate-500'}`}>
+                                                                {idx + 1}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-6 font-black text-slate-800 tracking-tight uppercase">{entry.value}</td>
+                                                        <td className="px-8 py-6">
+                                                            {delta > 0 ? (
+                                                                <span className="flex items-center gap-1.5 text-emerald-500 font-black text-[10px] uppercase">
+                                                                    <ArrowUpRight size={14}/> +{delta} ranks
+                                                                </span>
+                                                            ) : delta < 0 ? (
+                                                                <span className="flex items-center gap-1.5 text-rose-500 font-black text-[10px] uppercase">
+                                                                    <ArrowDownRight size={14}/> {Math.abs(delta)} ranks
+                                                                </span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1.5 text-slate-300 font-black text-[10px] uppercase">
+                                                                    <Minus size={14}/> Steady
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-8 py-6 text-right rounded-r-3xl">
+                                                            <span className="text-2xl font-black text-blue-600 tabular-nums">{entry.score}</span>
+                                                        </td>
+                                                    </motion.tr>
+                                                );
                                         })}
 
                                         {/* --- 2. PARTICIPANTS --- */}
