@@ -134,7 +134,7 @@ const ContestInstructions = () => {
     useEffect(() => {
         if (!contestData) {
             // Force user back to entry if they try to access this URL directly
-            navigate('/enter-contest', { replace: true });
+            navigate('/student/dashboard', { replace: true });
         }
     }, [contestData, navigate]);
 
@@ -190,7 +190,7 @@ const ContestInstructions = () => {
         // History Stack becomes: [ ...StudentDashboard, ContestDashboard ]
         // Result: Hitting 'Back' from Dashboard goes safely to StudentDashboard.
         
-        navigate(`/contest/${contestId}/dashboard`, { 
+        navigate(`/contests/${contestId}/live`, { 
             state: { contestData: contestData, theme: selectedTheme },
             replace: true 
         });

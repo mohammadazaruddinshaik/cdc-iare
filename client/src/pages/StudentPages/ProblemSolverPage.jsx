@@ -11,7 +11,7 @@ import {
     Award, Info, Hash 
 } from 'lucide-react';
 
-// ⚡️ IMPORT YOUR API CONFIG
+// ⚠️ MAKE SURE THIS PATH IS CORRECT FOR YOUR PROJECT
 import api from '../../api/axiosConfig'; 
 
 // --- UTILS ---
@@ -142,7 +142,9 @@ const ProblemSolverPage = () => {
     const [consoleSize, setConsoleSize] = useState(30); 
     
     const [isDragging, setIsDragging] = useState(false); 
-    const [isLocked, setIsLocked] = useState(true);
+    
+    // ⚡️ SECURITY LOCK: Initialize based on current fullscreen state
+    const [isLocked, setIsLocked] = useState(() => !document.fullscreenElement);
 
     // Data
     const [problemDetails, setProblemDetails] = useState(null);
@@ -213,14 +215,24 @@ const ProblemSolverPage = () => {
     };
     useEffect(() => { languageRef.current = language; }, [language]);
 
-    // --- FULL SCREEN ---
+    // --- FULL SCREEN & LOCK LOGIC ---
     const enterFullScreen = async () => {
         const elem = document.documentElement;
         try { if (elem.requestFullscreen) { await elem.requestFullscreen(); setIsLocked(false); } } catch (err) { console.error(err); }
     };
+    
     useEffect(() => {
-        const handleChange = () => { if (!document.fullscreenElement) setIsLocked(true); else setIsLocked(false); };
-        const handleVis = () => { if (document.hidden) setIsLocked(true); };
+        const handleChange = () => { 
+            if (!document.fullscreenElement) setIsLocked(true); 
+            else setIsLocked(false); 
+        };
+        const handleVis = () => { 
+            if (document.hidden) setIsLocked(true); 
+        };
+        
+        // Initial check
+        if(document.fullscreenElement) setIsLocked(false);
+
         document.addEventListener('fullscreenchange', handleChange);
         document.addEventListener('visibilitychange', handleVis);
         return () => { document.removeEventListener('fullscreenchange', handleChange); document.removeEventListener('visibilitychange', handleVis); };
@@ -241,13 +253,17 @@ const ProblemSolverPage = () => {
     const executeSubmission = async (isAuto = false) => {
         if (status === 'submitting' || status === 'autosubmitting') return;
         setStatus(isAuto ? 'autosubmitting' : 'submitting');
+        
         try {
             const submitResponse = await api.post('/api/student/submit-problem', {
-                examId: contestId, problemId: problemId, languageId: LANGUAGE_MAP[languageRef.current], code: codeRef.current 
+                examId: contestId, 
+                problemId: problemId, 
+                languageId: LANGUAGE_MAP[languageRef.current], 
+                code: codeRef.current 
             });
             const submitJson = submitResponse.data;
+
             if (isAuto) {
-                // ⚡️ AUTO-SUBMIT: Connect to Final Submit -> Results Page
                 const finalResponse = await api.post('/api/student/final-submit', { examId: contestId });
                 if (finalResponse.data.success) {
                     setSubmissionResult({ 
@@ -260,23 +276,27 @@ const ProblemSolverPage = () => {
                         isAuto: true 
                     });
                     setShowSubmitModal(true);
-                    
-                    // ⚡️ NAVIGATION: Redirect to Assessment Results Page with Data
-                    setTimeout(() => navigate(`/contest/${contestId}/result`, {
-                        state: { 
-                            resultData: finalResponse.data.data, 
-                            theme: themeId 
-                        }
+                    setTimeout(() => navigate(`/contests/result`, {
+                        state: { resultData: finalResponse.data.data, theme: themeId }
                     }), 3000); 
                 }
             } else {
+                const passed = submitJson.passedCount || 0;
+                const total = submitJson.totalPrivateCases || 0;
+                let message = submitJson.message;
+                
+                if (!message) {
+                    if (passed === total && total > 0) message = "Perfect! All test cases passed.";
+                    else if (passed > 0) message = "Good effort! Some test cases passed.";
+                    else message = "All test cases failed. Try again.";
+                }
+
                 setSubmissionResult({ 
                     status: submitJson.success ? submitJson.status : "Error", 
-                    passedCount: submitJson.passedCount || 0, 
-                    totalCases: submitJson.totalPrivateCases || 0, 
+                    passedCount: passed, 
+                    totalCases: total, 
                     marksEarned: submitJson.marksEarned || 0, 
-                    totalMarks: submitJson.totalMarks || 10,
-                    message: submitJson.message || "Submission Failed", 
+                    message: message, 
                     isAuto: false 
                 });
                 setShowSubmitModal(true);
@@ -512,7 +532,7 @@ const ProblemSolverPage = () => {
                 </div>
             )}
 
-            {/* --- ENHANCED SUBMISSION RESULT MODAL --- */}
+            {/* --- ⚡️ SUBMISSION RESULT MODAL (With Red/Green Boxes) --- */}
             {showSubmitModal && submissionResult && (
                 <div className={cn("fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-md animate-in fade-in zoom-in-95 duration-300", theme.modalOverlay)}>
                     <div className={cn("w-full max-w-md rounded-3xl border shadow-2xl relative overflow-hidden flex flex-col", theme.panelBg, theme.border)}>
@@ -526,46 +546,42 @@ const ProblemSolverPage = () => {
                             <button onClick={() => setShowSubmitModal(false)} className="p-2 rounded-full hover:bg-black/10 transition-colors"><X size={18}/></button>
                         </div>
 
-                        {/* Body - Childhood Paper Style */}
-                        <div className="p-10 flex flex-col items-center justify-center gap-6 relative">
-                            {/* "Paper" Circle Effect */}
-                            <div className="relative">
-                                <div className={cn(
-                                    "w-40 h-40 rounded-full border-4 flex flex-col items-center justify-center transform rotate-[-10deg] shadow-lg",
-                                    isPassed 
-                                        ? "border-emerald-500 text-emerald-600 bg-emerald-50" 
-                                        : "border-rose-500 text-rose-600 bg-rose-50"
-                                )}>
-                                    <div className="text-center">
-                                        <span className="text-5xl font-black font-mono tracking-tighter" style={{ fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif' }}>
-                                            {submissionResult.marksEarned}
-                                        </span>
-                                        <div className={cn("w-full h-1 bg-current rounded-full my-1 opacity-50")}></div>
-                                        <span className="text-3xl font-bold font-mono opacity-80" style={{ fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif' }}>
-                                            {submissionResult.totalMarks || 10}
-                                        </span>
-                                    </div>
-                                </div>
-                                {/* Status Stamp */}
-                                <div className={cn(
-                                    "absolute -bottom-2 -right-6 px-4 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest border-2 shadow-xl transform rotate-[5deg]",
-                                    theme.panelBg,
-                                    isPassed ? "border-emerald-500 text-emerald-500" : "border-rose-500 text-rose-500"
-                                )}>
-                                    {isPassed ? "Excellent!" : "Try Again"}
-                                </div>
-                            </div>
+                        {/* Body - Test Case Grid */}
+                        <div className="p-8 flex flex-col items-center justify-center gap-6">
                             
-                            <div className="text-center space-y-2 mt-2">
-                                <h4 className={cn("text-xl font-bold", theme.textHead)}>
-                                    {isPassed ? "Successfully Solved!" : "Partially Solved / Failed"}
+                            <div className="text-center space-y-1">
+                                <h4 className={cn("text-2xl font-black tracking-tight", isPassed ? "text-emerald-500" : "text-amber-500")}>
+                                    {isPassed ? "Excellent Work!" : "Some Tests Failed"}
                                 </h4>
-                                <p className="text-sm opacity-60 px-4">
+                                <p className={cn("text-sm opacity-60", theme.textMain)}>
                                     {submissionResult.message}
                                 </p>
-                                <div className="text-xs font-mono opacity-50 pt-2">
-                                    Test Cases: {submissionResult.passedCount} / {submissionResult.totalCases} Passed
-                                </div>
+                            </div>
+
+                            {/* ⚡️ TEST CASE BOXES GRID */}
+                            <div className="flex flex-wrap items-center justify-center gap-2 max-w-[300px]">
+                                {Array.from({ length: submissionResult.totalCases }).map((_, index) => {
+                                    // Visual logic: First 'passedCount' are green, rest are red
+                                    const isCasePassed = index < submissionResult.passedCount;
+                                    return (
+                                        <div 
+                                            key={index} 
+                                            className={cn(
+                                                "w-10 h-10 rounded-lg flex items-center justify-center border-2 transition-all hover:scale-110 cursor-default",
+                                                isCasePassed 
+                                                    ? "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md" 
+                                                    : "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md"
+                                            )}
+                                            title={isCasePassed ? "Passed" : "Failed"}
+                                        >
+                                            {isCasePassed ? <Check size={20} strokeWidth={3}/> : <X size={20} strokeWidth={3}/>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className={cn("px-4 py-2 rounded-full border text-xs font-mono font-bold uppercase tracking-widest", theme.border, theme.inputBg)}>
+                                Score: {submissionResult.marksEarned} / {submissionResult.totalMarks || 10}
                             </div>
                         </div>
 
@@ -576,8 +592,7 @@ const ProblemSolverPage = () => {
                             </button>
                             {(isPassed && !submissionResult.isAuto) && (
                                 <button 
-                                    // ⚡️ NAVIGATION: Go back to Contest Dashboard to solve other problems
-                                    onClick={() => navigate(`/contest/${contestId}/dashboard`, { state: { contestData, theme: themeId } })} 
+                                    onClick={() => navigate(`/contests/${contestId}/live`, { state: { contestData, theme: themeId } })} 
                                     className={cn("flex-1 py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg transition-transform hover:-translate-y-0.5", theme.accentPrimary)}
                                 >
                                     Dashboard
@@ -592,9 +607,8 @@ const ProblemSolverPage = () => {
             <header className={cn("shrink-0 z-20 px-2 pt-2 relative", theme.appBg)}>
                 <div className={cn("h-16 rounded-2xl flex items-center justify-between px-6 border shadow-sm backdrop-blur-xl transition-all", theme.headerBg, theme.border)}>
                     <div className="flex items-center gap-4">
-                        {/* ⚡️ BACK BUTTON NAVIGATES TO CONTEST DASHBOARD */}
                         <button 
-                            onClick={() => navigate(`/contest/${contestId}/dashboard`, { state: { contestData: contestData, theme: themeId } })} 
+                            onClick={() => navigate(`/contests/${contestId}/live`, { state: { contestData: contestData, theme: themeId } })} 
                             className={cn("p-2 rounded-lg border hover:scale-105 active:scale-95 transition-all", theme.panelBg, theme.border, theme.textSec)}
                         >
                             <ChevronLeft size={20}/>
@@ -710,7 +724,6 @@ const ProblemSolverPage = () => {
                     <div style={layoutMode === 'default' ? { height: `${consoleSize}%` } : { width: `${consoleSize}%` }} className={cn("flex flex-col rounded-2xl overflow-hidden border transition-all ease-linear duration-75 shadow-sm", theme.panelBg, theme.border)}>
                         <div className={cn("h-10 border-b flex items-center justify-between px-2 shrink-0 select-none bg-opacity-50 z-10 overflow-hidden", theme.border, theme.headerBg)}>
                             <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar mask-gradient pr-4 pl-2">
-                                {/* ⚡️ SHOW ALL CASES (Samples + Custom) */}
                                 {testCases.map((tc, i) => {
                                     const res = executionResults && executionResults.find(r => r.id === tc.id);
                                     return (
@@ -740,7 +753,6 @@ const ProblemSolverPage = () => {
                                                 <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-mono", theme.border, theme.isDark ? "bg-slate-800/50" : "bg-slate-100")}><Cpu size={10} className="text-blue-500"/><span className="font-bold">{currentResult.memory}</span></div>
                                             </div>
                                         </div>
-                                        {/* ⚡️ MINIMAL EDIT ICON */}
                                         <button onClick={() => setExecutionResults(null)} className={cn("p-2 rounded-lg transition-colors border shadow-sm hover:bg-blue-500/5 hover:border-blue-500/30 hover:text-blue-500", theme.panelBg, theme.border)} title="Edit Input"><Edit3 size={14}/></button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-10">
@@ -785,7 +797,6 @@ const ProblemSolverPage = () => {
                                                 adjustTextareaHeight(selectedCaseId);
                                             }} 
                                             rows={1} 
-                                            // ⚡️ ENSURE whitespace-pre FOR NEWLINES AND High Contrast
                                             className={cn("w-full bg-transparent outline-none p-4 font-mono text-xs resize-none block whitespace-pre overflow-x-auto h-full", currentCase?.type === 'sample' && "opacity-60 cursor-not-allowed")} 
                                             placeholder={currentCase?.type === 'sample' ? "Sample input (Read Only)" : "Enter test case input...\n(Use newlines for multiple inputs)"}
                                             spellCheck={false} 

@@ -87,7 +87,6 @@ const AppRoutes = () => {
       <Routes>
         {/* === PUBLIC ROUTE (NO AUTH CONTEXT) === */}
         <Route path="/" element={<LoginPage />} />
-        <Route path="/result" element={<AssessmentResult />} />
 
 
         {/* Public Contest Routes */}
@@ -103,6 +102,7 @@ const AppRoutes = () => {
             <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
             <Route path="/batch-report" element={<BatchWiseReport />} />
             <Route path="/coding-contests" element={<FacultyContestPage />} />
+        
           </Route>
 
           {/* 2. EXCLUSIVE ADMIN ROUTES */}
@@ -144,9 +144,11 @@ const AppRoutes = () => {
 
             <Route path="/contests" element={<StudentContestPage />} />
             <Route path="/contests/:contestId" element={<EnterContest />} />
-            <Route path="/contest/:contestId/instructions" element={<ContestInstructions />} />
+            <Route path="/contests/:contestId/instructions" element={<ContestInstructions />} />
             <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
             <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
+            <Route path="/contests/result" element={<AssessmentResult />} />
+
 
             <Route path="/student/quiz" element={<QuizDashboard/>}/>
             <Route path="/student/quiz/join" element={<QuizJoin />} />

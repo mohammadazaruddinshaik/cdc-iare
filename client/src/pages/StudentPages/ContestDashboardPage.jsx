@@ -261,7 +261,7 @@ const ContestDashboard = () => {
                     title: 'Submission Successful!',
                     message: json.message || "Your exam has been submitted successfully.",
                     // ⚡️ UPDATED: Navigate to results page with data on close
-                    onClose: () => navigate(`/contest/${contestId}/result`, {
+                    onClose: () => navigate(`/contests/result`, {
                         state: { 
                             resultData: json.data, // Passing the full response data
                             theme: themeId 

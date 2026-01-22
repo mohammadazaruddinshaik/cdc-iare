@@ -337,7 +337,7 @@ const ContestCard = ({ contest, onSelect }) => {
     const isEnded = contest.status === 'PAST';
     const isCompleted = contest.submissionStatus === 'Completed';
 
-    const handleEnter = (e) => { e.stopPropagation(); navigate(`/contests/${contest.examId}`); };
+    const handleEnter = (e) => { e.stopPropagation(); navigate(`/contests/${contest._id}`); };
     const handleViewResults = (e) => { e.stopPropagation(); onSelect(contest); };
 
     return (

@@ -106,31 +106,34 @@ const ContestEntry = () => {
     const [errorMsg, setErrorMsg] = useState('');
 
     const verifyExamId = async (code) => {
-        if (!code) return;
-        setStatus('LOADING');
-        setErrorMsg('');
+    if (!code) return;
+    setStatus('LOADING');
+    setErrorMsg('');
 
-        try {
-            // ⚡️ REPLACED FETCH WITH API INSTANCE (Handles Refresh Token)
-            const response = await api.post('/api/student/enter', { inputExamId: code });
-            const data = response.data;
+    try {
+        const response = await api.post('/api/student/enter', { inputExamId: code });
+        const data = response.data;
 
-            if (data.success) {
-                setTimeout(() => {
-                    setApiData(data);
-                    setStatus('SUCCESS');
-                }, 800);
-            } else {
-                setStatus('ERROR');
-                setErrorMsg(data.message || 'Contest ID is Invalid');
-            }
-        } catch (error) {
-            console.error(error);
+        if (data.success) {
+            setTimeout(() => {
+                setApiData(data);
+                setStatus('SUCCESS');
+            }, 800);
+        } else {
+            // This handles cases where the server returns 200 OK but success: false
             setStatus('ERROR');
-            setErrorMsg('Connection Error: Backend unavailable.');
+            setErrorMsg(data.message || 'Contest ID is Invalid');
         }
-    };
-
+    } catch (e) {
+        // --- ADD THIS LOGIC ---
+        console.error("API Error:", e);
+        setStatus('ERROR');
+        
+        // Handle different types of error messages
+        const message = e.response?.data?.message || e.message || 'Server connection failed';
+        setErrorMsg(message);
+    }
+};
     // --- AUTO FETCH LOGIC ---
     useEffect(() => {
         if (examId.length === 6) {
@@ -149,7 +152,7 @@ const ContestEntry = () => {
             // ⚡️ FIX: Pass correct ID to URL
             const contestId = apiData.examId; 
             
-            navigate(`/contest/${contestId}/instructions`, { 
+            navigate(`/contests/${contestId}/instructions`, { 
                 state: { contestData: apiData },
                 replace: true 
             });
