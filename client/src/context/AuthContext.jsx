@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Loader from '../components/Loader';
+import api from '../api/axiosConfig'; // ⚡️ Using your new Axios instance
 
 const AuthContext = createContext(null);
-const API_URL = import.meta.env.VITE_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -11,45 +11,39 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkUserSession = async () => {
       try {
-        // Reduced delay to 300ms as requested
+        // Reduced delay to 300ms as requested (Artificial delay for smooth loader)
         const minLoadTime = new Promise(resolve => setTimeout(resolve, 300));
         
-        const apiCall = fetch(`${API_URL}/api/me`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        });
+        // ⚡️ CHANGE 1: Use 'api.get' instead of fetch
+        // This automatically handles credentials, headers, and Token Refresh
+        const apiCall = api.get('/api/me');
 
         const [response] = await Promise.all([apiCall, minLoadTime]);
 
-        if (response.ok) {
-          const data = await response.json();
+        // Axios returns the data directly in .data
+        const data = response.data;
           
-          // --- UPDATED MAPPING LOGIC ---
-          // Maps userId (from student response) to username for consistent usage in Header
-          setUser({
-            username: data.username || data.userId || data.rollno, 
-            role: data.role,
-            sem: data.sem,       // Captured from student response
-            batch: data.batch,   // Captured from student response
-            userId: data.userId  // Explicitly storing userId
-          });
-        } else {
-          // --- CASE 1: Token missing or Invalid (401/403) ---
-          console.warn("Session invalid, redirecting to login.");
-          setUser(null);
-          // Only redirect if not already at root to avoid infinite loops
-          if (window.location.pathname !== '/') {
-            window.location.replace('/');
-          }
-        }
+        // --- MAPPING LOGIC ---
+        setUser({
+          username: data.username || data.userId || data.rollno, 
+          role: data.role,
+          sem: data.sem,       
+          batch: data.batch,   
+          userId: data.userId 
+        });
+
       } catch (error) {
-        // --- CASE 2: Network error or Server down ---
-        console.error("Session check failed:", error);
+        // --- CASE: Session invalid AND Refresh failed ---
+        // If we get here, it means the Refresh Token was also expired.
+        console.warn("Session check failed or expired:", error);
         setUser(null);
-        // Only redirect if not already at root to avoid infinite loops
+        
+        // Only redirect if not already at root
         if (window.location.pathname !== '/') {
-            window.location.replace('/');
+            // We use navigate or window location here. 
+            // Since this is initialization, standard logic usually allows the protected route wrapper to handle the redirect,
+            // but keeping your logic here is safe:
+             window.location.replace('/');
         }
       } finally {
         setLoading(false);
@@ -65,10 +59,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch(`${API_URL}/api/logout`, { 
-        method: 'POST', 
-        credentials: 'include' 
-      });
+      // ⚡️ CHANGE 2: Use 'api.post' for logout
+      await api.post('/api/logout');
     } catch (error) {
       console.error("Logout error", error);
     }

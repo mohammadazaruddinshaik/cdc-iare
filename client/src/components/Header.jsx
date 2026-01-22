@@ -8,7 +8,7 @@ import {
     // --- NEW ICONS ADDED HERE ---
     Puzzle,       // For Quiz Category
     ListChecks,   // For Manage Quizzes
-    Radio         // For Live Sessions
+    Radio,         // For Live Sessions
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import IARELogo from '../assets/logo.png';
@@ -103,7 +103,7 @@ const Header = ({ animate }) => {
         label: 'Arena', 
         icon: <Swords size={iconSize} /> 
     },
-            { path: '/student/quiz', label: 'Quiz', icon: <Code2 size={iconSize} /> },
+            { path: '/student/quiz', label: 'Quiz', icon: <Puzzle size={iconSize} /> },
             { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
             { path: '/timetable', label: 'Schedule', icon: <CalendarRange size={iconSize} /> },            
             { path: '/logs', label: 'Logs', icon: <FileClock size={iconSize} /> }, 

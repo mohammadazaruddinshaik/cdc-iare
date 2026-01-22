@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js'; // Import Crypto JS
 
-// --- ICONS ---
 import {
     LogIn, User, Eye, EyeOff, Linkedin, Github, 
     QrCode, Trophy, CheckCircle, 
@@ -11,15 +10,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- ASSETS ---
 import IARELogo from '../../assets/logo.png';
 import AzarImg from '../../assets/azaruddin.png';
 
-// --- CONFIGURATION ---
 const API_URL = import.meta.env.VITE_BASE_URL;
-const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_KEY; // Key from .env
+const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_KEY; 
 
-// --- SECURITY HELPERS ---
 const encryptData = (data) => {
   try {
     if (!data) return null;
@@ -274,10 +270,7 @@ const LoginPage = () => {
             if (response.ok && data) {
                 setActiveField('success');
                 
-                localStorage.setItem('user', JSON.stringify({
-                    username: data.username,
-                    role: data.role
-                }));
+                // REMOVED localStorage.setItem
 
                 setTimeout(() => {
                     let targetPath = '/';

@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Database, Cloud, Code, Coffee, AlertCircle, Zap, User, Clock, CalendarDays, Loader2 } from 'lucide-react';
+import { BookOpen, Database, Cloud, Code, Coffee, AlertCircle, User, Clock, CalendarDays } from 'lucide-react';
+import api from '../../api/axiosConfig'; 
 import BarChart from '../../components/BarChart';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
 import Loader from '../../components/Loader';
-
-// --- ENVIRONMENT VARIABLES ---
-const backendUrl = import.meta.env.VITE_BASE_URL;
 
 // --- ASSET IMPORTS ---
 import leetcodeLogo from '../../assets/leetcode.webp';
@@ -69,7 +66,7 @@ const getRankBadge = (rank) => {
     return "bg-gray-100";
 };
 
-// --- COMPONENTS ---
+// --- SUB-COMPONENTS ---
 
 const DonutChart = memo(({ percentage, presentColor, absentColor }) => {
     const size = 90; 
@@ -170,7 +167,6 @@ const EmptyState = ({ title }) => (
     </div>
 );
 
-
 const ErrorDisplay = ({ message, onRetry }) => (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F0F2F5] to-[#E5E7EB]">
         <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
@@ -198,34 +194,28 @@ const StudentDashboardPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // --- API FETCHING LOGIC ---
+    // --- UPDATED API FETCHING LOGIC ---
     const fetchStudentData = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
 
-            const response = await fetch(`${backendUrl}/api/student/get-dashboard-data`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: "include", 
-            });
+            // ⚡️ USING AXIOS INSTANCE
+            // No need for manual 401 checks here; the interceptor handles it.
+            const response = await api.get('/api/student/get-dashboard-data');
 
-            if (response.status === 401 || response.status === 403) {
-                logout(); 
-                return;
-            }
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Server error' }));
-                throw new Error(errorData.message || `Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setStudentData(data);
+            // Axios returns the parsed JSON automatically in .data
+            setStudentData(response.data);
 
         } catch (err) {
             console.error('Dashboard Error:', err.message);
-            setError(err.message);
+            
+            // 401/403 here means even the refresh token failed/expired
+            if (err.response?.status === 401 || err.response?.status === 403) {
+                logout(); 
+            } else {
+                setError(err.response?.data?.message || "Failed to connect to the server.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -436,7 +426,6 @@ const StudentDashboardPage = () => {
                     <div className="mt-8">
                         <h2 className="text-xl font-bold mb-4 text-white">Your Courses</h2>
                         {getCourseData.length > 0 ? (
-                            // FIX: Added 'md:grid-cols-3' and 'max-w-md mx-auto sm:max-w-none' to control width on small screens
                             <div className="max-w-md mx-auto sm:max-w-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-4 xl:gap-6">
                                 {getCourseData.map((course) => (
                                     <CourseCard key={course.id} course={course} />

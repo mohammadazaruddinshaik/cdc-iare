@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    ArrowRight, Clock, Calendar, Search, 
-    CheckCircle2, AlertCircle, FileQuestion, 
-    Hash, Hourglass, Layers
+    ArrowRight, Clock, Search, CheckCircle2, 
+    AlertCircle, FileQuestion, Layers 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const backendUrl = import.meta.env.VITE_BASE_URL;
+// --- INTEGRATIONS ---
+import api from '../../api/axiosConfig'; 
+import ErrorDisplay from '../../components/ErrorDisplay'; 
+import { useNetworkStatus } from '../../hooks/Network';
 
 // --- HELPER: FORMAT DURATION ---
 const getDurationString = (startStr, endStr) => {
@@ -22,36 +24,36 @@ const getDurationString = (startStr, endStr) => {
     return `${mins} Mins`;
 };
 
+// --- HELPER: TIME CALCULATION ---
+const calculateTimeLeft = (startTime, endTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (now < start) {
+        const diff = start - now;
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        return { status: 'Starts In', time: `${h}h ${m}m ${s}s` };
+    } else if (now >= start && now < end) {
+        const diff = end - now;
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        return { status: 'Ends In', time: `${h}h ${m}m ${s}s` };
+    } else {
+        return { status: 'Status', time: 'Ended' };
+    }
+};
+
 // --- COMPONENT: LIVE COUNTDOWN ---
 const LiveTimer = ({ startTime, endTime }) => {
-    const [timeStatus, setTimeStatus] = useState('');
-    const [timeLeft, setTimeLeft] = useState('');
+    const [timerData, setTimerData] = useState(() => calculateTimeLeft(startTime, endTime));
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const now = new Date();
-            const start = new Date(startTime);
-            const end = new Date(endTime);
-
-            if (now < start) {
-                const diff = start - now;
-                const h = Math.floor(diff / (1000 * 60 * 60));
-                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const s = Math.floor((diff % (1000 * 60)) / 1000);
-                setTimeStatus('Starts In');
-                setTimeLeft(`${h}h ${m}m ${s}s`);
-            } else if (now >= start && now < end) {
-                const diff = end - now;
-                const h = Math.floor(diff / (1000 * 60 * 60));
-                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const s = Math.floor((diff % (1000 * 60)) / 1000);
-                setTimeStatus('Ends In');
-                setTimeLeft(`${h}h ${m}m ${s}s`);
-            } else {
-                setTimeStatus('Status');
-                setTimeLeft('Ended');
-                clearInterval(interval);
-            }
+            setTimerData(calculateTimeLeft(startTime, endTime));
         }, 1000);
 
         return () => clearInterval(interval);
@@ -59,8 +61,8 @@ const LiveTimer = ({ startTime, endTime }) => {
 
     return (
         <div className="text-right">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">{timeStatus}</p>
-            <p className="font-mono font-bold text-indigo-600 text-sm">{timeLeft}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">{timerData.status}</p>
+            <p className="font-mono font-bold text-indigo-600 text-sm">{timerData.time}</p>
         </div>
     );
 };
@@ -96,6 +98,8 @@ const DataStreamBackground = () => {
 // --- MAIN PAGE COMPONENT ---
 const ContestEntry = () => {
     const navigate = useNavigate();
+    const isOnline = useNetworkStatus(); // ⚡️ NETWORK CHECK
+    
     const [examId, setExamId] = useState('');
     const [status, setStatus] = useState('IDLE'); 
     const [apiData, setApiData] = useState(null);
@@ -107,14 +111,9 @@ const ContestEntry = () => {
         setErrorMsg('');
 
         try {
-            const response = await fetch(`${backendUrl}/api/student/enter`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ inputExamId: code }),
-                credentials: 'include'
-            });
-
-            const data = await response.json();
+            // ⚡️ REPLACED FETCH WITH API INSTANCE (Handles Refresh Token)
+            const response = await api.post('/api/student/enter', { inputExamId: code });
+            const data = response.data;
 
             if (data.success) {
                 setTimeout(() => {
@@ -140,7 +139,6 @@ const ContestEntry = () => {
     }, [examId]);
 
     const handleKeyDown = (e) => {
-        // Manual override if user presses Enter
         if (e.key === 'Enter' && examId.length >= 1) {
             verifyExamId(examId);
         }
@@ -148,13 +146,20 @@ const ContestEntry = () => {
 
     const handleStartContest = () => {
         if (apiData) {
-            // Using replace: true to prevent going back
-            navigate(`/contest/${examId}/instructions`, { 
+            // ⚡️ FIX: Pass correct ID to URL
+            const contestId = apiData.examId; 
+            
+            navigate(`/contest/${contestId}/instructions`, { 
                 state: { contestData: apiData },
                 replace: true 
             });
         }
     };
+
+    // ⚡️ OFFLINE RENDER
+    if (!isOnline) {
+        return <ErrorDisplay type="offline" />;
+    }
 
     return (
         <div className="relative min-h-screen w-full flex flex-col items-center justify-center font-sans text-slate-900 overflow-hidden">
@@ -191,11 +196,15 @@ const ContestEntry = () => {
                                 type="text"
                                 value={examId}
                                 onChange={(e) => {
-                                    setExamId(e.target.value);
-                                    if(status !== 'IDLE') setStatus('IDLE');
+                                    const val = e.target.value;
+                                    if (val.length <= 6) {
+                                        setExamId(val);
+                                        if(status !== 'IDLE') setStatus('IDLE');
+                                    }
                                 }}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Enter Code"
+                                maxLength={6}
                                 className={`
                                     w-full h-24 text-center text-3xl font-black tracking-wider rounded-[2rem] outline-none transition-all duration-300 font-mono uppercase
                                     placeholder:font-sans placeholder:text-slate-200 placeholder:text-xl placeholder:tracking-widest placeholder:font-bold

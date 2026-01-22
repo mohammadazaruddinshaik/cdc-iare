@@ -5,9 +5,15 @@ import {
     Terminal, Cpu, Code2, 
     ChevronRight, Clock, ArrowRight, 
     Trophy, AlertOctagon, 
-    MonitorX, Eye, Lock, Zap
+    MonitorX, Eye, Lock, Zap 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// --- CUSTOM IMPORTS ---
+// Assuming these are in your standard project structure
+import ErrorDisplay from '../../components/ErrorDisplay'; 
+import { useNetworkStatus } from '../../hooks/Network';
+import apiConfig from '../../api/axiosConfig'; 
 
 // --- CSS UTILS ---
 const styles = `
@@ -32,8 +38,7 @@ const getDurationString = (startStr, endStr) => {
 const GridBackground = ({ activeTheme }) => {
     return (
         <div className="fixed inset-0 overflow-hidden pointer-events-none transition-colors duration-700 bg-slate-50 z-0">
-            
-            {/* 1. MIDNIGHT THEME (Blue/Slate - LogsPage Style) */}
+            {/* 1. MIDNIGHT THEME */}
             <motion.div 
                 animate={{ opacity: activeTheme === 'midnight' ? 1 : 0 }}
                 transition={{ duration: 0.5 }}
@@ -43,11 +48,11 @@ const GridBackground = ({ activeTheme }) => {
                 <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)', backgroundSize: '50px 50px', maskImage: 'radial-gradient(circle at center, black 40%, transparent 100%)' }} />
             </motion.div>
 
-            {/* 2. DARK THEME (Pure Black/Neutral) */}
+            {/* 2. DARK THEME */}
             <motion.div 
                 animate={{ opacity: activeTheme === 'dark' ? 1 : 0 }}
                 transition={{ duration: 0.5 }}
-                className="absolute inset-0 bg-[#050505]" // Almost pure black
+                className="absolute inset-0 bg-[#050505]"
             >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_50%)]" />
                 <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)', backgroundSize: '30px 30px', maskImage: 'radial-gradient(circle at center, black 50%, transparent 100%)' }} />
@@ -68,10 +73,8 @@ const GridBackground = ({ activeTheme }) => {
 
 // --- THEME CARD COMPONENT ---
 const ThemeCard = ({ id, activeTheme, icon: Icon, title, sub, onSelect }) => {
-    // Determine visual style based on the CARD'S identity, not just active theme
     const isMid = id === 'midnight';
     const isDark = id === 'dark';
-    const isLight = id === 'light';
 
     let bgClass = "bg-white/90 border-slate-200";
     let textClass = "text-slate-800";
@@ -122,35 +125,31 @@ const ContestInstructions = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { contestId } = useParams();
+    const isOnline = useNetworkStatus(); // ⚡️ Network Check
 
     // 1. RECEIVE DATA
     const contestData = location.state?.contestData;
 
+    // --- VALIDATION: REDIRECT IF NO DATA ---
     useEffect(() => {
         if (!contestData) {
+            // Force user back to entry if they try to access this URL directly
             navigate('/enter-contest', { replace: true });
         }
     }, [contestData, navigate]);
 
-
-    // --- PREVENT BACK NAVIGATION ---
+    // --- TRAP: PREVENT BACK NAVIGATION ---
+    // This ensures they cannot go back to "Entry" page once here.
     useEffect(() => {
-        // 1. Push the current state into the history stack immediately
-        // This creates a "dummy" history entry so the current page is now the "top" of the stack
+        // Push "current" state to history stack to create a buffer
         window.history.pushState(null, document.title, window.location.href);
 
-        // 2. Define the handler for the 'popstate' event (which fires when back is pressed)
         const handlePopState = (event) => {
-            // 3. When the user hits back, we immediately push them forward again
-            // effectively neutralizing the back button
+            // If they hit back, push them forward again immediately
             window.history.pushState(null, document.title, window.location.href);
         };
 
-        // 4. Add the event listener
         window.addEventListener('popstate', handlePopState);
-
-        // 5. Cleanup: remove the listener when the component unmounts
-        // (e.g., when they successfully click "Launch" and move to the next page)
         return () => {
             window.removeEventListener('popstate', handlePopState);
         };
@@ -158,7 +157,7 @@ const ContestInstructions = () => {
 
     // State
     const [step, setStep] = useState(1);
-    const [selectedTheme, setSelectedTheme] = useState('light'); // 'light', 'midnight', 'dark'
+    const [selectedTheme, setSelectedTheme] = useState('light'); 
     const [hoveredTheme, setHoveredTheme] = useState(null); 
     const [sliderVal, setSliderVal] = useState(0);
     const [clipPath, setClipPath] = useState('circle(0% at 50% 50%)');
@@ -183,9 +182,15 @@ const ContestInstructions = () => {
         }, 50);
     };
 
-    const handleLaunch = () => {
+    const handleLaunch = async () => {
         if (!agreed) return;
-        navigate(`/contests/${contestId}/live`, { 
+        
+        // ⚡️ NAVIGATION CHAIN PART 2
+        // We replace 'Instructions' in the history with 'Dashboard'.
+        // History Stack becomes: [ ...StudentDashboard, ContestDashboard ]
+        // Result: Hitting 'Back' from Dashboard goes safely to StudentDashboard.
+        
+        navigate(`/contest/${contestId}/dashboard`, { 
             state: { contestData: contestData, theme: selectedTheme },
             replace: true 
         });
@@ -198,12 +203,17 @@ const ContestInstructions = () => {
         if(val > 95) handleLaunch();
     };
 
+    // ⚡️ OFFLINE RENDER
+    if (!isOnline) {
+        return <ErrorDisplay type="offline" />;
+    }
+
     if (!contestData) return null; 
 
     // --- DYNAMIC STYLES BASED ON THEME ---
     const getThemeStyles = () => {
         switch(selectedTheme) {
-            case 'midnight': // Blue/Slate (LogsPage style)
+            case 'midnight':
                 return {
                     text: 'text-white',
                     subText: 'text-slate-400',
@@ -217,11 +227,11 @@ const ContestInstructions = () => {
                     sliderTrack: 'bg-[#0F172A]',
                     sliderFill: 'bg-indigo-500/20'
                 };
-            case 'dark': // Pure Black/Gray
+            case 'dark':
                 return {
                     text: 'text-gray-100',
                     subText: 'text-neutral-500',
-                    cardBg: 'bg-[#171717]/80', // Neutral 900
+                    cardBg: 'bg-[#171717]/80',
                     cardBorder: 'border-neutral-800',
                     iconBg: 'bg-neutral-800 text-white',
                     accentColor: 'text-white',

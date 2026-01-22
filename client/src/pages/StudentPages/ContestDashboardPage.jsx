@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Clock, Terminal, AlertCircle, Loader2, PlayCircle, CheckCircle2, AlertTriangle, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { 
+    ArrowRight, Clock, Terminal, AlertCircle, Loader2, 
+    PlayCircle, CheckCircle2, AlertTriangle, X, ShieldAlert, Maximize 
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const backendUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
+// --- INTEGRATIONS ---
+import api from '../../api/axiosConfig'; // ⚡️ Using your shared API Config
+import ErrorDisplay from '../../components/ErrorDisplay'; 
+import { useNetworkStatus } from '../../hooks/Network';
 
 // --- THEME CONFIGURATION ---
 const THEMES = {
@@ -92,15 +98,33 @@ const ContestDashboard = () => {
     const navigate = useNavigate();
     const location = useLocation(); 
     const { contestId } = useParams(); 
+    const isOnline = useNetworkStatus(); // ⚡️ NETWORK CHECK
     
     // --- 1. THEME SETUP ---
-    const themeId = location.state?.theme && THEMES[location.state.theme] ? location.state.theme : 'light';
-    const theme = THEMES[themeId];
+    const [themeId, setThemeId] = useState(() => {
+        if (location.state?.theme && THEMES[location.state.theme]) return location.state.theme;
+        return localStorage.getItem('app-theme') || 'light';
+    });
 
+    const theme = THEMES[themeId] || THEMES['light'];
+
+    useEffect(() => {
+        localStorage.setItem('app-theme', themeId);
+    }, [themeId]);
+
+    // Update theme if navigating back with new state
+    useEffect(() => {
+        if (location.state?.theme && THEMES[location.state.theme]) {
+            setThemeId(location.state.theme);
+        }
+    }, [location.state]);
+
+    // --- STATE ---
     const [contestData, setContestData] = useState(null);
     const [loading, setLoading] = useState(true); 
     const [error, setError] = useState('');
-    const [timeLeft, setTimeLeft] = useState('Loading...');
+    const [timeLeft, setTimeLeft] = useState(null); 
+    const [isLocked, setIsLocked] = useState(true); // Default true until fullscreen
     
     // UI States
     const [showFinishModal, setShowFinishModal] = useState(false);
@@ -114,36 +138,58 @@ const ContestDashboard = () => {
         onClose: () => {}
     });
 
+    // --- 2. FULL SCREEN & SECURITY LOGIC ---
+    const enterFullScreen = async () => {
+        const elem = document.documentElement;
+        try {
+            if (elem.requestFullscreen) {
+                await elem.requestFullscreen();
+                setIsLocked(false);
+            }
+        } catch (err) {
+            console.error("Full screen error:", err);
+        }
+    };
 
-    // --- PREVENT BACK NAVIGATION ---
     useEffect(() => {
-        // Push the current state to history immediately to create a buffer
-        window.history.pushState(null, document.title, window.location.href);
-
-        const handlePopState = () => {
-            // When back is pressed, push them forward again
-            window.history.pushState(null, document.title, window.location.href);
+        const handleFullScreenChange = () => {
+            if (!document.fullscreenElement) {
+                setIsLocked(true); 
+            } else {
+                setIsLocked(false);
+            }
         };
 
-        window.addEventListener('popstate', handlePopState);
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                setIsLocked(true); 
+            }
+        };
+
+        const handleContextMenu = (e) => e.preventDefault();
+
+        document.addEventListener('fullscreenchange', handleFullScreenChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener('contextmenu', handleContextMenu);
+
+        // Attempt initial fullscreen
+        enterFullScreen();
 
         return () => {
-            window.removeEventListener('popstate', handlePopState);
+            document.removeEventListener('fullscreenchange', handleFullScreenChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('contextmenu', handleContextMenu);
         };
     }, []);
 
-    
-    // --- 2. FETCH DATA ---
+    // --- 3. FETCH DATA (Using API Config) ---
     useEffect(() => {
         const fetchExamDetails = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${backendUrl}/api/student/get-exam-details/${contestId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
-                const json = await response.json();
+                // ⚡️ USING IMPORTED API INSTANCE
+                const response = await api.get(`/api/student/get-exam-details/${contestId}`);
+                const json = response.data;
 
                 if (json.success) {
                     setContestData(json.data);
@@ -160,18 +206,17 @@ const ContestDashboard = () => {
         fetchExamDetails();
     }, [contestId]);
 
-    // --- 3. TIMER LOGIC (ABSOLUTE TIME SYNC) ---
+    // --- 4. TIMER LOGIC ---
     useEffect(() => {
         if (!contestData?.endTime) return;
 
-        const interval = setInterval(() => {
+        const calculateTime = () => {
             const end = new Date(contestData.endTime).getTime();
             const now = new Date().getTime();
             const distance = end - now;
 
             if (distance < 0) {
-                setTimeLeft("ENDED");
-                clearInterval(interval);
+                return "ENDED";
             } else {
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -180,25 +225,36 @@ const ContestDashboard = () => {
                 const h = hours < 10 ? `0${hours}` : hours;
                 const m = minutes < 10 ? `0${minutes}` : minutes;
                 const s = seconds < 10 ? `0${seconds}` : seconds;
-                
-                setTimeLeft(`${h}:${m}:${s}`);
+                return `${h}:${m}:${s}`;
             }
+        };
+
+        setTimeLeft(calculateTime()); 
+
+        const interval = setInterval(() => {
+            const timeString = calculateTime();
+            setTimeLeft(timeString);
+            if (timeString === "ENDED") clearInterval(interval);
         }, 1000);
 
         return () => clearInterval(interval);
     }, [contestData]);
 
-    // --- 4. FINAL SUBMIT LOGIC ---
+    // --- PREVENT BACK BUTTON (THE TRAP) ---
+    useEffect(() => {
+        window.history.pushState(null, null, window.location.href);
+        const handlePopState = () => window.history.pushState(null, null, window.location.href);
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    // --- HANDLERS ---
     const handleFinalSubmit = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${backendUrl}/api/student/final-submit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ examId: contestId }),
-                credentials: 'include'
-            });
-            const json = await response.json();
+            // ⚡️ USING API INSTANCE
+            const response = await api.post('/api/student/final-submit', { examId: contestId });
+            const json = response.data;
             
             setShowFinishModal(false);
 
@@ -236,18 +292,26 @@ const ContestDashboard = () => {
     const handleProblemClick = (problemId) => {
         if (!problemId) return;
         
-        // --- PASSING TIME SYNC DATA ---
+        // ⚡️ NAVIGATION: PASS THEME & DATA TO PROBLEM SOLVER
         navigate(`/contests/${contestId}/problem/${problemId}`, {
             state: { 
-                contestData: contestData, // This contains 'endTime' for sync
+                contestData: contestData, 
                 theme: themeId 
             }
         });
     };
 
-    if (loading) return (
+    // ⚡️ OFFLINE CHECK
+    if (!isOnline) {
+        return <ErrorDisplay type="offline" />;
+    }
+
+    // ⚡️ LOADING & ERROR STATES
+    if (loading || !timeLeft) return (
         <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
-            <Loader2 className={`animate-spin ${theme.accent}`} size={32} />
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className={`animate-spin ${theme.accent}`} size={40} />
+            </div>
         </div>
     );
 
@@ -264,7 +328,30 @@ const ContestDashboard = () => {
     return (
         <div className={`min-h-screen ${theme.bg} ${theme.text} font-sans selection:bg-indigo-500/30 overflow-x-hidden relative pb-10 transition-colors duration-500`}>
             
-            {/* Background Grid - Specific per theme */}
+            {/* 🛡️ SECURITY LOCKOUT MODAL 🛡️ */}
+            {isLocked && (
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/10 backdrop-blur-xl backdrop-saturate-150 animate-in fade-in duration-300">
+                    <div className="w-full max-w-md p-8 rounded-3xl bg-white shadow-2xl border border-slate-200 text-center space-y-6">
+                        <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto animate-pulse">
+                            <ShieldAlert size={32} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Security Lockout</h2>
+                            <p className="text-slate-500 mt-2 font-medium">
+                                The exam environment has been locked because focus was lost or full-screen mode was exited.
+                            </p>
+                        </div>
+                        <button 
+                            onClick={enterFullScreen}
+                            className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <Maximize size={18} /> Resume Session
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Background Grid */}
             <div className="fixed inset-0 pointer-events-none">
                 {themeId === 'midnight' && (
                      <div className="absolute inset-0 bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225]">
