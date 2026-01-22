@@ -52,6 +52,7 @@ import FacultySessionPage from './pages/FacultyPages/FacultySessionPage.jsx';
 import FacultySessionAnalytics from './pages/FacultyPages/FacultySessionAnalytics.jsx';
 import StudentResultPage from './pages/StudentPages/StudentResultsPage.jsx';
 import QuizDashboard from './pages/StudentPages/QuizDashboard.jsx';
+import AssessmentResult from './pages/StudentPages/AssessmentResult.jsx';
 
 // --- 1. NEW COMPONENT: HANDLES AUTH CONTEXT & LOADING ---
 // This wrapper ensures AuthProvider only loads for pages INSIDE it.
@@ -86,6 +87,8 @@ const AppRoutes = () => {
       <Routes>
         {/* === PUBLIC ROUTE (NO AUTH CONTEXT) === */}
         <Route path="/" element={<LoginPage />} />
+        <Route path="/result" element={<AssessmentResult />} />
+
 
         {/* Public Contest Routes */}
 

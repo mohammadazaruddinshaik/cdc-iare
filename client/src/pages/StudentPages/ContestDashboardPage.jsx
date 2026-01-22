@@ -7,7 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- INTEGRATIONS ---
-import api from '../../api/axiosConfig'; // ⚡️ Using your shared API Config
+import api from '../../api/axiosConfig'; 
 import ErrorDisplay from '../../components/ErrorDisplay'; 
 import { useNetworkStatus } from '../../hooks/Network';
 
@@ -98,7 +98,7 @@ const ContestDashboard = () => {
     const navigate = useNavigate();
     const location = useLocation(); 
     const { contestId } = useParams(); 
-    const isOnline = useNetworkStatus(); // ⚡️ NETWORK CHECK
+    const isOnline = useNetworkStatus(); 
     
     // --- 1. THEME SETUP ---
     const [themeId, setThemeId] = useState(() => {
@@ -112,7 +112,6 @@ const ContestDashboard = () => {
         localStorage.setItem('app-theme', themeId);
     }, [themeId]);
 
-    // Update theme if navigating back with new state
     useEffect(() => {
         if (location.state?.theme && THEMES[location.state.theme]) {
             setThemeId(location.state.theme);
@@ -124,7 +123,7 @@ const ContestDashboard = () => {
     const [loading, setLoading] = useState(true); 
     const [error, setError] = useState('');
     const [timeLeft, setTimeLeft] = useState(null); 
-    const [isLocked, setIsLocked] = useState(true); // Default true until fullscreen
+    const [isLocked, setIsLocked] = useState(true); 
     
     // UI States
     const [showFinishModal, setShowFinishModal] = useState(false);
@@ -172,7 +171,6 @@ const ContestDashboard = () => {
         document.addEventListener('visibilitychange', handleVisibilityChange);
         document.addEventListener('contextmenu', handleContextMenu);
 
-        // Attempt initial fullscreen
         enterFullScreen();
 
         return () => {
@@ -182,12 +180,11 @@ const ContestDashboard = () => {
         };
     }, []);
 
-    // --- 3. FETCH DATA (Using API Config) ---
+    // --- 3. FETCH DATA ---
     useEffect(() => {
         const fetchExamDetails = async () => {
             try {
                 setLoading(true);
-                // ⚡️ USING IMPORTED API INSTANCE
                 const response = await api.get(`/api/student/get-exam-details/${contestId}`);
                 const json = response.data;
 
@@ -240,7 +237,7 @@ const ContestDashboard = () => {
         return () => clearInterval(interval);
     }, [contestData]);
 
-    // --- PREVENT BACK BUTTON (THE TRAP) ---
+    // --- PREVENT BACK BUTTON ---
     useEffect(() => {
         window.history.pushState(null, null, window.location.href);
         const handlePopState = () => window.history.pushState(null, null, window.location.href);
@@ -252,7 +249,6 @@ const ContestDashboard = () => {
     const handleFinalSubmit = async () => {
         setIsSubmitting(true);
         try {
-            // ⚡️ USING API INSTANCE
             const response = await api.post('/api/student/final-submit', { examId: contestId });
             const json = response.data;
             
@@ -264,7 +260,13 @@ const ContestDashboard = () => {
                     type: 'success',
                     title: 'Submission Successful!',
                     message: json.message || "Your exam has been submitted successfully.",
-                    onClose: () => navigate('/student/dashboard')
+                    // ⚡️ UPDATED: Navigate to results page with data on close
+                    onClose: () => navigate(`/contest/${contestId}/result`, {
+                        state: { 
+                            resultData: json.data, // Passing the full response data
+                            theme: themeId 
+                        }
+                    })
                 });
             } else {
                 setResultModal({
@@ -291,8 +293,6 @@ const ContestDashboard = () => {
 
     const handleProblemClick = (problemId) => {
         if (!problemId) return;
-        
-        // ⚡️ NAVIGATION: PASS THEME & DATA TO PROBLEM SOLVER
         navigate(`/contests/${contestId}/problem/${problemId}`, {
             state: { 
                 contestData: contestData, 
@@ -301,12 +301,10 @@ const ContestDashboard = () => {
         });
     };
 
-    // ⚡️ OFFLINE CHECK
     if (!isOnline) {
         return <ErrorDisplay type="offline" />;
     }
 
-    // ⚡️ LOADING & ERROR STATES
     if (loading || !timeLeft) return (
         <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
             <div className="flex flex-col items-center gap-4">

@@ -247,11 +247,27 @@ const ProblemSolverPage = () => {
             });
             const submitJson = submitResponse.data;
             if (isAuto) {
+                // ⚡️ AUTO-SUBMIT: Connect to Final Submit -> Results Page
                 const finalResponse = await api.post('/api/student/final-submit', { examId: contestId });
                 if (finalResponse.data.success) {
-                    setSubmissionResult({ status: "Time's Up", passedCount: submitJson.passedCount || 0, totalCases: submitJson.totalPrivateCases || 0, marksEarned: submitJson.marksEarned || 0, totalMarks: submitJson.totalMarks || 10, message: "Exam auto-submitted successfully.", isAuto: true });
+                    setSubmissionResult({ 
+                        status: "Time's Up", 
+                        passedCount: submitJson.passedCount || 0, 
+                        totalCases: submitJson.totalPrivateCases || 0, 
+                        marksEarned: submitJson.marksEarned || 0, 
+                        totalMarks: submitJson.totalMarks || 10, 
+                        message: "Exam auto-submitted successfully.", 
+                        isAuto: true 
+                    });
                     setShowSubmitModal(true);
-                    setTimeout(() => navigate('/student/dashboard'), 3000); 
+                    
+                    // ⚡️ NAVIGATION: Redirect to Assessment Results Page with Data
+                    setTimeout(() => navigate(`/contest/${contestId}/result`, {
+                        state: { 
+                            resultData: finalResponse.data.data, 
+                            theme: themeId 
+                        }
+                    }), 3000); 
                 }
             } else {
                 setSubmissionResult({ 
@@ -339,7 +355,6 @@ const ProblemSolverPage = () => {
     // --- RUN CODE ---
     const handleRun = async () => {
         setStatus('running'); setExecutionResults(null);
-        // Only send custom test cases. Explicitly ensure input is string to preserve \n
         const customTestCasesPayload = testCases.filter(tc => tc.type === 'custom').map(tc => ({ 
             input: String(tc.input), 
             output: tc.output || "" 
@@ -352,7 +367,6 @@ const ProblemSolverPage = () => {
             });
             const json = response.data;
             if (json.success && json.results) {
-                // Map results back to UI indices
                 const results = json.results.map((res, index) => {
                     const originalCase = testCases[index];
                     if (!originalCase) return null;
@@ -561,7 +575,11 @@ const ProblemSolverPage = () => {
                                 Keep Coding
                             </button>
                             {(isPassed && !submissionResult.isAuto) && (
-                                <button onClick={() => navigate('/student/dashboard')} className={cn("flex-1 py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg transition-transform hover:-translate-y-0.5", theme.accentPrimary)}>
+                                <button 
+                                    // ⚡️ NAVIGATION: Go back to Contest Dashboard to solve other problems
+                                    onClick={() => navigate(`/contest/${contestId}/dashboard`, { state: { contestData, theme: themeId } })} 
+                                    className={cn("flex-1 py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg transition-transform hover:-translate-y-0.5", theme.accentPrimary)}
+                                >
                                     Dashboard
                                 </button>
                             )}
