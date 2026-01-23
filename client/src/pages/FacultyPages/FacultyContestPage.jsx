@@ -805,7 +805,7 @@ const FacultyContestPage = () => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${examId}_Report.xlsx`; 
+                a.download = `${examId}_Report.pdf`; 
                 document.body.appendChild(a);
                 a.click();
                 a.remove();

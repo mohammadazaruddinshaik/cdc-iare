@@ -7,14 +7,16 @@ import {
     Crown, Medal, Star, 
     Edit2, Save, Link as LinkIcon, ArrowUpRight
 } from 'lucide-react';
-import Header from '../../components/Header';
-import { useAuth } from '../../context/AuthContext'; 
-import Loader from '../../components/Loader'; 
 
-import lcImg from '../../assets/leetcode.webp';
-import gfgImg from '../../assets/gfg.png';
-import ccImg from '../../assets/codechef.png';
-import ghImg from '../../assets/github.png';
+import Header from '../../../components/Header';
+import { useAuth } from '../../../context/AuthContext'; 
+import Loader from '../../../components/Loader';
+
+
+import lcImg from '/src/assets/leetcode.webp';
+import gfgImg from '/src/assets/leetcode.webp';
+import ccImg from '/src/assets/leetcode.webp';
+import ghImg from '/src/assets/leetcode.webp';
 
 const backendUrl = import.meta.env.VITE_BASE_URL;
 

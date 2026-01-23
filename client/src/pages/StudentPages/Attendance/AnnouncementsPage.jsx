@@ -14,9 +14,10 @@ import {
     Star, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Header from '../../components/Header';
-import { useAuth } from '../../context/AuthContext';
-import Loader from '../../components/Loader'; 
+import Header from '../../../components/Header';
+import { useAuth } from '../../../context/AuthContext'; 
+import Loader from '../../../components/Loader';
+import api from '/src/api/axiosConfig'; 
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 

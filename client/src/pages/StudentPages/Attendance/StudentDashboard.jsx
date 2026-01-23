@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { BookOpen, Database, Cloud, Code, Coffee, AlertCircle, User, Clock, CalendarDays } from 'lucide-react';
-import api from '../../api/axiosConfig'; 
-import BarChart from '../../components/BarChart';
-import Header from '../../components/Header';
-import { useAuth } from '../../context/AuthContext'; 
-import Loader from '../../components/Loader';
+import api from '../../../api/axiosConfig'; 
+import BarChart from '../../../components/BarChart';
+import Header from '../../../components/Header';
+import { useAuth } from '../../../context/AuthContext'; 
+import Loader from '../../../components/Loader';
 
 // --- ASSET IMPORTS ---
-import leetcodeLogo from '../../assets/leetcode.webp';
-import gfgLogo from '../../assets/gfg.png';
-import codechefLogo from '../../assets/codechef.png';
-import githubLogo from '../../assets/github.png';
+import leetcodeLogo from '/src/assets/leetcode.webp';
+import gfgLogo from '/src/assets/leetcode.webp';
+import codechefLogo from '/src/assets/leetcode.webp';
+import githubLogo from '/src/assets/leetcode.webp';
 
 const getLogo = (importName, fallbackUrl) => importName || fallbackUrl;
 

@@ -10,9 +10,9 @@ import {
     ChevronRight, ChevronLeft, CalendarDays, Zap,
     BookOpen, User, AlertCircle
 } from 'lucide-react';
-import Header from '../../components/Header';
-import { useAuth } from '../../context/AuthContext';
-import Loader from '../../components/Loader';
+import Header from '../../../components/Header';
+import { useAuth } from '../../../context/AuthContext'; 
+import Loader from '../../../components/Loader';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 

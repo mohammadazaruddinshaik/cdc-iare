@@ -7,8 +7,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- IMPORTS ---
-import Header from '../../components/Header';
-import Loader from '../../components/Loader';
+import Header from '../../../components/Header';
+import Loader from '../../../components/Loader';
 
 // --- CONFIG ---
 const backendUrl = (import.meta.env.VITE_BASE_URL || "http://localhost:5000").replace(/\/$/, '');

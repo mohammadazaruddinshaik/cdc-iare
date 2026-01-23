@@ -9,10 +9,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Editor from "@monaco-editor/react"; 
 
 // --- IMPORTS ---
-import Header from '../../components/Header';
-import { useAuth } from '../../context/AuthContext';
-import Loader from '../../components/Loader';
-import api from '../../api/axiosConfig'; // ⚡️ This instance already knows your Base URL
+import Header from '../../../components/Header';
+import { useAuth } from '../../../context/AuthContext'; 
+import Loader from '../../../components/Loader';
+import api from '/src/api/axiosConfig'; 
 
 // --- STYLING CONSTANTS ---
 const STATUS_STYLES = {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Loader from '../components/Loader';
-import api from '../api/axiosConfig'; // ⚡️ Using your new Axios instance
+import api from '../api/axiosConfig'; 
 
 const AuthContext = createContext(null);
 
@@ -11,11 +11,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkUserSession = async () => {
       try {
-        // Reduced delay to 300ms as requested (Artificial delay for smooth loader)
         const minLoadTime = new Promise(resolve => setTimeout(resolve, 300));
         
-        // ⚡️ CHANGE 1: Use 'api.get' instead of fetch
-        // This automatically handles credentials, headers, and Token Refresh
         const apiCall = api.get('/api/me');
 
         const [response] = await Promise.all([apiCall, minLoadTime]);
@@ -33,16 +30,11 @@ export const AuthProvider = ({ children }) => {
         });
 
       } catch (error) {
-        // --- CASE: Session invalid AND Refresh failed ---
-        // If we get here, it means the Refresh Token was also expired.
         console.warn("Session check failed or expired:", error);
         setUser(null);
         
         // Only redirect if not already at root
         if (window.location.pathname !== '/') {
-            // We use navigate or window location here. 
-            // Since this is initialization, standard logic usually allows the protected route wrapper to handle the redirect,
-            // but keeping your logic here is safe:
              window.location.replace('/');
         }
       } finally {

@@ -1,30 +1,32 @@
-import axios from 'axios';
+import axios from "axios";
 
-/**
- * API Instance
- * Configured for a 180-minute backend cookie session.
- */
+// Create the instance using your environment variable
 const api = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL,
     withCredentials: true, 
 });
 
-/**
- * Response Interceptor
- * If the 180-minute cookie expires, the backend returns a 401.
- * This interceptor catches that and redirects the user immediately.
- */
+// Response Interceptor: Handles automatic token recovery
 api.interceptors.response.use(
     (response) => response, 
-    (error) => {
-        // Logical check for Session Expiration
-        if (error.response?.status === 401) {
-            console.warn("Session expired. Redirecting to login...");
-            
-            // Direct "kick" to login page without touching local storage
-            window.location.href = '/login'; 
-        }
+    async (error) => {
+        const originalRequest = error.config;
 
+        // If the error is 401 (Unauthorized) and we haven't retried yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+            
+                await axios.post(`${import.meta.env.VITE_BASE_URL}/api/refresh`, {}, { withCredentials: true });
+
+                // If successful, retry the original request with the new cookie
+                return api(originalRequest);
+            } catch (refreshError) {
+                // If refresh fails, the session is completely dead
+                return Promise.reject(refreshError);
+            }
+        }
         return Promise.reject(error);
     }
 );

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ArrowRight, 
-    UserCheck, 
     Search, 
     CheckCircle2, 
     AlertCircle, 
@@ -26,7 +25,7 @@ const ANIMATION_VARIANTS = {
 };
 
 // ==========================================
-// 2. SUB-COMPONENT: ANIMATED BACKGROUND
+// 2. SUB-COMPONENT: ANIMATED BACKGROUND (CORNERS FIXED)
 // ==========================================
 const DataStreamBackground = () => {
     const leftPhrases = ["BATTLE OF MINDS", "TIME MATTERS", "EVERY SECOND COUNTS", "PROVE YOUR SKILL", "FOCUS", "ADAPT", "WIN"];
@@ -38,35 +37,46 @@ const DataStreamBackground = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-slate-100 via-white to-slate-100 opacity-80"></div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-50/50 rounded-full blur-[100px] opacity-60"></div>
 
-            {/* Left Column Animation */}
-            <div className="absolute left-4 top-0 bottom-0 w-40 overflow-hidden opacity-10 hidden md:block">
+            {/* Grid Texture */}
+            <div className="absolute inset-0 opacity-[0.2]" 
+                 style={{ backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
+            </div>
+
+            {/* UPDATES:
+               1. left-0 / right-0 to stick to corners.
+               2. w-96 to ensure absolutely no text cutting.
+               3. text-left (on left) and text-right (on right) to anchor to edges.
+               4. pl-8 / pr-8 to give breathing room from the absolute bezel.
+            */}
+            
+            {/* Left Column - Anchored to Top Left */}
+            <div className="absolute left-0 top-0 bottom-0 w-96 overflow-hidden opacity-30 hidden md:block [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_90%,transparent)]">
                 <motion.div 
                     animate={{ y: [0, -1000] }}
-                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-                    className="flex flex-col gap-12 text-right font-black text-xs tracking-[0.2em] text-slate-400"
+                    transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+                    className="flex flex-col gap-20 text-left pl-8 pt-20"
                 >
                     {[...leftPhrases, ...leftPhrases, ...leftPhrases, ...leftPhrases].map((item, i) => (
-                        <span key={`l-${i}`} className="whitespace-nowrap">{item}</span>
+                        <span key={`l-${i}`} className="whitespace-nowrap text-xs font-black tracking-[0.2em] text-slate-400">
+                            {item}
+                        </span>
                     ))}
                 </motion.div>
             </div>
 
-            {/* Right Column Animation */}
-            <div className="absolute right-4 top-0 bottom-0 w-40 overflow-hidden opacity-10 hidden md:block">
+            {/* Right Column - Anchored to Top Right */}
+            <div className="absolute right-0 top-0 bottom-0 w-96 overflow-hidden opacity-40 hidden md:block [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_90%,transparent)]">
                 <motion.div 
                     animate={{ y: [-1000, 0] }}
-                    transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-                    className="flex flex-col gap-12 text-left font-black text-xl tracking-tighter text-indigo-300"
+                    transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
+                    className="flex flex-col gap-20 text-right pr-8 pt-20"
                 >
                     {[...rightPhrases, ...rightPhrases, ...rightPhrases, ...rightPhrases].map((item, i) => (
-                        <span key={`r-${i}`} className="whitespace-nowrap">{item}</span>
+                        <span key={`r-${i}`} className="whitespace-nowrap text-xl font-black tracking-tighter text-indigo-300">
+                            {item}
+                        </span>
                     ))}
                 </motion.div>
-            </div>
-            
-            {/* Grid Texture */}
-            <div className="absolute inset-0 opacity-[0.2]" 
-                 style={{ backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
             </div>
         </div>
     );
@@ -116,7 +126,6 @@ const QuizJoinPage = () => {
 
     // --- EFFECTS ---
     useEffect(() => {
-        // Clear any browser history state when landing here to prevent "Forward" loops
         window.history.replaceState(null, '');
 
         if (sessionCode.length === 6) {
@@ -130,7 +139,7 @@ const QuizJoinPage = () => {
         }
     }, [sessionCode]);
 
-    // --- NAVIGATION HANDLER (SECURITY UPDATE) ---
+    // --- NAVIGATION HANDLER ---
    const handleStartQuiz = () => {
     if (apiData) {
         navigate('/student/quiz/instructions', { 
@@ -148,7 +157,7 @@ const QuizJoinPage = () => {
     // ==========================================
     const getCardStyles = () => {
         switch (status) {
-            case 'SUCCESS': return 'shadow-[0_40px_80px_-20px_rgba(79,70,229,0.3)] ring-4 ring-indigo-50 border-indigo-100';
+            case 'SUCCESS': return 'shadow-[0_30px_60px_-15px_rgba(79,70,229,0.2)] ring-4 ring-indigo-50 border-indigo-100';
             case 'ERROR': return 'shadow-2xl shadow-red-200/50 ring-4 ring-red-50 border-red-100';
             default: return 'shadow-2xl shadow-slate-200/80 border border-white';
         }
@@ -166,10 +175,10 @@ const QuizJoinPage = () => {
             <DataStreamBackground />
 
             {/* MAIN CONTENT CONTAINER */}
-            <div className="relative z-10 w-full max-w-[560px] px-6">
+            <div className="relative z-10 w-full max-w-[560px] lg:max-w-[480px] px-6">
                 
                 {/* --- HEADER: TITLE --- */}
-                <motion.div layout className="text-center mb-10">
+                <motion.div layout className="text-center mb-8 lg:mb-6">
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -178,22 +187,22 @@ const QuizJoinPage = () => {
                         Not Just a Quiz
                     </motion.div>
                     
-                    <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 mb-4 leading-[0.9]">
+                    <h1 className="text-5xl md:text-6xl lg:text-5xl font-black tracking-tighter text-slate-900 mb-3 lg:mb-2 leading-[0.9]">
                         It’s a Battle <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">
                             Of Minds.
                         </span>
                     </h1>
                     
-                    <p className="text-slate-500 font-medium text-lg tracking-tight">
-    Every question counts. Every second matters.
-</p>
+                    <p className="text-slate-500 font-medium text-lg lg:text-base tracking-tight">
+                        Every question counts. Every second matters.
+                    </p>
                 </motion.div>
 
                 {/* --- CARD CONTAINER --- */}
                 <motion.div 
                     layout
-                    className={`relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] transition-all duration-500 overflow-hidden ${getCardStyles()}`}
+                    className={`relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] lg:rounded-[2rem] transition-all duration-500 overflow-hidden ${getCardStyles()}`}
                 >
                     {/* A. INPUT SECTION */}
                     <div className="p-3 relative z-20 bg-white/50">
@@ -205,7 +214,13 @@ const QuizJoinPage = () => {
                                 onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
                                 placeholder="ENTER CODE"
                                 className={`
-                                    w-full h-24 text-center text-4xl font-black tracking-[0.25em] rounded-[2rem] outline-none transition-all duration-300 font-mono
+                                    w-full 
+                                    h-24 lg:h-20 
+                                    text-center 
+                                    text-4xl lg:text-3xl 
+                                    font-black tracking-[0.25em] 
+                                    rounded-[2rem] lg:rounded-[1.75rem]
+                                    outline-none transition-all duration-300 font-mono
                                     placeholder:font-sans placeholder:text-slate-200 placeholder:text-xl placeholder:tracking-widest placeholder:font-bold
                                     ${getInputStyles()}
                                 `}
@@ -250,39 +265,36 @@ const QuizJoinPage = () => {
                         )}
                     </AnimatePresence>
 
-                    {/* C. SUCCESS DETAILS (ENHANCED VISUALS) */}
+                    {/* C. SUCCESS DETAILS */}
                     <AnimatePresence>
                         {status === 'SUCCESS' && apiData && (
                             <motion.div {...ANIMATION_VARIANTS} className="relative z-10">
-                                {/* Gradient Background for Info Section */}
-                                <div className="px-8 pb-8 pt-6 bg-gradient-to-b from-white via-indigo-50/20 to-indigo-50/50 rounded-b-[2.5rem]">
+                                <div className="px-8 pb-8 pt-6 lg:px-6 lg:pb-6 lg:pt-4 bg-gradient-to-b from-white via-indigo-50/30 to-slate-50 rounded-b-[2.5rem]">
                                     
                                     {/* Visual Separator */}
-                                    <div className="w-full flex justify-center mb-6">
-                                        <div className="w-16 h-1 bg-slate-200 rounded-full"></div>
+                                    <div className="w-full flex justify-center mb-6 lg:mb-4">
+                                        <div className="w-12 h-1 bg-slate-200/80 rounded-full"></div>
                                     </div>
 
-                                    {/* 1. Header: Title & Student Stats */}
-                                    <div className="flex justify-between items-start mb-8">
-                                        <div className="flex-1 pr-4">
-                                            <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-tight mb-3">
+                                    {/* 1. Header */}
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 lg:mb-6">
+                                        <div className="flex-1">
+                                            <h2 className="text-xl lg:text-lg font-black text-slate-800 tracking-tight leading-tight mb-2">
                                                 {apiData.session.title}
                                             </h2>
                                             
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-1 rounded-full bg-gradient-to-b from-indigo-500 to-blue-400"></div>
+                                                <div className="h-8 w-1 rounded-full bg-gradient-to-b from-indigo-500 to-blue-400"></div>
                                                 <div>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <p className="text-sm font-bold text-slate-700">
-                                                            {apiData.student.name}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <span className="px-2 py-0.5 bg-slate-200/60 rounded text-[10px] font-bold text-slate-500">
+                                                    <p className="text-sm lg:text-xs font-bold text-slate-700">
+                                                        {apiData.student.name}
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-2 mt-0.5">
+                                                        <span className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-bold text-slate-500">
                                                             {apiData.student.rollno}
                                                         </span>
-                                                        <span className="px-2 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-400">
-                                                            {apiData.student.batch} • {apiData.student.sem}
+                                                        <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-400">
+                                                             {apiData.student.sem} • {apiData.student.batch}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -290,65 +302,63 @@ const QuizJoinPage = () => {
                                         </div>
                                         
                                         {/* Status Chip */}
-                                        <div className="flex flex-col items-center gap-1">
-                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full border border-amber-200 shadow-sm">
-                                                <Zap size={14} className="fill-amber-500 text-amber-600" />
-                                                <span className="text-[10px] font-black uppercase tracking-wider">Joined</span>
-                                            </div>
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100 shadow-sm shrink-0">
+                                            <Zap size={12} className="fill-amber-500 text-amber-600" />
+                                            <span className="text-[9px] font-black uppercase tracking-wider">Ready</span>
                                         </div>
                                     </div>
 
-                                    {/* 2. Metrics Grid - NEW COLORS */}
-                                    <div className="grid grid-cols-2 gap-4 mb-8">
+                                    {/* 2. Metrics Grid */}
+                                    <div className="grid grid-cols-2 gap-3 mb-8 lg:mb-6">
                                         
-                                        {/* Card: Time (Hourglass) - NOW ROSE/RED (Urgency) */}
-                                        <div className="relative group overflow-hidden bg-gradient-to-br from-rose-50 to-red-50 border border-rose-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300">
-                                            <div className="absolute top-0 right-0 p-3 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                                <Hourglass size={60} className="text-rose-600" />
+                                        {/* Time Card */}
+                                        <div className="relative group overflow-hidden bg-white border border-rose-100/80 rounded-2xl p-4 lg:p-3 shadow-[0_2px_8px_-2px_rgba(225,29,72,0.1)] hover:shadow-md hover:border-rose-200 transition-all duration-300">
+                                            <div className="absolute top-0 right-0 p-2 opacity-5 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
+                                                <Hourglass size={50} className="text-rose-600" />
                                             </div>
                                             <div className="relative z-10">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-rose-600">
-                                                        <Hourglass size={16} />
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="p-1 bg-rose-50 rounded-md text-rose-500">
+                                                        <Hourglass size={14} />
                                                     </div>
-                                                    <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">Limit</span>
+                                                    <span className="text-[10px] font-bold uppercase text-rose-400 tracking-wider">Time Limit</span>
                                                 </div>
-                                                <p className="text-2xl font-black text-slate-800">
+                                                <p className="text-2xl lg:text-xl font-black text-slate-800">
                                                     {apiData.session.durationMinutes}
-                                                    <span className="text-sm font-bold text-slate-400 ml-1">min</span>
+                                                    <span className="text-xs font-bold text-slate-400 ml-0.5">m</span>
                                                 </p>
                                             </div>
                                         </div>
 
-                                        {/* Card: Questions (Target) - NOW CYAN/SKY (Precision) */}
-                                        <div className="relative group overflow-hidden bg-gradient-to-br from-cyan-50 to-sky-50 border border-cyan-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300">
-                                            <div className="absolute top-0 right-0 p-3 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                                <Target size={60} className="text-cyan-600" />
+                                        {/* Questions Card */}
+                                        <div className="relative group overflow-hidden bg-white border border-cyan-100/80 rounded-2xl p-4 lg:p-3 shadow-[0_2px_8px_-2px_rgba(6,182,212,0.1)] hover:shadow-md hover:border-cyan-200 transition-all duration-300">
+                                            <div className="absolute top-0 right-0 p-2 opacity-5 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
+                                                <Target size={50} className="text-cyan-600" />
                                             </div>
                                             <div className="relative z-10">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-cyan-600">
-                                                        <Target size={16} />
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="p-1 bg-cyan-50 rounded-md text-cyan-500">
+                                                        <Target size={14} />
                                                     </div>
-                                                    <span className="text-[10px] font-black uppercase text-cyan-500 tracking-wider">Targets</span>
+                                                    <span className="text-[10px] font-bold uppercase text-cyan-500 tracking-wider">Total Q's</span>
                                                 </div>
-                                                <p className="text-2xl font-black text-slate-800">
+                                                <p className="text-2xl lg:text-xl font-black text-slate-800">
                                                     {apiData.questions.length}
-                                                    <span className="text-sm font-bold text-slate-400 ml-1">Q</span>
+                                                    <span className="text-xs font-bold text-slate-400 ml-0.5">Q</span>
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* 3. CTA Button - MATCHING 'OF MINDS' GRADIENT */}
+                                    {/* 3. CTA Button */}
                                     <motion.button
-                                        whileHover={{ scale: 1.02 }}
+                                        whileHover={{ scale: 1.01 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleStartQuiz}
-                                        className="relative w-full py-4 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white font-bold text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-300 flex items-center justify-center gap-3 group overflow-hidden border border-white/10"
+                                        className="relative w-full py-4 lg:py-3.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-sm lg:text-xs uppercase tracking-widest rounded-xl lg:rounded-xl shadow-lg shadow-indigo-200/50 hover:shadow-indigo-300/50 transition-all duration-300 flex items-center justify-center gap-3 group overflow-hidden border border-white/10"
                                     >
                                         <span className="relative z-10 flex items-center gap-2">
-                                            Initialize Battle <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                            Go Live <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                         </span>
                                     </motion.button>
                                 </div>

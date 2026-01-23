@@ -1,61 +1,56 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-
-import LoginPage from './pages/CommonPages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// --- Pages Imports ---
-import AdminDashboard from './pages/AdminPages/AdminDashboard';
-import FacultyDashboard from './pages/FacultyPages/FacultyDashboard';
-import StudentDashboard from './pages/StudentPages/StudentDashboard';
-import ModifyTimetablePage from './pages/AdminPages/ModifyTimetablePage';
-import StudentProfilePage from './pages/StudentPages/ProfilePage';
-import FacultyProfilePage from './pages/FacultyPages/FacultyProfilePage';
-import AdminProfilePage from './pages/AdminPages/AdminProfilePage';
-
+import LoginPage from './pages/CommonPages/LoginPage';
 import LeaderboardPage from './pages/CommonPages/LeaderBoardPage';
-import TimeTablePage from './pages/StudentPages/TimeTablePage';
-import FacultyTimetablePage from './pages/FacultyPages/FacultyTimeTablePage';
-import LogsPage from './pages/StudentPages/LogsPage';
-import AnnouncementsPage from './pages/StudentPages/AnnouncementsPage';
-
-import UpdateStudentPage from './pages/FacultyPages/UpdateStudentPage';
 import PostAttendance from './pages/CommonPages/PostAttendancePage';
 import ViewAttendance from './pages/CommonPages/ViewAttendancePage';
 import FacultyActionPage from './pages/CommonPages/FacultyActionPage';
-import FacultyMarkAttendancePage from './pages/FacultyPages/FacultyMarkAttendancePage';
 import MultiBatchAttendancePage from './pages/CommonPages/MultiBatchAttendancePage';
-
-import AdminTimetablePage from './pages/AdminPages/AdminTimeTablePage';
-import ManageFacultyPage from './pages/AdminPages/ManageFacultyPage';
-import SessionWiseReportPage from './pages/AdminPages/SessionWiseReportPage';
 import BatchWiseReport from './pages/CommonPages/BatchWiseReportPage';
-import ManageAttendancePage from './pages/AdminPages/ManageAttendancePage';
-import ManageStudentPage from './pages/AdminPages/ManageStudentPage';
-import MonthlyReport from './pages/AdminPages/MonthlyReportPage';
-import CreateTimetablePage from './pages/AdminPages/CreateTimeTable';
-import SystemAdministrationPage from './pages/AdminPages/SystemAdministration';
-import AdminAnnouncementsPage from './pages/AdminPages/AdminAnnouncementsPage';
-import FacultyContestPage from './pages/FacultyPages/FacultyContestPage';
-import StudentContestPage from './pages/StudentPages/StudentContestPage';
-import EnterContest from './pages/StudentPages/EnterContestPage';
-import ContestDashboard from './pages/StudentPages/ContestDashboardPage'
-import ProblemSolver from './pages/StudentPages/ProblemSolverPage';
 
-import ContestInstructions from './pages/StudentPages/ContestInstructions';
+import AdminDashboard from './pages/AdminPages/AdminDashboard';
+import AdminProfilePage from './pages/AdminPages/AdminProfilePage';
+import AdminTimetablePage from './pages/AdminPages/AdminTimeTablePage';
+import ModifyTimetablePage from './pages/AdminPages/ModifyTimetablePage';
+import CreateTimetablePage from './pages/AdminPages/CreateTimeTable';
+import ManageStudentPage from './pages/AdminPages/ManageStudentPage';
+import ManageFacultyPage from './pages/AdminPages/ManageFacultyPage';
+import ManageAttendancePage from './pages/AdminPages/ManageAttendancePage';
+import AdminAnnouncementsPage from './pages/AdminPages/AdminAnnouncementsPage';
+import SystemAdministrationPage from './pages/AdminPages/SystemAdministration';
+import SessionWiseReportPage from './pages/AdminPages/SessionWiseReportPage';
+import MonthlyReport from './pages/AdminPages/MonthlyReportPage';
+
+import FacultyDashboard from './pages/FacultyPages/FacultyDashboard';
+import FacultyProfilePage from './pages/FacultyPages/FacultyProfilePage';
+import FacultyTimetablePage from './pages/FacultyPages/FacultyTimeTablePage';
+import FacultyMarkAttendancePage from './pages/FacultyPages/FacultyMarkAttendancePage';
+import UpdateStudentPage from './pages/FacultyPages/UpdateStudentPage';
+import FacultyContestPage from './pages/FacultyPages/FacultyContestPage';
 import FacultyQuizDashboard from './pages/FacultyPages/FacultyQuizDashboard';
-import QuizJoin from './pages/StudentPages/QuizJoin.jsx';
-import QuizInstructions from './pages/StudentPages/QuizInstructions.jsx';
-import QuizActive from './pages/StudentPages/QuizActive.jsx';
 import FacultySessionPage from './pages/FacultyPages/FacultySessionPage.jsx';
 import FacultySessionAnalytics from './pages/FacultyPages/FacultySessionAnalytics.jsx';
-import StudentResultPage from './pages/StudentPages/StudentResultsPage.jsx';
-import QuizDashboard from './pages/StudentPages/QuizDashboard.jsx';
-import AssessmentResult from './pages/StudentPages/AssessmentResult.jsx';
 
-// --- 1. NEW COMPONENT: HANDLES AUTH CONTEXT & LOADING ---
-// This wrapper ensures AuthProvider only loads for pages INSIDE it.
+import StudentDashboard from './pages/StudentPages/Attendance/StudentDashboard.jsx';
+import StudentProfilePage from './pages/StudentPages/Attendance/ProfilePage';
+import TimeTablePage from './pages/StudentPages/Attendance/TimeTablePage.jsx';
+import LogsPage from './pages/StudentPages/Attendance/LogsPage.jsx';
+import AnnouncementsPage from './pages/StudentPages/Attendance/AnnouncementsPage';
+import StudentContestPage from './pages/StudentPages/Contest/StudentContestPage';
+import EnterContest from './pages/StudentPages/Contest/EnterContestPage';
+import ContestInstructions from './pages/StudentPages/Contest/ContestInstructions';
+import ContestDashboard from './pages/StudentPages/Contest/ContestDashboardPage';
+import ProblemSolver from './pages/StudentPages/Contest/ProblemSolverPage';
+import AssessmentResult from './pages/StudentPages/Contest/AssessmentResult.jsx';
+import QuizDashboard from './pages/StudentPages/Quiz/QuizDashboard.jsx';
+import QuizJoin from './pages/StudentPages/Quiz/QuizJoin.jsx';
+import QuizInstructions from './pages/StudentPages/Quiz/QuizInstructions.jsx';
+import QuizActive from './pages/StudentPages/Quiz/QuizActive.jsx';
+import StudentResultPage from './pages/StudentPages/Quiz/StudentResultsPage.jsx';
+
 const AuthLayout = () => {
   return (
     <AuthProvider>
@@ -64,7 +59,6 @@ const AuthLayout = () => {
   );
 };
 
-// --- 2. LOADING HANDLER ---
 const AuthLoadingHandler = () => {
   const { loading } = useAuth();
 
@@ -82,19 +76,12 @@ const AuthLoadingHandler = () => {
 
 const AppRoutes = () => {
   return (
-    // FIX: Added future flags here to silence v7 warnings
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        {/* === PUBLIC ROUTE (NO AUTH CONTEXT) === */}
         <Route path="/" element={<LoginPage />} />
 
-
-        {/* Public Contest Routes */}
-
-        {/* === PROTECTED ROUTES (WRAPPED IN AUTH CONTEXT) === */}
         <Route element={<AuthLayout />}>
-
-          {/* 1. SHARED ADMIN & FACULTY ROUTES */}
+          
           <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
             <Route path="/post-attendance" element={<PostAttendance />} />
             <Route path="/faculty/action" element={<FacultyActionPage />} />
@@ -102,10 +89,8 @@ const AppRoutes = () => {
             <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
             <Route path="/batch-report" element={<BatchWiseReport />} />
             <Route path="/coding-contests" element={<FacultyContestPage />} />
-        
           </Route>
 
-          {/* 2. EXCLUSIVE ADMIN ROUTES */}
           <Route element={<ProtectedRoute requiredRole="admin" />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/profile" element={<AdminProfilePage />} />
@@ -122,7 +107,6 @@ const AppRoutes = () => {
             <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
           </Route>
 
-          {/* 3. EXCLUSIVE FACULTY ROUTES */}
           <Route element={<ProtectedRoute requiredRole="faculty" />}>
             <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
             <Route path="/faculty/profile" element={<FacultyProfilePage />} />
@@ -134,22 +118,17 @@ const AppRoutes = () => {
             <Route path="/faculty/sessions/:sessionCode/analytics" element={<FacultySessionAnalytics />} />
           </Route>
 
-          {/* 4. STUDENT ROUTES */}
           <Route element={<ProtectedRoute requiredRole="student" />}>
             <Route path="/student/dashboard" element={<StudentDashboard />} />
             <Route path="/student/profile" element={<StudentProfilePage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/inbox" element={<AnnouncementsPage />} />
-
-
             <Route path="/contests" element={<StudentContestPage />} />
             <Route path="/contests/:contestId" element={<EnterContest />} />
             <Route path="/contests/:contestId/instructions" element={<ContestInstructions />} />
             <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
             <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
             <Route path="/contests/result" element={<AssessmentResult />} />
-
-
             <Route path="/student/quiz" element={<QuizDashboard/>}/>
             <Route path="/student/quiz/join" element={<QuizJoin />} />
             <Route path="/student/quiz/instructions" element={<QuizInstructions />} />
@@ -157,27 +136,22 @@ const AppRoutes = () => {
             <Route path="/student/quiz/result" element={<StudentResultPage />} />
           </Route>
 
-          {/* Semi-Public / Shared Routes (Logged in users only) */}
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/timetable" element={<TimeTablePage />} />
 
-          {/* Catch-all route for 404 */}
           <Route path="*" element={
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', backgroundColor: '#111827' }}>
               <h1>404 | Page Not Found</h1>
             </div>
           } />
-
-        </Route> {/* End of AuthLayout */}
+        </Route> 
       </Routes>
     </Router>
   );
 };
 
 function App() {
-  return (
-    <AppRoutes />
-  );
+  return <AppRoutes />;
 }
 
 export default App;
