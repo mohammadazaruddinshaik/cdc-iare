@@ -8,7 +8,7 @@ import {
     UploadCloud, FileSpreadsheet,
     Check, Archive, Grid, Loader2, AlertCircle, Layers,
     Upload, Briefcase, GraduationCap, ClipboardList,
-    Settings, Edit3, RefreshCw, MinusCircle, BookOpen, Hash
+    Settings, Edit3, RefreshCw, MinusCircle, BookOpen, Hash, AlertTriangle, ArrowRight
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
@@ -16,7 +16,6 @@ import { useAuth } from '../../context/AuthContext';
 // --- CONFIGURATION ---
 const API_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
 
-// Extended Color Palette & Config
 const CATEGORY_THEMES = {
     attendance: { 
         label: "Attendance", 
@@ -58,7 +57,6 @@ const CATEGORY_THEMES = {
 const SEMESTERS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 const DEFAULT_COURSES = ["CP", "JFS", "DBS", "AWS", "DBMS"];
 
-// --- HELPER: GENERATE DEFAULTS ---
 const generateDefaultBatches = () => {
     const prefixes = ['SU', 'SN', 'SB'];
     const batches = [];
@@ -70,7 +68,6 @@ const generateDefaultBatches = () => {
     return batches;
 };
 
-// --- HELPER: DYNAMIC BATCH COLORS ---
 const getBatchColorStyle = (batchName, isSelected = true) => {
     if (!isSelected) return 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50';
     if (batchName.startsWith('SU')) return 'bg-blue-50 text-blue-700 border-blue-300 ring-1 ring-blue-200';
@@ -79,21 +76,16 @@ const getBatchColorStyle = (batchName, isSelected = true) => {
     return 'bg-violet-50 text-violet-700 border-violet-300 ring-1 ring-violet-200';
 };
 
-// --- COMPONENTS ---
 const SectionHeader = ({ title, subtitle }) => (
     <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            {title}
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">{title}</h2>
         <p className="text-gray-500 text-sm mt-1">{subtitle}</p>
     </div>
 );
 
 const DbStatCard = ({ label, value, icon: Icon, color }) => (
     <div className={`bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4 transition-all hover:shadow-md`}>
-        <div className={`p-3 rounded-lg bg-${color}-50 text-${color}-600`}>
-            <Icon size={20} />
-        </div>
+        <div className={`p-3 rounded-lg bg-${color}-50 text-${color}-600`}><Icon size={20} /></div>
         <div>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</p>
             <p className="text-xl font-bold text-gray-800">{value}</p>
@@ -101,42 +93,70 @@ const DbStatCard = ({ label, value, icon: Icon, color }) => (
     </div>
 );
 
-// --- REUSABLE STATUS MODAL ---
+// --- UPDATED STATUS MODAL WITH WIDER LIST ---
 const StatusModal = ({ status, onClose }) => {
     if (!status || !status.type) return null;
 
+    const hasMismatches = status.details?.mismatchedBatchRolls && status.details.mismatchedBatchRolls.length > 0;
+
     return (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 animate-in zoom-in-95">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full text-center border border-gray-100 max-h-[90vh] overflow-y-auto">
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${status.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                     {status.type === 'success' ? <CheckCircle size={32} /> : <AlertCircle size={32} />}
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2 capitalize">{status.type === 'success' ? 'Success' : 'Error'}</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-2 capitalize">{status.type === 'success' ? 'Processing Results' : 'System Alert'}</h3>
                 <p className="text-gray-500 mb-6 font-medium text-sm leading-relaxed">{status.message}</p>
 
-                {status.details && status.details.missingFields && (
-                    <div className="bg-red-50 rounded-xl p-4 mb-6 text-left border border-red-100">
-                        <p className="text-xs font-bold text-red-800 uppercase tracking-wide mb-3 flex items-center gap-2">
-                            <FileSpreadsheet size={14}/> Missing Columns
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            {status.details.missingFields.map((field, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-white border border-red-200 text-red-600 text-xs font-bold rounded-md shadow-sm">
-                                    {field}
-                                </span>
+                {status.type === 'success' && status.details?.addedCount !== undefined && (
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+                            <p className="text-[10px] uppercase font-bold text-green-600 tracking-wider mb-1">Successfully Added</p>
+                            <p className="text-3xl font-black text-green-700">{status.details.addedCount}</p>
+                        </div>
+                        <div className={`p-4 rounded-2xl border ${hasMismatches ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                            <p className="text-[10px] uppercase font-bold text-gray-600 tracking-wider mb-1">Mismatched Batches</p>
+                            <p className={`text-3xl font-black ${hasMismatches ? 'text-amber-600' : 'text-gray-400'}`}>{status.details.mismatchedCount || 0}</p>
+                        </div>
+                    </div>
+                )}
+
+                {hasMismatches && (
+                    <div className="bg-slate-50 rounded-2xl p-6 mb-6 text-left border border-slate-200 shadow-inner">
+                        <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-3">
+                            <p className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                <AlertTriangle size={14} className="text-amber-500"/> Ignored Records Detail
+                            </p>
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">Mismatch List</span>
+                        </div>
+                        
+                        {/* WIDER HORIZONTAL GRID FOR ROLL NUMBERS */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                            {status.details.mismatchedBatchRolls.map((item, idx) => (
+                                <div key={idx} className="bg-white p-3 rounded-xl border border-gray-200 flex flex-col gap-1 shadow-sm hover:border-amber-300 transition-colors">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="font-mono font-black text-gray-800 text-xs tracking-tighter">{item.rollno}</span>
+                                        <Hash size={10} className="text-slate-300" />
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px]">
+                                        <div className="px-2 py-0.5 bg-red-50 text-red-500 rounded border border-red-100 font-bold">{item.batch}</div>
+                                        <ArrowRight size={10} className="text-slate-400" />
+                                        <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded border border-emerald-100 font-bold">{item.expectedBatch}</div>
+                                    </div>
+                                </div>
                             ))}
                         </div>
-                        <p className="text-[10px] text-red-500 mt-3 italic leading-tight">
-                            The uploaded file is missing these required headers. Please check your CSV/Excel file.
+                        <p className="text-[10px] text-gray-400 mt-4 italic text-center">
+                            Only students belonging to <span className="font-bold text-gray-600">"{status.details.mismatchedBatchRolls[0]?.expectedBatch}"</span> were processed.
                         </p>
                     </div>
                 )}
 
                 <button 
                     onClick={onClose} 
-                    className={`w-full py-3 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-xl ${status.type === 'success' ? 'bg-gray-900 hover:bg-black' : 'bg-red-600 hover:bg-red-700'}`}
+                    className={`w-full py-4 rounded-2xl font-bold text-white transition-all shadow-lg hover:shadow-xl ${status.type === 'success' ? 'bg-gray-900 hover:bg-black' : 'bg-red-600 hover:bg-red-700'}`}
                 >
-                    {status.type === 'success' ? 'Continue' : 'Close'}
+                    {status.type === 'success' ? 'Acknowledged & Close' : 'Return to Manager'}
                 </button>
             </div>
         </div>
@@ -234,7 +254,7 @@ const ModifyCollectionModal = ({ collection, onClose, onSuccess }) => {
     };
 
     const handleSuccessClose = () => {
-        onSuccess(); // Trigger loadData
+        onSuccess(); 
         onClose();
     };
 
@@ -323,10 +343,9 @@ const ModifyCollectionModal = ({ collection, onClose, onSuccess }) => {
     );
 };
 
-// --- UPLOAD MODAL ---
+// --- UPLOAD MODAL WITH ENTER KEY SUPPORT ---
 const CollectionManagerModal = ({ collection, onClose, onSuccess }) => {
     const { logout } = useAuth();
-    const [view, setView] = useState('upload'); 
     const [courses, setCourses] = useState(DEFAULT_COURSES); 
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [customCourse, setCustomCourse] = useState("");
@@ -334,7 +353,7 @@ const CollectionManagerModal = ({ collection, onClose, onSuccess }) => {
     const [confirmAction, setConfirmAction] = useState(null); 
     const [confirmInput, setConfirmInput] = useState("");
     const [isUploading, setIsUploading] = useState(false);
-    const [status, setStatus] = useState({ type: null, message: null }); 
+    const [status, setStatus] = useState({ type: null, message: null, details: null }); 
 
     const displayBatchName = collection.collectionName.includes('_') 
         ? collection.collectionName.split('_').pop() 
@@ -397,14 +416,11 @@ const CollectionManagerModal = ({ collection, onClose, onSuccess }) => {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    if (response.status === 400 && data.missingFields && Array.isArray(data.missingFields)) {
+                    if (response.status === 400 && data.missingFields) {
                         setStatus({
                             type: 'error',
                             message: data.message || "Structure mismatch detected.",
-                            details: {
-                                missingFields: data.missingFields,
-                                expectedFields: data.expectedFields
-                            }
+                            details: data
                         });
                         setConfirmAction(null); 
                         return; 
@@ -412,7 +428,11 @@ const CollectionManagerModal = ({ collection, onClose, onSuccess }) => {
                     throw new Error(data.message || "Upload failed");
                 }
 
-                setStatus({ type: 'success', message: "File uploaded and records processed successfully." });
+                setStatus({ 
+                    type: 'success', 
+                    message: data.message || "Enrollment batch processed successfully.",
+                    details: data 
+                });
             }
             setConfirmAction(null); 
         } catch (error) {
@@ -423,103 +443,120 @@ const CollectionManagerModal = ({ collection, onClose, onSuccess }) => {
         }
     };
 
+    // ENTER KEY HANDLER
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && confirmInput === validationTarget && !isUploading) {
+            executeAction();
+        }
+    };
+
     const handleSuccessClose = () => {
-        onSuccess(); // Trigger loadData
+        onSuccess(); 
         onClose();
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden relative border border-gray-100">
                 <div className="bg-white border-b border-gray-200 p-6 flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <Clock className="text-blue-600" /> {collection.collectionName}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">System Configuration</p>
+                        <p className="text-sm text-gray-500 mt-1">Enrollment Manager • CSV/XLSX Upload</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-full transition-colors"><X size={20} /></button>
                 </div>
 
                 <div className="flex-grow overflow-y-auto p-6 bg-slate-50">
-                    {view === 'upload' && (
-                        <div className="max-w-5xl mx-auto space-y-6">
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <FileSpreadsheet size={14}/> Required Format (CSV / Excel)
-                                </h4>
-                                <div className="bg-white rounded-lg border border-blue-200 overflow-hidden shadow-sm">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-blue-50 border-b border-blue-100 text-blue-700">
-                                            <tr>
-                                                <th className="px-4 py-2">S NO</th>
-                                                <th className="px-4 py-2">Roll No</th>
-                                                <th className="px-4 py-2">Name of the Student</th>
-                                                <th className="px-4 py-2">Branch</th>
-                                                <th className="px-4 py-2 bg-blue-100 text-blue-800">Batch</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-gray-500">
-                                            <tr>
-                                                <td className="px-4 py-2">1</td>
-                                                <td className="px-4 py-2 font-mono text-gray-700">21SU1A0501</td>
-                                                <td className="px-4 py-2">John Doe</td>
-                                                <td className="px-4 py-2">CSE</td>
-                                                <td className="px-4 py-2 font-bold bg-blue-50 text-blue-600">{displayBatchName}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                    <div className="max-w-5xl mx-auto space-y-6">
+                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                            <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <FileSpreadsheet size={14}/> CSV Layout Requirement
+                            </h4>
+                            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden shadow-sm">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-blue-50 border-b border-blue-100 text-blue-700">
+                                        <tr>
+                                            <th className="px-4 py-2">S NO</th>
+                                            <th className="px-4 py-2">Roll No</th>
+                                            <th className="px-4 py-2">Name of the Student</th>
+                                            <th className="px-4 py-2">Branch</th>
+                                            <th className="px-4 py-2 bg-blue-100 text-blue-800">Batch</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-gray-500">
+                                        <tr>
+                                            <td className="px-4 py-2">1</td>
+                                            <td className="px-4 py-2 font-mono text-gray-700">21SU1A0501</td>
+                                            <td className="px-4 py-2">Sample Student</td>
+                                            <td className="px-4 py-2">CSE</td>
+                                            <td className="px-4 py-2 font-bold bg-blue-50 text-blue-600">{displayBatchName}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-sm">Step 1: Select File</h3>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/10 transition-all group cursor-pointer relative h-40 flex flex-col items-center justify-center">
-                                        <input type="file" accept=".csv, .xlsx, .xls" onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                        <UploadCloud size={32} className={`mb-2 transition-colors ${file ? 'text-emerald-600' : 'text-gray-300 group-hover:text-emerald-500'}`} />
-                                        {file ? <p className="font-bold text-emerald-600 text-sm truncate w-full px-2">{file.name}</p> : <><p className="text-sm text-gray-500 font-medium">Click to upload</p><p className="text-xs text-gray-400 mt-1">Supports .csv, .xlsx, .xls</p></>}
-                                    </div>
-                                </div>
-                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-bold text-gray-800 text-sm">Step 2: Courses</h3>
-                                        <form onSubmit={handleAddCustomCourse} className="flex gap-1"><input value={customCourse} onChange={e => setCustomCourse(e.target.value)} placeholder="New..." className="w-20 px-2 py-1 text-xs border rounded-md outline-none focus:border-violet-500" /><button type="submit" className="bg-violet-600 text-white p-1 rounded-md"><Plus size={12}/></button></form>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1">
-                                        {courses.map(course => {
-                                            const isSelected = selectedCourses.includes(course);
-                                            return (
-                                                <button key={course} onClick={() => toggleCourse(course)} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1 ${isSelected ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'}`}>
-                                                    {isSelected && <Check size={10} />} {course}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button onClick={() => initiateAction('upload')} className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold shadow-lg hover:bg-black hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-                                <Save size={18} /> Review & Upload Data
-                            </button>
                         </div>
-                    )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                                <h3 className="font-bold text-gray-800 mb-4 text-sm flex items-center gap-2"><UploadCloud size={16} className="text-slate-400"/> Source File</h3>
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/10 transition-all group cursor-pointer relative h-40 flex flex-col items-center justify-center">
+                                    <input type="file" accept=".csv, .xlsx, .xls" onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                    <UploadCloud size={32} className={`mb-2 transition-colors ${file ? 'text-emerald-600' : 'text-gray-300 group-hover:text-emerald-500'}`} />
+                                    {file ? <p className="font-bold text-emerald-600 text-sm truncate w-full px-2">{file.name}</p> : <><p className="text-sm text-gray-500 font-medium">Click to select</p><p className="text-xs text-gray-400 mt-1">.csv, .xlsx, .xls</p></>}
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2"><BookOpen size={16} className="text-slate-400"/> Course Link</h3>
+                                    <form onSubmit={handleAddCustomCourse} className="flex gap-1">
+                                        <input value={customCourse} onChange={e => setCustomCourse(e.target.value)} placeholder="New..." className="w-20 px-2 py-1 text-xs border rounded-md outline-none focus:border-violet-500" />
+                                        <button type="submit" className="bg-violet-600 text-white p-1 rounded-md hover:bg-violet-700"><Plus size={12}/></button>
+                                    </form>
+                                </div>
+                                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1">
+                                    {courses.map(course => {
+                                        const isSelected = selectedCourses.includes(course);
+                                        return (
+                                            <button key={course} onClick={() => toggleCourse(course)} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1 ${isSelected ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'}`}>
+                                                {isSelected && <Check size={10} />} {course}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onClick={() => initiateAction('upload')} className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold shadow-lg hover:bg-black hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                            <UploadCloud size={18} /> Review & Execute Enrollment
+                        </button>
+                    </div>
                 </div>
 
                 {confirmAction && (
                     <div className="absolute inset-0 z-[60] bg-white/95 backdrop-blur-md flex items-center justify-center p-6">
                         <div className="w-full max-w-md bg-white border border-gray-100 shadow-2xl rounded-2xl p-8 relative animate-in slide-in-from-bottom-8 duration-300">
                             {!isUploading && <button onClick={() => setConfirmAction(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20}/></button>}
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 capitalize">Confirm {confirmAction}</h3>
-                            <p className="text-gray-500 text-sm mb-4">Type: <span className="font-mono font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded">{validationTarget}</span></p>
-                            <input type="text" value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-4 font-mono text-sm focus:border-blue-500 outline-none" />
-                            <button onClick={executeAction} disabled={confirmInput !== validationTarget || isUploading} className={`w-full py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${confirmInput === validationTarget ? 'bg-gray-900 hover:bg-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                                {isUploading ? <Loader2 className="animate-spin" size={20}/> : `Verify & ${confirmAction}`}
+                            <h3 className="text-xl font-bold text-gray-900 mb-2 capitalize">Action Verification</h3>
+                            <p className="text-gray-500 text-sm mb-4">Confirm processing by typing: <span className="font-mono font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded">{validationTarget}</span></p>
+                            <input 
+                                type="text" 
+                                value={confirmInput} 
+                                onChange={(e) => setConfirmInput(e.target.value)} 
+                                onKeyDown={handleKeyDown}
+                                className="w-full px-4 py-4 border border-gray-300 rounded-xl mb-4 font-mono text-center text-lg focus:border-blue-500 outline-none shadow-inner" 
+                                placeholder="..." 
+                                autoFocus
+                            />
+                            <button onClick={executeAction} disabled={confirmInput !== validationTarget || isUploading} className={`w-full py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${confirmInput === validationTarget ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                                {isUploading ? <Loader2 className="animate-spin" size={20}/> : `Verify & Process`}
                             </button>
+                            <p className="text-[10px] text-gray-400 mt-4 text-center">Press <span className="font-bold">Enter</span> to confirm</p>
                         </div>
                     </div>
                 )}
-                {status.type && <StatusModal status={status} onClose={status.type === 'success' ? handleSuccessClose : () => setStatus({ type: null, message: null })} />}
+                {status.type && <StatusModal status={status} onClose={status.type === 'success' ? handleSuccessClose : () => setStatus({ type: null, message: null, details: null })} />}
             </div>
         </div>
     );
@@ -554,7 +591,7 @@ const DeleteConfirmationModal = ({ collectionName, onClose, onSuccess }) => {
             if (res.ok) {
                 setStatus({ type: 'success', message: `Collection deleted.` });
                 setTimeout(() => {
-                    onSuccess(); // Changed from passing name to just invoking callback which will be loadData
+                    onSuccess(); 
                 }, 800);
             } else {
                 setStatus({ type: 'error', message: data.message || "Delete failed" });
@@ -635,7 +672,6 @@ const SystemAdministrationPage = () => {
         loadData();
     }, [user, navigate]);
 
-    // FETCH FUNCTION
     const loadData = async () => {
         setIsLoading(true); 
         try {
@@ -681,7 +717,6 @@ const SystemAdministrationPage = () => {
         return { groupedCollections: grouped, stats: newStats };
     }, [flatList]);
 
-    // UPDATED: Now calls loadData() directly
     const handleDeleteSuccess = () => {
         setDeleteTarget(null);
         loadData(); 
@@ -721,7 +756,7 @@ const SystemAdministrationPage = () => {
             if (res.ok) {
                 setGlobalStatus({ type: 'success', message: data.message || "Semester Initialized Successfully" });
                 handleTabChange('collections');
-                loadData(); // RE-FETCH
+                loadData(); 
             } else {
                 setGlobalStatus({ type: 'error', message: data.message || "Initialization failed" });
             }
@@ -807,7 +842,7 @@ const SystemAdministrationPage = () => {
                 } else {
                    fetchSemConfig(modifySemName); 
                 }
-                loadData(); // UPDATED: RE-FETCH ALL COLLECTIONS
+                loadData(); 
             } else {
                 setGlobalStatus({ type: 'error', message: data.message || "Operation failed" });
             }
@@ -837,7 +872,6 @@ const SystemAdministrationPage = () => {
 
     return (
         <div className="min-h-screen font-sans bg-slate-50 pb-20">
-            {/* HERO HEADER */}
             <div className="bg-slate-900 pb-32 rounded-b-[2.5rem] shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
                 <div className="px-6 pt-6 relative z-10 max-w-[95%] mx-auto">
@@ -858,7 +892,6 @@ const SystemAdministrationPage = () => {
                 </div>
             </div>
 
-            {/* CONTENT AREA */}
             <main className="px-4 -mt-24 relative z-20 max-w-[95%] mx-auto">
                 {activeMainTab === 'create' && (
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
@@ -1060,7 +1093,12 @@ const SystemAdministrationPage = () => {
                 {activeMainTab === 'collections' && (
                     <div className="space-y-6 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
                         {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-20"><Loader2 className="animate-spin text-blue-600 mb-4" size={40} /><p className="text-gray-500 font-medium">Fetching database collections...</p></div>
+                        <div className="flex flex-col items-center mt-24 py-20">
+                        <Loader2 className="animate-spin text-blue-600 mb-8" size={40} />
+                        <p className="text-gray-500 font-medium">
+                            Fetching database collections...
+                        </p>
+                        </div>
                         ) : (
                             <>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1080,7 +1118,6 @@ const SystemAdministrationPage = () => {
                                                 <span className="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded-full">{items.length}</span>
                                             </div>
                                             
-                                            {/* UPDATED GRID COLS FOR WIDER LAYOUT */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                                 {items.map((col, idx) => {
                                                     const themeKey = Object.keys(CATEGORY_THEMES).find(k => k === col.category) || 'others';
@@ -1118,7 +1155,6 @@ const SystemAdministrationPage = () => {
                 )}
             </main>
 
-            {/* MODALS */}
             {selectedCollection && <CollectionManagerModal collection={selectedCollection} onClose={() => setSelectedCollection(null)} onSuccess={loadData} />}
             {selectedModifyCollection && <ModifyCollectionModal collection={selectedModifyCollection} onClose={() => setSelectedModifyCollection(null)} onSuccess={() => { loadData(); }} />}
             {deleteTarget && <DeleteConfirmationModal collectionName={deleteTarget} onClose={() => setDeleteTarget(null)} onSuccess={handleDeleteSuccess} />}
