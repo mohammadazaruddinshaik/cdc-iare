@@ -433,9 +433,7 @@ const LogsPage = () => {
                                                             </div>
                                                             <h4 className="font-bold text-white text-base">{style.label}</h4>
                                                         </div>
-                                                        <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5 ml-0.5">
-                                                            <Clock size={12} strokeWidth={2.5} /> {log.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </p>
+                                                       
                                                     </div>
                                                 </div>
 

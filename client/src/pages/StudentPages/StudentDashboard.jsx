@@ -9,9 +9,9 @@ import Loader from '../../components/Loader';
 // --- ASSET IMPORTS ---
 // Replace these with actual paths if available, or use the fallback logic below
 import leetcodeLogo from '../../assets/leetcode.webp';
-import gfgLogo from '../../assets/leetcode.webp'; // Placeholder
-import codechefLogo from '../../assets/leetcode.webp'; // Placeholder
-import githubLogo from '../../assets/leetcode.webp'; // Placeholder
+import gfgLogo from '../../assets/gfg.png'; // Placeholder
+import codechefLogo from '../../assets/codechef.png'; // Placeholder
+import githubLogo from '../../assets/github.png'; // Placeholder
 
 const getLogo = (importName, fallbackUrl) => importName || fallbackUrl;
 
@@ -49,6 +49,12 @@ const knownCourses = {
         bgColor: "bg-gradient-to-br from-emerald-100 via-emerald-50 to-green-50",
         progressColor: "bg-gradient-to-r from-emerald-600 to-green-600"
     },
+     'DBMS': {
+        title: "Database Management System",
+        icon: <Database className="w-6 h-6 text-emerald-700" />,
+        bgColor: "bg-gradient-to-br from-emerald-100 via-emerald-50 to-green-50",
+        progressColor: "bg-gradient-to-r from-emerald-600 to-green-600"
+    },
     'AWS': {
         title: "Amazon Web Services",
         icon: <Cloud className="w-6 h-6 text-yellow-700" />,
@@ -57,7 +63,7 @@ const knownCourses = {
     }
 };
 
-const maxCodingScores = { LeetCode: 500, CodeChef: 500, GeeksforGeeks: 500, GitHub: 500 };
+const maxCodingScores = { LeetCode: 6000, CodeChef: 2500, GeeksforGeeks: 3000, GitHub: 1500 };
 
 // --- HELPER FUNCTIONS ---
 const getRankBadge = (rank) => {
@@ -138,19 +144,25 @@ const TopCoderCard = memo(({ coder }) => (
                 <span className="font-black text-gray-800 text-base">#{coder.rank}</span>
             </div>
         </div>
+
+        {/* The grid now maps all platforms, showing 0 if the data is missing */}
         <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
             {[
-                { img: platformLogos.LeetCode, val: coder.scores.leetcode },
-                { img: platformLogos.GeeksforGeeks, val: coder.scores.gfg },
-                { img: platformLogos.CodeChef, val: coder.scores.codechef },
-                { img: platformLogos.GitHub, val: coder.scores.github }
-            ].map((item, i) => item.val > 0 && (
+                { img: platformLogos.LeetCode, val: coder.scores?.leetcode },
+                { img: platformLogos.GeeksforGeeks, val: coder.scores?.gfg },
+                { img: platformLogos.CodeChef, val: coder.scores?.codechef },
+                { img: platformLogos.GitHub, val: coder.scores?.github }
+            ].map((item, i) => (
                 <div key={i} className="flex items-center space-x-2 bg-white/50 px-2 py-1 rounded-lg border border-white/20 shadow-sm">
-                    <img src={item.img} alt="P" className="w-4 h-4 object-contain flex-shrink-0" />
-                    <span className="text-xs font-bold text-gray-800 truncate">{item.val}</span>
+                    <img src={item.img} alt="Platform" className="w-4 h-4 object-contain flex-shrink-0" />
+                    {/* If val is null, undefined, or missing, show 0 */}
+                    <span className="text-xs font-bold text-gray-800 truncate">
+                        {item.val ?? 0}
+                    </span>
                 </div>
             ))}
         </div>
+
         <div className="mt-auto pt-2 border-t border-black/5 flex justify-between items-center relative z-10">
              <div className="flex items-center space-x-2 text-gray-700">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-800/70">Score</span>
@@ -309,8 +321,8 @@ const StudentDashboardPage = () => {
         };
     }, [studentData]);
 
-    const isCodingDataAvailable = useMemo(() => getCodingScores.some(item => item.score > 0), [getCodingScores]);
-    const isLeaderboardAvailable = useMemo(() => getTopCoders.some(student => student.totalScore > 0), [getTopCoders]);
+    const isCodingDataAvailable = useMemo(() => getCodingScores.some(item => item.score >= 0), [getCodingScores]);
+    const isLeaderboardAvailable = useMemo(() => getTopCoders.some(student => student.totalScore >= 0), [getTopCoders]);
 
     // --- RENDER ---
 

@@ -120,7 +120,7 @@ const SessionReport = () => {
             }
             
             const formattedDate = formatDateForFilename(date);
-            const filename = `Report_${semname}_${session}_${formattedDate}.${fileExtension}`;
+            const filename = `CDC-${semname}_${session}_${formattedDate}.${fileExtension}`;
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);

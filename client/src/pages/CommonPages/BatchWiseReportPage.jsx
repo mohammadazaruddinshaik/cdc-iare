@@ -151,7 +151,7 @@ const BatchWiseReport = () => {
             const blobUrl = URL.createObjectURL(blob);
 
             // Simple filename using just the batch and extension
-            const filename = `${selectedBatch}.${fileExtension}`; 
+            const filename = `CDC-${selectedBatch}.${fileExtension}`; 
 
             const a = document.createElement("a");
             a.href = blobUrl;
