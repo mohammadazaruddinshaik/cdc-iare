@@ -288,7 +288,6 @@ const StudentStickyFooter = ({ myData }) => {
                     <div className="flex flex-col justify-center"> 
                         <span className="text-[10px] font-mono font-semibold text-slate-400">{myData.displayId}</span>
                         <div className="flex items-center gap-1.5">
-                            <Flag size={12} className="text-yellow-500" />
                             <span className="text-sm font-bold text-white">Rank #{myData.rank}</span>
                         </div>
                     </div>

@@ -1,32 +1,24 @@
 import axios from "axios";
 
-// Create the instance using your environment variable
 const api = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL,
     withCredentials: true, 
 });
 
-// Response Interceptor: Handles automatic token recovery
+// Intercept Errors Globally
 api.interceptors.response.use(
     (response) => response, 
-    async (error) => {
-        const originalRequest = error.config;
-
-        // If the error is 401 (Unauthorized) and we haven't retried yet
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
-
-            try {
-            
-                await axios.post(`${import.meta.env.VITE_BASE_URL}/api/refresh`, {}, { withCredentials: true });
-
-                // If successful, retry the original request with the new cookie
-                return api(originalRequest);
-            } catch (refreshError) {
-                // If refresh fails, the session is completely dead
-                return Promise.reject(refreshError);
-            }
+    (error) => {
+        // 1. Check for Network Error (Offline / Server Down)
+        if (!error.response) {
+             // "Network Error" usually has no response object
+             window.dispatchEvent(new Event('app-network-error'));
+        } 
+        // 2. Check for 500 Server Errors (Optional: if you want to block the app on 500)
+        else if (error.response.status >= 500) {
+             window.dispatchEvent(new Event('app-server-error'));
         }
+
         return Promise.reject(error);
     }
 );

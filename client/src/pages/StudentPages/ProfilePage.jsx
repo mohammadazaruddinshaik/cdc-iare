@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Mail, Lock, X, Eye, EyeOff,
+    Mail, Lock, X, Unlock,
     Loader2, Maximize, GraduationCap, Users,
     User, CheckCircle, AlertTriangle, Info,
-    Crown, Medal, Star, 
-    Edit2, Save, Link as LinkIcon, ArrowUpRight
+    Crown, Medal, Star, BarChart3, Gauge, 
+    Edit2, Save, Link as LinkIcon, ArrowUpRight,
+    ListOrdered
 } from 'lucide-react';
 
-import Header from '../../../components/Header';
-import { useAuth } from '../../../context/AuthContext'; 
-import Loader from '../../../components/Loader';
+import Header from '../../components/Header';
+import { useAuth } from '../../context/AuthContext'; 
+import Loader from '../../components/Loader';
 
-
-import lcImg from '/src/assets/leetcode.webp';
-import gfgImg from '/src/assets/leetcode.webp';
-import ccImg from '/src/assets/leetcode.webp';
-import ghImg from '/src/assets/leetcode.webp';
+// --- ASSETS ---
+import lcImg from '../../assets/leetcode.webp';
+import gfgImg from '../../assets/gfg.png'; // Replace with actual GFG asset if available
+import ccImg from '../../assets/codechef.png'; // Replace with actual CodeChef asset
+import ghImg from '../../assets/github.png'; // Replace with actual GitHub asset
 
 const backendUrl = import.meta.env.VITE_BASE_URL;
 
@@ -107,7 +108,7 @@ const PasswordInput = ({ id, label, value, onChange, error, placeholder }) => {
                     className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <Unlock size={20} /> : <Lock size={20} />}
                 </button>
             </div>
             {error && (
@@ -205,7 +206,7 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                 <div className="flex justify-between items-start mb-8">
                     <div>
                         <h2 className="text-2xl font-black text-gray-900 tracking-tight">Coding Profiles</h2>
-                        <p className="text-gray-500 text-sm mt-1 font-medium">Connect your coding platforms to track progress.</p>
+                        <p className="text-gray-500 text-sm mt-1 font-medium">  Link platforms to view activity and rankings.</p>
                     </div>
                     <button onClick={onClose} className="p-2 -mr-2 -mt-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X size={20} />
@@ -531,11 +532,12 @@ const ProfilePage = () => {
                     <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
                 </div>
 
-                <div className="px-4 sm:px-6 lg:px-8 relative z-10">
-                    <Header animate={animate} />
+                <div className="px-4 sm:px-6 lg:px-8 relative z-50">
+                    <Header animate={animate} qrCode={userData.qrImage} />
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-6"></div>
 
-                    <div className={`py-12 lg:min-h-[50vh] flex items-center transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+                    {/* FIXED: Added pb-24 for mobile to prevent overlap with the rounded bottom edge */}
+                    <div className={`py-12 pb-24 lg:pb-12 lg:min-h-[50vh] flex items-center transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
                         <div className="flex flex-col lg:flex-row items-center justify-between w-full max-w-7xl mx-auto gap-12 lg:gap-16">
                             <div className="flex flex-col lg:flex-row items-center gap-8 text-white">
                                 <div className="relative flex-shrink-0">
@@ -577,14 +579,14 @@ const ProfilePage = () => {
                                     />
                                 </div>
                                 <div className="max-w-xs">
-                                    <h4 className="font-semibold text-lg">Digital ID Card</h4>
                                     <p className="text-xs text-gray-400 mt-1">
                                         👉 Note: This QR code updates in real time for maximum security.
                                     </p>
                                 </div>
                                 <button onClick={() => setIsFullScreenQrOpen(true)} className="mt-2 flex items-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm justify-center shadow-lg shadow-blue-600/30">
                                     <Maximize size={16} />
-                                    View Fullscreen QR
+                                   Open Fullscreen QR
+
                                 </button>
                             </div>
                         </div>
@@ -598,43 +600,45 @@ const ProfilePage = () => {
                     <section>
                         <div className="mb-8 border-b border-gray-200 pb-4 flex items-center justify-between">
                             <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                                Coding Profile & Ranks                               
+                             Performance Overview                              
                             </h2>
                             <button 
                                 onClick={() => setIsHandlesModalOpen(true)}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-full hover:bg-black transition-all shadow-lg hover:shadow-xl active:scale-95"
                             >
                                 <Edit2 size={16} />
-                                Edit Handles
+                               Update Profiles
+
                             </button>
                         </div>
                         
                         {/* Ranks & Total Score */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                             {/* UPDATED: Crown icon used here */}
-                             <ProfileDetailCard 
-                                icon={<Crown />} 
-                                label="Global Rank" 
-                                value={`#${userData.globalRank}`} 
-                                variant="primary"
-                            />
-                            <ProfileDetailCard 
-                                icon={<Medal />} 
-                                label="Batch Rank" 
-                                value={`#${userData.batchRank}`} 
-                                variant="secondary"
-                            />
-                             <ProfileDetailCard 
-                                icon={<Star />} 
-                                label="Total Coding Score" 
-                                value={userData.codingProfile.totalScore} 
-                                variant="gold"
-                            />
-                        </div>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <ProfileDetailCard 
+    icon={<ListOrdered />} 
+    label="Global Rank" 
+    value={`#${userData.globalRank}`} 
+    variant="primary"
+  />
+
+  <ProfileDetailCard 
+    icon={<Users />} 
+    label="Batch Rank" 
+    value={`#${userData.batchRank}`} 
+    variant="secondary"
+  />
+
+  <ProfileDetailCard 
+    icon={<Gauge />} 
+    label="Total Score" 
+    value={userData.codingProfile.totalScore} 
+    variant="gold"
+  />
+</div>
 
                         {/* Coding Platforms */}
                         <h3 className="text-xl font-bold text-gray-800 mb-6 px-1 flex items-center gap-2">
-                            <LinkIcon size={20} className="text-blue-500" /> Connected Platforms
+                            <LinkIcon size={20} className="text-blue-500" /> Linked Coding Platforms
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <ProfileDetailCard 
@@ -642,7 +646,7 @@ const ProfilePage = () => {
                                 isImage={true} 
                                 label="LeetCode" 
                                 value={userData.codingProfile.scores.leetcode || 'N/A'} 
-                                description={userData.codingProfile.handles.leetcode ? `@${userData.codingProfile.handles.leetcode}` : 'No Handle'}
+                                description={userData.codingProfile.handles.leetcode ? `@${userData.codingProfile.handles.leetcode}` : 'Not Linked'}
                                 redirectUrl={userData.codingProfile.handles.leetcode ? `https://leetcode.com/${userData.codingProfile.handles.leetcode}/` : null}
                             />
                             <ProfileDetailCard 
@@ -650,7 +654,7 @@ const ProfilePage = () => {
                                 isImage={true}
                                 label="GeeksForGeeks" 
                                 value={userData.codingProfile.scores.gfg || 'N/A'} 
-                                description={userData.codingProfile.handles.gfg ? `@${userData.codingProfile.handles.gfg}` : 'No Handle'}
+                                description={userData.codingProfile.handles.gfg ? `@${userData.codingProfile.handles.gfg}` : 'Not Linked'}
                                 redirectUrl={userData.codingProfile.handles.gfg ? `https://www.geeksforgeeks.org/user/${userData.codingProfile.handles.gfg}/` : null}
                             />
                             <ProfileDetailCard 
@@ -658,7 +662,7 @@ const ProfilePage = () => {
                                 isImage={true}
                                 label="CodeChef" 
                                 value={userData.codingProfile.scores.codechef || 'N/A'} 
-                                description={userData.codingProfile.handles.codechef ? `@${userData.codingProfile.handles.codechef}` : 'No Handle'}
+                                description={userData.codingProfile.handles.codechef ? `@${userData.codingProfile.handles.codechef}` : 'Not Linked'}
                                 redirectUrl={userData.codingProfile.handles.codechef ? `https://www.codechef.com/users/${userData.codingProfile.handles.codechef}` : null}
                             />
                             <ProfileDetailCard 
@@ -666,7 +670,7 @@ const ProfilePage = () => {
                                 isImage={true}
                                 label="GitHub" 
                                 value={userData.codingProfile.scores.github || 'N/A'} 
-                                description={userData.codingProfile.handles.github ? `@${userData.codingProfile.handles.github}` : 'No Handle'}
+                                description={userData.codingProfile.handles.github ? `@${userData.codingProfile.handles.github}` : 'Not Linked'}
                                 redirectUrl={userData.codingProfile.handles.github ? `https://github.com/${userData.codingProfile.handles.github}` : null}
                             />
                         </div>

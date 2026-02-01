@@ -1,24 +1,42 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ErrorPage from './ErrorPage'; 
 
-const ProtectedRoute = ({ requiredRole }) => {
+const ProtectedRoute = ({ allowedRoles, requiredRole }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
+  // 1. Not logged in? -> Kick to Login Page
   if (!user) {
     return <Navigate to="/" replace />;
   }
 
-  // 2. Check if user has the correct role
-  if (requiredRole && user.role !== requiredRole) {
+  // 2. Determine allowed roles
+  const roles = allowedRoles || (requiredRole ? [requiredRole] : []);
+  
+  // 3. Check if current user has permission
+  if (roles.length > 0 && !roles.includes(user.role)) {
+    
+    // 4. Unauthorized? -> SHOW 404 NOT FOUND (Security Best Practice)
+    // We pretend the page doesn't exist so they don't try to hack it.
     return (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-900 text-white">
-            <h1 className="text-3xl font-bold text-red-500 mb-2">Access Denied</h1>
-            <p className="text-gray-400">You do not have permission to view this page.</p>
-        </div>
+      <ErrorPage 
+        type="notfound" 
+        onRetry={() => {
+            // "Go Back Home" button redirects to their proper dashboard
+            const dashboardMap = {
+                student: '/student/dashboard',
+                faculty: '/faculty/dashboard',
+                admin: '/admin/dashboard'
+            };
+            navigate(dashboardMap[user.role] || '/');
+        }} 
+      />
     );
   }
 
+  // 5. Authorized? -> Render the page
   return <Outlet />;
 };
 

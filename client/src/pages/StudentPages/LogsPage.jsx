@@ -1,23 +1,18 @@
-/**
- * @file LogsPage.jsx
- * @description Dark-themed Attendance Logs with API Integration and Smart Empty States.
- */
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     Search, Calendar, BookOpen, ChevronLeft, ChevronRight, X,
     CheckCircle2, XCircle, PieChart as PieChartIcon,
     CalendarDays, BarChart2, Filter, Terminal, Cloud, Database, Coffee, Server,
-    Clock, ArrowUpRight, Sparkles, Layers, FileQuestion, FolderOpen
+    Clock, ArrowUpRight, Sparkles, FileQuestion, FolderOpen,Gauge,UserCheck
 } from 'lucide-react';
 import { 
     ResponsiveContainer, PieChart, Pie, Cell, Tooltip 
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import Header from '../../../components/Header';
-import { useAuth } from '../../../context/AuthContext'; 
-import Loader from '../../../components/Loader';
+import Header from '../../components/Header';
+import { useAuth } from '../../context/AuthContext'; 
+import Loader from '../../components/Loader';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 
@@ -25,7 +20,6 @@ const API_URL = import.meta.env.VITE_BASE_URL;
 const COURSE_STYLES = {
     'CP': { 
         label: 'Competitive Programming', 
-        // SWAPPED: Now using the Orange/Amber theme (previously AWS)
         gradient: 'from-orange-500/20 to-amber-500/5',
         text: 'text-orange-300',
         border: 'border-orange-500/30',
@@ -33,7 +27,6 @@ const COURSE_STYLES = {
     },
     'AWS': { 
         label: 'Amazon Web Services', 
-        // SWAPPED: Now using the Violet/Purple theme (previously CP)
         gradient: 'from-violet-500/20 to-purple-500/5',
         text: 'text-violet-300',
         border: 'border-violet-500/30',
@@ -314,7 +307,8 @@ const LogsPage = () => {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-32 relative overflow-hidden selection:bg-blue-500/30">
+        // FIXED: Increased pb-40 for mobile to prevent overlap issues
+        <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-40 md:pb-32 relative overflow-hidden selection:bg-blue-500/30">
             
             <div className="relative px-4 sm:px-6 lg:px-8 pt-4 pb-6 z-20">
                 <Header animate={animate} />
@@ -327,7 +321,7 @@ const LogsPage = () => {
                 {/* --- TITLE & CONTROLS --- */}
                 <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
                             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-slate-400 pb-2">
                                 Attendance Logs
                             </span>
@@ -348,9 +342,16 @@ const LogsPage = () => {
                                 />
                             </div>
                         </div>
-                        <button onClick={() => setIsChartOpen(true)} className="p-2.5 bg-[#0F172A] hover:bg-white/10 text-white rounded-xl border border-white/10 shadow-lg transition-all active:scale-95" title="Analytics">
+                        
+                        {/* FIXED: Analytics Button - HIDDEN ON MOBILE (hidden md:block) */}
+                        <button 
+                            onClick={() => setIsChartOpen(true)} 
+                            className="hidden md:block p-2.5 bg-[#0F172A] hover:bg-white/10 text-white rounded-xl border border-white/10 shadow-lg transition-all active:scale-95" 
+                            title="Analytics"
+                        >
                             <BarChart2 size={20} strokeWidth={2.5} />
                         </button>
+
                         <button onClick={() => setIsCalendarOpen(true)} className="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-95" title="Calendar View">
                             <Calendar size={20} strokeWidth={2.5} />
                         </button>
@@ -362,9 +363,7 @@ const LogsPage = () => {
                     
                     <div className="bg-[#0F172A]/60 backdrop-blur-xl border border-blue-500/20 p-5 rounded-[1.5rem] flex items-center gap-5 shadow-lg relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                        <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30 group-hover:scale-110 transition-transform">
-                            <Layers size={24} />
-                        </div>
+                       
                         <div>
                             <span className="block text-3xl font-black text-white">{overallStats.total}</span>
                             <span className="text-xs font-bold text-blue-300 uppercase tracking-wider">Total Classes</span>
@@ -373,9 +372,7 @@ const LogsPage = () => {
 
                     <div className="bg-[#0F172A]/60 backdrop-blur-xl border border-emerald-500/20 p-5 rounded-[1.5rem] flex items-center gap-5 shadow-lg relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30 group-hover:scale-110 transition-transform">
-                            <CheckCircle2 size={24} />
-                        </div>
+                       
                         <div>
                             <span className="block text-3xl font-black text-white">{overallStats.present}</span>
                             <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">Present</span>
@@ -384,9 +381,7 @@ const LogsPage = () => {
 
                     <div className="bg-[#0F172A]/60 backdrop-blur-xl border border-purple-500/20 p-5 rounded-[1.5rem] flex items-center gap-5 shadow-lg relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 border border-purple-500/30 group-hover:scale-110 transition-transform">
-                            <PieChartIcon size={24} />
-                        </div>
+                       
                         <div>
                             <span className="block text-3xl font-black text-white">{overallStats.percentage}%</span>
                             <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">Attendance Rate</span>

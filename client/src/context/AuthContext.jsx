@@ -1,26 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import Loader from '../components/Loader';
 import api from '../api/axiosConfig'; 
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  // We keep 'loading' true initially, but we won't block the render with it
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkUserSession = async () => {
       try {
-        const minLoadTime = new Promise(resolve => setTimeout(resolve, 300));
+        // Direct API call - instant check
+        const { data } = await api.get('/api/me');
         
-        const apiCall = api.get('/api/me');
-
-        const [response] = await Promise.all([apiCall, minLoadTime]);
-
-        // Axios returns the data directly in .data
-        const data = response.data;
-          
-        // --- MAPPING LOGIC ---
         setUser({
           username: data.username || data.userId || data.rollno, 
           role: data.role,
@@ -30,13 +23,7 @@ export const AuthProvider = ({ children }) => {
         });
 
       } catch (error) {
-        console.warn("Session check failed or expired:", error);
         setUser(null);
-        
-        // Only redirect if not already at root
-        if (window.location.pathname !== '/') {
-             window.location.replace('/');
-        }
       } finally {
         setLoading(false);
       }
@@ -51,20 +38,16 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // ⚡️ CHANGE 2: Use 'api.post' for logout
       await api.post('/api/logout');
     } catch (error) {
-      console.error("Logout error", error);
+      console.error("Logout failed", error);
     }
-    // Clear state and force navigation to root
     setUser(null);
     window.location.replace('/');
   };
 
-  if (loading) {
-    return <Loader />;
-  }
-
+  // ⚡️ FIX: Removed the "if (loading) return <Loader />" block.
+  // The app now renders children immediately.
   return (
     <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}

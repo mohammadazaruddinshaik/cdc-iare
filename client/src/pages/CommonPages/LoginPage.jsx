@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js'; // Import Crypto JS
 
 import {
-    LogIn, User, Eye, EyeOff, Linkedin, Github, 
+    LogIn, User, Linkedin, Github,  Lock, Unlock,
     QrCode, Trophy, CheckCircle, 
     Battery, Wifi, Signal, Terminal, ScanLine, Server, Loader2, ChevronDown,
     Handshake, XCircle, X, Info, Building2
@@ -50,14 +50,34 @@ const decryptData = (ciphertext) => {
 // --- DATA ---
 const teamMentor = {
     name: 'Dr. B Padmaja',
-    role: 'Project Mentor',
+    role: 'Advisor',
     image: 'https://iare.irins.org/profile_images/217071.jpg',
 };
+
 const teamDevelopers = [
-    { name: 'Burugu Sai Nitin', role: 'Full Stack Developer', image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66F6/23951A66F6.jpg', linkedin: 'https://www.linkedin.com/in/burugu-sai-nitin/', github: 'https://github.com/Immnitin' },
-    { name: 'Shaik Mohammad Azaruddin', role: 'Full Stack Developer', image: AzarImg, linkedin: 'https://www.linkedin.com/in/mohammadazaruddinshaik/', github: 'https://github.com/mohammadazaruddinshaik' },
-    { name: 'Tavva Sandeep Kumar Reddy', role: 'Full Stack Developer', image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66H0/23951A66H0.jpg', linkedin: 'https://www.linkedin.com/in/tavva-sandeep-kumar-rddy-705966355/', github: 'https://github.com/SandeepReddy100' },
+    {
+        name: 'Burugu Sai Nitin',
+        role: 'Software Engineer',
+        image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66F6/23951A66F6.jpg',
+        linkedin: 'https://www.linkedin.com/in/burugu-sai-nitin/',
+        github: 'https://github.com/Immnitin'
+    },
+    {
+        name: 'Shaik Mohammad Azaruddin',
+        role: 'Software Engineer',
+        image: AzarImg,
+        linkedin: 'https://www.linkedin.com/in/mohammadazaruddinshaik/',
+        github: 'https://github.com/mohammadazaruddinshaik'
+    },
+    {
+        name: 'Tavva Sandeep Kumar Reddy',
+        role: 'Software Engineer',
+        image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66H0/23951A66H0.jpg',
+        linkedin: 'https://www.linkedin.com/in/tavva-sandeep-kumar-rddy-705966355/',
+        github: 'https://github.com/SandeepReddy100'
+    },
 ];
+
 
 // --- SUB-COMPONENTS ---
 
@@ -322,12 +342,14 @@ const LoginPage = () => {
                     
                     <div className="relative z-10 w-full max-w-xl flex flex-col items-center justify-center h-full">
                         <div className="mb-8 text-center">
-                            <h1 className="text-3xl xl:text-4xl font-extrabold mb-2 leading-tight">
-                              <span className="text-white">Where</span> <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">Precision</span> <span className="text-white">Meets</span> <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Performance.</span>
-                            </h1>
-                            <p className="text-sm text-gray-400 font-light leading-relaxed max-w-md mx-auto">
-                                Track every moment. Transform every outcome — with seamless QR attendance, live analytics, and smart campus management.
-                            </p>
+                            <h1 className="text-3xl xl:text-4xl font-semibold mb-2 text-white">
+    QR Attendance System
+</h1>
+
+<p className="text-sm text-blue-200/80 leading-relaxed max-w-md mx-auto">
+    A centralized system for managing classroom attendance using secure, time-bound QR codes.
+</p>
+
                         </div>
 
                         <div className="relative w-full max-w-[260px] h-[50vh] max-h-[580px] min-h-[380px]" style={{ perspective: '1200px' }}>
@@ -386,7 +408,8 @@ const LoginPage = () => {
 
                             <div className="mb-6 text-center lg:text-left">
                                 <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-1 tracking-tight">Sign In</h1>
-                                <p className="text-xs md:text-sm text-gray-500 font-medium">Welcome back. Please enter your details.</p>
+                                <p className="text-xs md:text-sm text-gray-500 font-medium">    Enter your credentials to continue.
+</p>
                             </div>
 
                             <form onSubmit={handleLogin} className="space-y-4">
@@ -402,7 +425,7 @@ const LoginPage = () => {
                                     <label className="text-xs font-bold text-gray-500 ml-3 uppercase tracking-wider">Password</label>
                                     <div className="relative group">
                                         <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setActiveField('password')} onBlur={() => setActiveField(null)} onPaste={(e) => { e.preventDefault(); return false; }} onCopy={(e) => { e.preventDefault(); return false; }} className="w-full bg-white border-2 border-gray-100 rounded-full py-3 pl-4 pr-10 text-sm font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:shadow-lg transition-all outline-none" placeholder="••••••••" />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors">{showPassword ? <Eye size={18} /> : <EyeOff size={18} />}</button>
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors">{showPassword ? <Unlock size={18} /> : <Lock size={18} />}</button>
                                     </div>
                                 </div>
 
@@ -430,7 +453,7 @@ const LoginPage = () => {
     >
         {/* CHANGED: Text is now darker (gray-900), slightly larger (text-xs), and says "Developers" */}
         <span className="text-xs font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-[0.15em] uppercase mb-1">
-            Meet The Team 
+    View Contributors
         </span>
         
         {/* CHANGED: Icon is now darker (gray-500) so it is visible even without hovering */}
@@ -446,7 +469,8 @@ const LoginPage = () => {
             <div id="meet-team" className="w-full bg-[#F8FAFC] py-16 px-6 border-t border-gray-200 flex items-center justify-center min-h-auto lg:min-h-[80vh]">
                 <div className="max-w-7xl w-full"> 
                     <div className="text-center mb-10">
-                        <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">MEET THE TEAM</h2>
+                        <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">    Built &amp; Maintained By
+</h2>
                         <div className="h-1.5 w-20 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto rounded-full mt-3"></div>
                     </div>
 

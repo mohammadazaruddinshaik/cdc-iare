@@ -326,7 +326,7 @@ const ViewAllFaculty = ({ animate, facultyList, isLoading, error, onAction, onDe
             );
         }
         
-        if (error) return <StatusDisplay title="Connection Failed" message="Could not retrieve faculty data." icon={ServerCrash} colorClass="red" action={<button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700">Retry</button>} />;
+        if (error) return <StatusDisplay title="Faculty Not Found" message="Could not retrieve faculty data." icon={ServerCrash} colorClass="red" action={<button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700">Retry</button>} />;
         if (!facultyList || facultyList.length === 0) return <StatusDisplay title="No Records" message="No faculty members found." icon={Users} colorClass="amber" />;
         if (paginated.length === 0) return <StatusDisplay title="No Matches" message="Try clearing your search or filters." icon={Search} colorClass="gray" action={<button onClick={() => {setSearchTerm(''); setDesignationFilter('All'); setSemesterFilter('All');}} className="text-blue-600 font-bold underline decoration-2 underline-offset-4">Reset Filters</button>} />;
 

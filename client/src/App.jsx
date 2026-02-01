@@ -1,157 +1,176 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+
+// --- Context & Core Components ---
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorPage from './components/ErrorPage'; 
+import Loader from './components/Loader'; 
 
+// --- Eager Load (Load immediately) ---
 import LoginPage from './pages/CommonPages/LoginPage';
-import LeaderboardPage from './pages/CommonPages/LeaderBoardPage';
-import PostAttendance from './pages/CommonPages/PostAttendancePage';
-import ViewAttendance from './pages/CommonPages/ViewAttendancePage';
-import FacultyActionPage from './pages/CommonPages/FacultyActionPage';
-import MultiBatchAttendancePage from './pages/CommonPages/MultiBatchAttendancePage';
-import BatchWiseReport from './pages/CommonPages/BatchWiseReportPage';
 
-import AdminDashboard from './pages/AdminPages/AdminDashboard';
-import AdminProfilePage from './pages/AdminPages/AdminProfilePage';
-import AdminTimetablePage from './pages/AdminPages/AdminTimeTablePage';
-import ModifyTimetablePage from './pages/AdminPages/ModifyTimetablePage';
-import CreateTimetablePage from './pages/AdminPages/CreateTimeTable';
-import ManageStudentPage from './pages/AdminPages/ManageStudentPage';
-import ManageFacultyPage from './pages/AdminPages/ManageFacultyPage';
-import ManageAttendancePage from './pages/AdminPages/ManageAttendancePage';
-import AdminAnnouncementsPage from './pages/AdminPages/AdminAnnouncementsPage';
-import SystemAdministrationPage from './pages/AdminPages/SystemAdministration';
-import SessionWiseReportPage from './pages/AdminPages/SessionWiseReportPage';
-import MonthlyReport from './pages/AdminPages/MonthlyReportPage';
+// --- Lazy Load (Load only when needed) ---
+// 1. Common Pages
+const LeaderboardPage = lazy(() => import('./pages/CommonPages/LeaderBoardPage'));
+const TimeTablePage = lazy(() => import('./pages/StudentPages/TimeTablePage')); // Note: Imported from StudentPages but seems common
+const ViewAttendance = lazy(() => import('./pages/CommonPages/ViewAttendancePage'));
+const PostAttendance = lazy(() => import('./pages/CommonPages/PostAttendancePage'));
+const MultiBatchAttendancePage = lazy(() => import('./pages/CommonPages/MultiBatchAttendancePage'));
+const FacultyActionPage = lazy(() => import('./pages/CommonPages/FacultyActionPage'));
+const BatchWiseReport = lazy(() => import('./pages/CommonPages/BatchWiseReportPage'));
 
-import FacultyDashboard from './pages/FacultyPages/FacultyDashboard';
-import FacultyProfilePage from './pages/FacultyPages/FacultyProfilePage';
-import FacultyTimetablePage from './pages/FacultyPages/FacultyTimeTablePage';
-import FacultyMarkAttendancePage from './pages/FacultyPages/FacultyMarkAttendancePage';
-import UpdateStudentPage from './pages/FacultyPages/UpdateStudentPage';
-import FacultyContestPage from './pages/FacultyPages/FacultyContestPage';
-import FacultyQuizDashboard from './pages/FacultyPages/FacultyQuizDashboard';
-import FacultySessionPage from './pages/FacultyPages/FacultySessionPage.jsx';
-import FacultySessionAnalytics from './pages/FacultyPages/FacultySessionAnalytics.jsx';
+// 2. Admin Pages
+const AdminDashboard = lazy(() => import('./pages/AdminPages/AdminDashboard'));
+const AdminProfilePage = lazy(() => import('./pages/AdminPages/AdminProfilePage'));
+const AdminTimetablePage = lazy(() => import('./pages/AdminPages/AdminTimeTablePage'));
+const ManageStudentPage = lazy(() => import('./pages/AdminPages/ManageStudentPage'));
+const ManageFacultyPage = lazy(() => import('./pages/AdminPages/ManageFacultyPage'));
+const ManageAttendancePage = lazy(() => import('./pages/AdminPages/ManageAttendancePage'));
+const AdminAnnouncementsPage = lazy(() => import('./pages/AdminPages/AdminAnnouncementsPage'));
+const CreateTimetablePage = lazy(() => import('./pages/AdminPages/CreateTimeTable'));
+const SystemAdministrationPage = lazy(() => import('./pages/AdminPages/SystemAdministration'));
+const SessionWiseReportPage = lazy(() => import('./pages/AdminPages/SessionWiseReportPage'));
+const MonthlyReport = lazy(() => import('./pages/AdminPages/MonthlyReportPage'));
+const ModifyTimetablePage = lazy(() => import('./pages/AdminPages/ModifyTimetablePage'));
 
-import StudentDashboard from './pages/StudentPages/Attendance/StudentDashboard.jsx';
-import StudentProfilePage from './pages/StudentPages/Attendance/ProfilePage';
-import TimeTablePage from './pages/StudentPages/Attendance/TimeTablePage.jsx';
-import LogsPage from './pages/StudentPages/Attendance/LogsPage.jsx';
-import AnnouncementsPage from './pages/StudentPages/Attendance/AnnouncementsPage';
-import StudentContestPage from './pages/StudentPages/Contest/StudentContestPage';
-import EnterContest from './pages/StudentPages/Contest/EnterContestPage';
-import ContestInstructions from './pages/StudentPages/Contest/ContestInstructions';
-import ContestDashboard from './pages/StudentPages/Contest/ContestDashboardPage';
-import ProblemSolver from './pages/StudentPages/Contest/ProblemSolverPage';
-import AssessmentResult from './pages/StudentPages/Contest/AssessmentResult.jsx';
-import QuizDashboard from './pages/StudentPages/Quiz/QuizDashboard.jsx';
-import QuizJoin from './pages/StudentPages/Quiz/QuizJoin.jsx';
-import QuizInstructions from './pages/StudentPages/Quiz/QuizInstructions.jsx';
-import QuizActive from './pages/StudentPages/Quiz/QuizActive.jsx';
-import StudentResultPage from './pages/StudentPages/Quiz/StudentResultsPage.jsx';
+// 3. Faculty Pages
+const FacultyDashboard = lazy(() => import('./pages/FacultyPages/FacultyDashboard'));
+const FacultyProfilePage = lazy(() => import('./pages/FacultyPages/FacultyProfilePage'));
+const FacultyMarkAttendancePage = lazy(() => import('./pages/FacultyPages/FacultyMarkAttendancePage'));
+const UpdateStudentPage = lazy(() => import('./pages/FacultyPages/UpdateStudentPage'));
+const FacultyTimetablePage = lazy(() => import('./pages/FacultyPages/FacultyTimeTablePage'));
 
-const AuthLayout = () => {
-  return (
-    <AuthProvider>
-      <AuthLoadingHandler />
-    </AuthProvider>
-  );
-};
+// 4. Student Pages
+const StudentDashboard = lazy(() => import('./pages/StudentPages/StudentDashboard'));
+const StudentProfilePage = lazy(() => import('./pages/StudentPages/ProfilePage'));
+const LogsPage = lazy(() => import('./pages/StudentPages/LogsPage'));
+const InboxPage = lazy(() => import('./pages/StudentPages/AnnouncementsPage'));
 
-const AuthLoadingHandler = () => {
+
+/**
+ * --- SessionGuard ---
+ * Wraps all protected routes.
+ * 1. Checks if Auth is still loading (shows Loader).
+ * 2. If Auth is ready, renders child routes inside Suspense (handling lazy loading).
+ */
+const SessionGuard = () => {
   const { loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center flex-col gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-        <p className="text-white font-mono text-sm animate-pulse">Verifying Session...</p>
-      </div>
-    );
-  }
-
-  return <Outlet />;
-};
-
-const AppRoutes = () => {
+  if (loading) return <Loader />;
+  
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-
-        <Route element={<AuthLayout />}>
-          
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
-            <Route path="/post-attendance" element={<PostAttendance />} />
-            <Route path="/faculty/action" element={<FacultyActionPage />} />
-            <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
-            <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
-            <Route path="/batch-report" element={<BatchWiseReport />} />
-            <Route path="/coding-contests" element={<FacultyContestPage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute requiredRole="admin" />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/profile" element={<AdminProfilePage />} />
-            <Route path="/admin/timetable" element={<AdminTimetablePage />} />
-            <Route path="/admin/attendance" element={<ViewAttendance />} />
-            <Route path="/admin/manage-students" element={<ManageStudentPage />} />
-            <Route path="/admin/manage-faculty" element={<ManageFacultyPage />} />
-            <Route path="/admin/manage-attendance" element={<ManageAttendancePage />} />
-            <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
-            <Route path="/admin/create-timetable" element={<CreateTimetablePage />} />
-            <Route path="/admin/system-admin" element={<SystemAdministrationPage />} />
-            <Route path="/session-report" element={<SessionWiseReportPage />} />
-            <Route path="/monthly-report" element={<MonthlyReport />} />
-            <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute requiredRole="faculty" />}>
-            <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
-            <Route path="/faculty/profile" element={<FacultyProfilePage />} />
-            <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
-            <Route path="/faculty/students" element={<ViewAttendance />} />
-            <Route path="/faculty/timetable" element={<FacultyTimetablePage />} />
-            <Route path="/faculty/quiz" element={<FacultyQuizDashboard />} />
-            <Route path="/faculty/sessions" element={<FacultySessionPage />} />
-            <Route path="/faculty/sessions/:sessionCode/analytics" element={<FacultySessionAnalytics />} />
-          </Route>
-
-          <Route element={<ProtectedRoute requiredRole="student" />}>
-            <Route path="/student/dashboard" element={<StudentDashboard />} />
-            <Route path="/student/profile" element={<StudentProfilePage />} />
-            <Route path="/logs" element={<LogsPage />} />
-            <Route path="/inbox" element={<AnnouncementsPage />} />
-            <Route path="/contests" element={<StudentContestPage />} />
-            <Route path="/contests/:contestId" element={<EnterContest />} />
-            <Route path="/contests/:contestId/instructions" element={<ContestInstructions />} />
-            <Route path="/contests/:contestId/live" element={<ContestDashboard />} />
-            <Route path="/contests/:contestId/problem/:problemId" element={<ProblemSolver />} />
-            <Route path="/contests/result" element={<AssessmentResult />} />
-            <Route path="/student/quiz" element={<QuizDashboard/>}/>
-            <Route path="/student/quiz/join" element={<QuizJoin />} />
-            <Route path="/student/quiz/instructions" element={<QuizInstructions />} />
-            <Route path="/student/quiz/active" element={<QuizActive />} />
-            <Route path="/student/quiz/result" element={<StudentResultPage />} />
-          </Route>
-
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/timetable" element={<TimeTablePage />} />
-
-          <Route path="*" element={
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', backgroundColor: '#111827' }}>
-              <h1>404 | Page Not Found</h1>
-            </div>
-          } />
-        </Route> 
-      </Routes>
-    </Router>
+    <Suspense fallback={<Loader />}>
+      <Outlet />
+    </Suspense>
   );
 };
 
+// --- Route Definitions ---
+const AppRoutes = () => {
+  return (
+    <Routes>
+      {/* Public Route */}
+      <Route path="/" element={<LoginPage />} />
+
+      {/* Protected Area */}
+      <Route element={<SessionGuard />}>
+        
+        {/* --- Common Routes (Accessible if logged in) --- */}
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/timetable" element={<TimeTablePage />} />
+
+        {/* --- Shared Admin & Faculty Routes --- */}
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
+          <Route path="/post-attendance" element={<PostAttendance />} />
+          <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
+          <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
+          <Route path="/batch-report" element={<BatchWiseReport />} />
+          <Route path="/faculty/action" element={<FacultyActionPage />} />
+        </Route>
+
+        {/* --- Admin Only Routes --- */}
+        <Route element={<ProtectedRoute requiredRole="admin" />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/profile" element={<AdminProfilePage />} />
+          <Route path="/admin/timetable" element={<AdminTimetablePage />} />
+          <Route path="/admin/attendance" element={<ViewAttendance />} />
+          <Route path="/admin/manage-students" element={<ManageStudentPage />} />
+          <Route path="/admin/manage-faculty" element={<ManageFacultyPage />} />
+          <Route path="/admin/manage-attendance" element={<ManageAttendancePage />} />
+          <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+          <Route path="/admin/create-timetable" element={<CreateTimetablePage />} />
+          <Route path="/admin/system-admin" element={<SystemAdministrationPage />} />
+          <Route path="/session-report" element={<SessionWiseReportPage />} />
+          <Route path="/monthly-report" element={<MonthlyReport />} />
+          <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
+        </Route>
+
+        {/* --- Faculty Only Routes --- */}
+        <Route element={<ProtectedRoute requiredRole="faculty" />}>
+          <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
+          <Route path="/faculty/profile" element={<FacultyProfilePage />} />
+          <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
+          <Route path="/faculty/students" element={<ViewAttendance />} />
+          <Route path="/faculty/timetable" element={<FacultyTimetablePage />} />
+        </Route>
+
+        {/* --- Student Only Routes --- */}
+        <Route element={<ProtectedRoute requiredRole="student" />}>
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/profile" element={<StudentProfilePage />} />
+          <Route path="/logs" element={<LogsPage />} />
+          <Route path="/inbox" element={<InboxPage />} />
+        </Route>
+
+        {/* --- 404 Not Found (Catches all unmatched paths) --- */}
+        <Route path="*" element={<ErrorPage type="notfound" />} />
+      </Route>
+    </Routes>
+  );
+};
+
+// --- MAIN APPLICATION ENTRY ---
 function App() {
-  return <AppRoutes />;
+  const [errorType, setErrorType] = useState(null);
+
+  // Global Error Listener
+  useEffect(() => {
+    const handleOffline = () => setErrorType('network');
+    const handleOnline = () => setErrorType(null);
+    const handleNetworkError = () => setErrorType('network');
+    const handleServerError = () => setErrorType('server');
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('app-network-error', handleNetworkError);
+    window.addEventListener('app-server-error', handleServerError);
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('app-network-error', handleNetworkError);
+      window.removeEventListener('app-server-error', handleServerError);
+    };
+  }, []);
+
+  const handleRetry = () => {
+    setErrorType(null);
+    window.location.reload();
+  };
+
+  return (
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AuthProvider>
+        {/* If a critical system error exists, block the app and show the ErrorPage */}
+        {errorType ? (
+          <ErrorPage type={errorType} onRetry={handleRetry} />
+        ) : (
+          <AppRoutes />
+        )}
+      </AuthProvider>
+    </BrowserRouter>
+  );
 }
 
 export default App;
