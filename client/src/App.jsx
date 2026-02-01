@@ -13,7 +13,7 @@ import LoginPage from './pages/CommonPages/LoginPage';
 // --- Lazy Load (Load only when needed) ---
 // 1. Common Pages
 const LeaderboardPage = lazy(() => import('./pages/CommonPages/LeaderBoardPage'));
-const TimeTablePage = lazy(() => import('./pages/StudentPages/TimeTablePage')); // Note: Imported from StudentPages but seems common
+const TimeTablePage = lazy(() => import('./pages/StudentPages/TimeTablePage'));
 const ViewAttendance = lazy(() => import('./pages/CommonPages/ViewAttendancePage'));
 const PostAttendance = lazy(() => import('./pages/CommonPages/PostAttendancePage'));
 const MultiBatchAttendancePage = lazy(() => import('./pages/CommonPages/MultiBatchAttendancePage'));
@@ -47,12 +47,38 @@ const StudentProfilePage = lazy(() => import('./pages/StudentPages/ProfilePage')
 const LogsPage = lazy(() => import('./pages/StudentPages/LogsPage'));
 const InboxPage = lazy(() => import('./pages/StudentPages/AnnouncementsPage'));
 
+/**
+ * --- NetworkGuard ---
+ * Wraps ONLY the specific routes that must fail when offline.
+ * If you want a page to work offline, do NOT wrap it with this.
+ */
+const NetworkGuard = ({ children }) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  if (!isOnline) {
+    return <ErrorPage type="network" onRetry={() => window.location.reload()} />;
+  }
+
+  return children;
+};
 
 /**
  * --- SessionGuard ---
  * Wraps all protected routes.
- * 1. Checks if Auth is still loading (shows Loader).
- * 2. If Auth is ready, renders child routes inside Suspense (handling lazy loading).
+ * Checks if Auth is ready.
  */
 const SessionGuard = () => {
   const { loading } = useAuth();
@@ -76,39 +102,61 @@ const AppRoutes = () => {
       {/* Protected Area */}
       <Route element={<SessionGuard />}>
         
-        {/* --- Common Routes (Accessible if logged in) --- */}
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        {/* --- Common Routes --- */}
+        {/* Example: Leaderboard requires internet, so we wrap it in NetworkGuard */}
+        <Route path="/leaderboard" element={
+          <NetworkGuard>
+            <LeaderboardPage />
+          </NetworkGuard>
+        } />
+        
+        {/* Timetable might be cached, so we allow it offline (No NetworkGuard) */}
         <Route path="/timetable" element={<TimeTablePage />} />
 
         {/* --- Shared Admin & Faculty Routes --- */}
         <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
+          {/* USER REQUEST: No Network Guard for these specific pages */}
           <Route path="/post-attendance" element={<PostAttendance />} />
           <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
           <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
+          
           <Route path="/batch-report" element={<BatchWiseReport />} />
           <Route path="/faculty/action" element={<FacultyActionPage />} />
         </Route>
 
         {/* --- Admin Only Routes --- */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/profile" element={<AdminProfilePage />} />
-          <Route path="/admin/timetable" element={<AdminTimetablePage />} />
-          <Route path="/admin/attendance" element={<ViewAttendance />} />
+          {/* Dashboards often need live data, so we guard them */}
+          <Route path="/admin/dashboard" element={
+            <NetworkGuard>
+              <AdminDashboard />
+            </NetworkGuard>
+          } />
+          
+          {/* USER REQUEST: These pages are included WITHOUT NetworkGuard (Accessible offline) */}
           <Route path="/admin/manage-students" element={<ManageStudentPage />} />
           <Route path="/admin/manage-faculty" element={<ManageFacultyPage />} />
           <Route path="/admin/manage-attendance" element={<ManageAttendancePage />} />
-          <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
           <Route path="/admin/create-timetable" element={<CreateTimetablePage />} />
+          <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
+
+          {/* Other Admin Routes */}
+          <Route path="/admin/profile" element={<AdminProfilePage />} />
+          <Route path="/admin/timetable" element={<AdminTimetablePage />} />
+          <Route path="/admin/attendance" element={<ViewAttendance />} />
+          <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
           <Route path="/admin/system-admin" element={<SystemAdministrationPage />} />
           <Route path="/session-report" element={<SessionWiseReportPage />} />
           <Route path="/monthly-report" element={<MonthlyReport />} />
-          <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
         </Route>
 
         {/* --- Faculty Only Routes --- */}
         <Route element={<ProtectedRoute requiredRole="faculty" />}>
-          <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
+          <Route path="/faculty/dashboard" element={
+            <NetworkGuard>
+              <FacultyDashboard />
+            </NetworkGuard>
+          } />
           <Route path="/faculty/profile" element={<FacultyProfilePage />} />
           <Route path="/faculty/update-student" element={<UpdateStudentPage />} />
           <Route path="/faculty/students" element={<ViewAttendance />} />
@@ -117,13 +165,17 @@ const AppRoutes = () => {
 
         {/* --- Student Only Routes --- */}
         <Route element={<ProtectedRoute requiredRole="student" />}>
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/dashboard" element={
+            <NetworkGuard>
+              <StudentDashboard />
+            </NetworkGuard>
+          } />
           <Route path="/student/profile" element={<StudentProfilePage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/inbox" element={<InboxPage />} />
         </Route>
 
-        {/* --- 404 Not Found (Catches all unmatched paths) --- */}
+        {/* --- 404 Not Found --- */}
         <Route path="*" element={<ErrorPage type="notfound" />} />
       </Route>
     </Routes>
@@ -136,19 +188,16 @@ function App() {
 
   // Global Error Listener
   useEffect(() => {
-    const handleOffline = () => setErrorType('network');
-    const handleOnline = () => setErrorType(null);
-    const handleNetworkError = () => setErrorType('network');
-    const handleServerError = () => setErrorType('server');
+    // NOTE: Removed global 'offline' listener here so individual pages can decide.
+    // Only listening for critical application errors now.
+    
+    const handleNetworkError = () => setErrorType('network'); // Custom event manually triggered by API calls
+    const handleServerError = () => setErrorType('server');   // Custom event manually triggered by API calls
 
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
     window.addEventListener('app-network-error', handleNetworkError);
     window.addEventListener('app-server-error', handleServerError);
 
     return () => {
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
       window.removeEventListener('app-network-error', handleNetworkError);
       window.removeEventListener('app-server-error', handleServerError);
     };
@@ -162,7 +211,7 @@ function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
-        {/* If a critical system error exists, block the app and show the ErrorPage */}
+        {/* Only blocking global errors (like 500 server crashes), not connection loss */}
         {errorType ? (
           <ErrorPage type={errorType} onRetry={handleRetry} />
         ) : (
