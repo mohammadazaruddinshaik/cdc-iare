@@ -15,9 +15,9 @@ import Loader from '../../components/Loader';
 
 // --- ASSETS ---
 import lcImg from '../../assets/leetcode.webp';
-import gfgImg from '../../assets/gfg.png'; // Replace with actual GFG asset if available
-import ccImg from '../../assets/codechef.png'; // Replace with actual CodeChef asset
-import ghImg from '../../assets/github.png'; // Replace with actual GitHub asset
+import gfgImg from '../../assets/gfg.png'; 
+import ccImg from '../../assets/codechef.png'; 
+import ghImg from '../../assets/github.png'; 
 
 const backendUrl = import.meta.env.VITE_BASE_URL;
 
@@ -469,11 +469,15 @@ const ProfilePage = () => {
 
         const fetchProfileData = async () => {
             try {
-                const response = await fetch(`${backendUrl}/api/student/get-profile-data?rollno=${user.username}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: "include",
-                });
+                // Modified: Wait for both the API call AND a 2.5 second timer
+                const [response, _] = await Promise.all([
+                    fetch(`${backendUrl}/api/student/get-profile-data?rollno=${user.username}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: "include",
+                    }),
+                    new Promise(resolve => setTimeout(resolve, 2500)) // 2.5 seconds delay
+                ]);
 
                 if (response.status === 401 || response.status === 403) {
                     logout();

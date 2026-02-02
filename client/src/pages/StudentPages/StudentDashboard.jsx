@@ -7,11 +7,10 @@ import { useAuth } from '../../context/AuthContext';
 import Loader from '../../components/Loader';
 
 // --- ASSET IMPORTS ---
-// Replace these with actual paths if available, or use the fallback logic below
 import leetcodeLogo from '../../assets/leetcode.webp';
-import gfgLogo from '../../assets/gfg.png'; // Placeholder
-import codechefLogo from '../../assets/codechef.png'; // Placeholder
-import githubLogo from '../../assets/github.png'; // Placeholder
+import gfgLogo from '../../assets/gfg.png'; 
+import codechefLogo from '../../assets/codechef.png'; 
+import githubLogo from '../../assets/github.png'; 
 
 const getLogo = (importName, fallbackUrl) => importName || fallbackUrl;
 
@@ -145,7 +144,6 @@ const TopCoderCard = memo(({ coder }) => (
             </div>
         </div>
 
-        {/* The grid now maps all platforms, showing 0 if the data is missing */}
         <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
             {[
                 { img: platformLogos.LeetCode, val: coder.scores?.leetcode },
@@ -155,7 +153,6 @@ const TopCoderCard = memo(({ coder }) => (
             ].map((item, i) => (
                 <div key={i} className="flex items-center space-x-2 bg-white/50 px-2 py-1 rounded-lg border border-white/20 shadow-sm">
                     <img src={item.img} alt="Platform" className="w-4 h-4 object-contain flex-shrink-0" />
-                    {/* If val is null, undefined, or missing, show 0 */}
                     <span className="text-xs font-bold text-gray-800 truncate">
                         {item.val ?? 0}
                     </span>
@@ -207,14 +204,21 @@ const StudentDashboardPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // --- API FETCHING LOGIC ---
+    // --- API FETCHING LOGIC (UPDATED WITH 2.5s DELAY) ---
     const fetchStudentData = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
 
-            // Fetch data
-            const response = await api.get('/api/student/get-dashboard-data');
+            // 1. Minimum loading time promise (2500ms)
+            const minLoadTime = new Promise(resolve => setTimeout(resolve, 2500));
+
+            // 2. Data fetching promise
+            const dataFetch = api.get('/api/student/get-dashboard-data');
+
+            // 3. Wait for BOTH to complete
+            const [_, response] = await Promise.all([minLoadTime, dataFetch]);
+
             setStudentData(response.data);
 
         } catch (err) {
@@ -330,7 +334,6 @@ const StudentDashboardPage = () => {
     if (error) return <ErrorDisplay message={error} onRetry={fetchStudentData} />;
     if (!studentData) return null;
 
-    // Extract QR Code from student data
     const qrLink = studentData?.student?.qrLink;
 
     return (
@@ -342,17 +345,12 @@ const StudentDashboardPage = () => {
                     <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10"></div>
                 </div>
                 
-                {/* Max-Width Container */}
                 <div className="px-6 sm:px-8 lg:px-8 xl:px-12 relative z-50 max-w-[1600px] mx-auto">
-                    
-                    {/* Header with QR Code Prop */}
                     <Header animate={true} qrCode={qrLink} />
-                    
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-6"></div>
                     
                     {/* --- ROW 1: Session & Attendance --- */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-                        
                         {/* Session (9 cols) */}
                         <div className="lg:col-span-9 flex flex-col justify-center">
                             <section className="mb-0 transition-all duration-700">
@@ -458,7 +456,6 @@ const StudentDashboardPage = () => {
             </div>
 
             {/* --- BODY SECTION --- */}
-            {/* --- ROW 3: Performance & Leaderboard --- */}
             <div className="px-6 sm:px-8 lg:px-8 xl:px-12 py-8 relative z-10 max-w-[1600px] mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     

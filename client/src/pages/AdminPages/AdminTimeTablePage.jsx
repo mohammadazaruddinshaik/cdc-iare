@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     Calendar, Clock, Database, MapPin, 
     ChevronRight, ChevronLeft, Sun, CalendarDays, 
-    Terminal, Coffee, Filter, LayoutGrid, Plus, User, Layers, Edit, Cloud, BookOpen, 
-    Code2, Server
+    Terminal, Coffee, Filter, LayoutGrid, Plus, User, Layers, Edit, Cloud, BookOpen
 } from 'lucide-react';
 import Header from '../../components/Header'; 
 import { useAuth } from '../../context/AuthContext'; 
@@ -13,8 +12,7 @@ import Loader from '../../components/Loader';
 // --- API CONFIGURATION ---
 const API_URL = import.meta.env.VITE_BASE_URL;
 
-// --- SUBJECT MAPPING (New Feature) ---
-// Maps short codes to Full Names
+// --- SUBJECT MAPPING ---
 const SUBJECT_MAP = {
     'CP': 'Competitive Programming',
     'JFS': 'Java Full Stack',
@@ -77,23 +75,22 @@ const parseSubjectInfo = (rawSubject) => {
     if (rawSubject.includes(' - ')) {
         const parts = rawSubject.split(' - ');
         return {
-            code: parts[0], // CDC001
-            title: parts[1] // Competitive Programming
+            code: parts[0], 
+            title: parts[1] 
         };
     }
 
-    // Case 2: Short Code "CP", "JFS", "DBS"
-    // Check if it exists in our Mapping Dictionary
+    // Case 2: Short Code Mapping
     if (SUBJECT_MAP[rawSubject]) {
         return {
-            code: rawSubject, // CP
-            title: SUBJECT_MAP[rawSubject] // Competitive Programming
+            code: rawSubject,
+            title: SUBJECT_MAP[rawSubject]
         };
     }
 
-    // Case 3: Unknown format, return as is
+    // Case 3: Unknown format
     return {
-        code: rawSubject.substring(0, 3).toUpperCase(), // First 3 chars as psuedo-code
+        code: rawSubject.substring(0, 6).toUpperCase(),
         title: rawSubject
     };
 };
@@ -111,7 +108,14 @@ const AdminTimetablePage = () => {
   const [selectedBatch, setSelectedBatch] = useState('');
 
   // Date Selection State
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Initialize to Monday if today is Sunday (to prevent empty screen on weekends)
+  const [selectedDate, setSelectedDate] = useState(() => {
+      const d = new Date();
+      if (d.getDay() === 0) { // 0 is Sunday
+          d.setDate(d.getDate() + 1);
+      }
+      return d;
+  });
 
   // Render State
   const [todaysGroupedSchedule, setTodaysGroupedSchedule] = useState({});
@@ -121,8 +125,9 @@ const AdminTimetablePage = () => {
   // --- 1. Init: Fetch Backend Data ---
   useEffect(() => {
     if (!user) {
-        navigate('/');
-        return;
+        // If user is null but we are not loading, redirect. 
+        // If we are just initializing, we wait.
+        return; 
     }
 
     const fetchTimetable = async () => {
@@ -143,6 +148,7 @@ const AdminTimetablePage = () => {
 
             const result = await response.json();
             
+            // --- DATA PROCESSING LOGIC ---
             const processedData = {};
             const semGrouping = {};
             let firstBatch = '';
@@ -160,13 +166,15 @@ const AdminTimetablePage = () => {
                         if (!firstBatch) firstBatch = batchDisplayName;
 
                         const scheduleMap = {};
-                        if (batchObj.weekSchedule) {
+                        if (batchObj.weekSchedule && Array.isArray(batchObj.weekSchedule)) {
                             batchObj.weekSchedule.forEach(dayObj => {
-                                scheduleMap[dayObj.day] = dayObj.periods.map(p => ({
+                                // Ensure periods exists
+                                const periods = dayObj.periods || [];
+                                scheduleMap[dayObj.day] = periods.map(p => ({
                                     time: `${p.startTime} - ${p.endTime}`,
-                                    rawSubject: p.subject, // Keep raw for processing
+                                    rawSubject: p.subject,
                                     room: p.roomNo,
-                                    faculty: p.faculty && Array.isArray(p.faculty) 
+                                    faculty: p.faculty && Array.isArray(p.faculty) && p.faculty[0] 
                                         ? p.faculty.map(f => f.name).join(', ') 
                                         : 'N/A'
                                 }));
@@ -190,7 +198,7 @@ const AdminTimetablePage = () => {
     };
 
     fetchTimetable();
-  }, [user, navigate, logout]); 
+  }, [user, logout]); 
 
   // --- 2. LOGIC: TODAY'S SCHEDULE (Grouped by Sem) ---
   useEffect(() => {
@@ -213,8 +221,8 @@ const AdminTimetablePage = () => {
 
                 classDetails = {
                     ...primaryClass,
-                    fullTitle: title, // "Competitive Programming"
-                    displayCode: code, // "CP" or "CDC001"
+                    fullTitle: title,
+                    displayCode: code,
                     icon: style.icon,
                     gradient: style.gradient,
                     glass: style.glass,
@@ -244,11 +252,15 @@ const AdminTimetablePage = () => {
     let currentDate = new Date(); 
     let safetyCounter = 0;
     
+    // Start from tomorrow
     currentDate.setDate(currentDate.getDate() + 1);
 
     while (allDates.length < 12 && safetyCounter < 30) {
         const dayIndex = currentDate.getDay();
-        if (dayIndex !== 0) { allDates.push(new Date(currentDate)); } 
+        // Skip Sunday (0)
+        if (dayIndex !== 0) { 
+            allDates.push(new Date(currentDate)); 
+        } 
         currentDate.setDate(currentDate.getDate() + 1);
         safetyCounter++;
     }
@@ -305,6 +317,7 @@ const AdminTimetablePage = () => {
     return <Loader />;
   }
 
+  // Fallback if user is null (though useEffect redirects)
   if (!user) return null;
 
   return (
@@ -449,7 +462,9 @@ const AdminTimetablePage = () => {
                     </div>
                 ))
             ) : (
-                <div className="text-center text-gray-500 py-10">No schedule available for this date.</div>
+                <div className="text-center text-gray-500 py-10 bg-white/5 rounded-2xl border border-white/5">
+                    No schedule data available for {selectedDate.toLocaleDateString()}.
+                </div>
             )}
         </section>
 

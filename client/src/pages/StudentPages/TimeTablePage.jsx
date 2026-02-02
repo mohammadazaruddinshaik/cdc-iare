@@ -1,8 +1,3 @@
-/**
- * @file TimetablePage.jsx
- * @description Student Timetable with unified professional styling and optimized mobile width.
- */
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -55,10 +50,17 @@ const SUBJECT_STYLES = {
   }
 };
 
-const getSubjectTheme = (subjectCode) => {
-    if (!subjectCode) return SUBJECT_STYLES['DEFAULT'];
-    const code = subjectCode.toUpperCase().trim();
-    return SUBJECT_STYLES[code] || SUBJECT_STYLES['DEFAULT'];
+// Helper to determine subject theme
+const getSubjectTheme = (subjectName) => {
+    if (!subjectName) return SUBJECT_STYLES['DEFAULT'];
+    const lower = subjectName.toLowerCase();
+    
+    if (lower.includes('competitive') || lower.includes('cdc001')) return SUBJECT_STYLES['CP'];
+    if (lower.includes('cloud') || lower.includes('aws')) return SUBJECT_STYLES['AWS'];
+    if (lower.includes('database') || lower.includes('cdc002')) return SUBJECT_STYLES['DBS'];
+    if (lower.includes('java') || lower.includes('cdc005')) return SUBJECT_STYLES['JFS'];
+
+    return SUBJECT_STYLES['DEFAULT'];
 };
 
 const TimetablePage = () => {
@@ -85,11 +87,15 @@ const TimetablePage = () => {
 
     const fetchTimetableData = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/student/get-timetable-data`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
+            // Modified: Wait for both the API call AND a 2.5 second timer
+            const [_, response] = await Promise.all([
+                new Promise(resolve => setTimeout(resolve, 2500)), // Minimum 2.5s delay
+                fetch(`${API_URL}/api/student/get-timetable-data`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                })
+            ]);
 
             if (response.status === 401 || response.status === 403) {
                 logout();
@@ -104,6 +110,7 @@ const TimetablePage = () => {
                 return; 
             }
 
+            // Handle both Array response and Object response
             const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
             if (data && data.weekSchedule) {
@@ -117,7 +124,10 @@ const TimetablePage = () => {
                             time: `${p.startTime} - ${p.endTime}`,
                             subject: p.subject,
                             room: p.roomNo,
-                            faculty: p.faculty ? p.faculty.map(f => f.name).join(', ') : 'Faculty'
+                            // FIX: Filter out null values from faculty array before mapping
+                            faculty: (p.faculty && Array.isArray(p.faculty))
+                                ? p.faculty.filter(f => f !== null).map(f => f.name).join(', ') 
+                                : 'N/A'
                         }));
                     });
                 }
@@ -157,9 +167,12 @@ const TimetablePage = () => {
         const primaryClass = dailyClasses.length > 0 ? dailyClasses[0] : null;
         
         let theme = SUBJECT_STYLES['DEFAULT'];
-        
+        let displayTitle = primaryClass?.subject || 'Free';
+
         if (primaryClass) {
             theme = getSubjectTheme(primaryClass.subject);
+            // Use the theme's full title if available, otherwise fallback to subject code
+            displayTitle = theme.fullTitle === 'Course Session' ? primaryClass.subject : theme.fullTitle;
         }
 
         return { 
@@ -168,7 +181,8 @@ const TimetablePage = () => {
             hasClass: !!primaryClass,
             classInfo: primaryClass ? {
                 ...primaryClass,
-                ...theme
+                ...theme,
+                displayTitle: displayTitle
             } : null,
             isToday 
         };
@@ -188,8 +202,7 @@ const TimetablePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans pb-32 relative overflow-hidden selection:bg-blue-500/30">
       
-      {/* FIXED: Header Container z-index raised to z-50 to stay on top 
-      */}
+      {/* Header Container */}
       <div className="relative px-6 sm:px-8 pt-4 pb-6 z-50">
          <Header animate={animate} />
          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
@@ -268,12 +281,12 @@ const TimetablePage = () => {
                                         <span className={`inline-block px-3 py-1 rounded-full bg-white/5 font-bold text-[10px] uppercase tracking-widest border border-white/10 mb-2 shadow-sm ${todaySchedule.classInfo.textColor}`}>
                                             Happening Now
                                         </span>
-                                        <h3 className="text-2xl md:text-5xl font-black text-white leading-tight break-words">
-                                            {todaySchedule.classInfo.fullTitle}
+                                        <h3 className="text-2xl md:text-4xl font-black text-white leading-tight break-words">
+                                            {todaySchedule.classInfo.displayTitle}
                                         </h3>
                                         <p className="text-sm md:text-lg mt-2 font-medium flex items-center gap-2 text-slate-300">
                                             <User size={16} className="text-slate-400" />
-                                            {todaySchedule.classInfo.faculty}
+                                            {todaySchedule.classInfo.faculty || 'N/A'}
                                         </p>
                                     </div>
                                 </div>
@@ -348,12 +361,12 @@ const TimetablePage = () => {
                                     {item.hasClass ? (
                                         <>
                                             <h4 className="text-lg md:text-xl font-black text-white leading-tight mb-2 group-hover:text-blue-200 transition-colors line-clamp-2">
-                                                {item.classInfo.fullTitle}
+                                                {item.classInfo.displayTitle}
                                             </h4>
                                             
                                             <p className="text-xs font-bold mb-5 flex items-center gap-2 text-slate-400">
                                                 <User size={12} />
-                                                {item.classInfo.faculty}
+                                                {item.classInfo.faculty || 'N/A'}
                                             </p>
                                             
                                             <div className="flex items-center justify-between pt-4 border-t border-white/5">

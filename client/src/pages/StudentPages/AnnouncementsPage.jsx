@@ -165,11 +165,15 @@ const InboxPage = () => {
         if (!user) { navigate('/'); return; }
         const fetchData = async () => {
             try {
-                const response = await fetch(`${API_URL}/api/student/get-announcements`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: "include",
-                });
+                // Modified: Wait for both the API call AND a 2.5 second timer
+                const [_, response] = await Promise.all([
+                    new Promise(resolve => setTimeout(resolve, 2500)), // Minimum 2.5s delay
+                    fetch(`${API_URL}/api/student/get-announcements`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: "include",
+                    })
+                ]);
                 
                 if (response.status === 401 || response.status === 403) { logout(); return; }
                 
@@ -212,9 +216,7 @@ const InboxPage = () => {
 
             <main className="relative z-10 px-6 sm:px-8 py-4 max-w-7xl mx-auto space-y-10">
                 
-                {/* 1. Page Title & Search 
-                   CHANGED: 'items-end' -> 'items-start md:items-end' to align left on mobile
-                */}
+                {/* 1. Page Title & Search */}
                 <div className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-6 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
