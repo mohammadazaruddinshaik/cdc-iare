@@ -296,7 +296,7 @@ export default function MultiBatchAttendancePage() {
                 const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${roll}/${roll}.jpg`;
                 setScanResult({ rollNumber: roll, message: `Verified (${studentBatch})`, type: 'success', photo: photoUrl });
                 setLastScanned({ rollNumber: roll, photo: photoUrl, batch: studentBatch, timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) });
-                setCooldown(10);
+                setCooldown(3);
             } else {
                 setScanResult({ rollNumber: roll, message: 'Not in selected batches', type: 'error' });
                 setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); }, 3000);

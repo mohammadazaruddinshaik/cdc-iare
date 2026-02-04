@@ -303,19 +303,21 @@ const StudentDashboardPage = () => {
         }));
     }, [studentData]);
 
-    const formattedTodaySchedule = useMemo(() => {
+   const formattedTodaySchedule = useMemo(() => {
         const rawSchedule = studentData?.todaySchedule || [];
         if (rawSchedule.length === 0) return { hasClass: false };
         const currentSession = rawSchedule[0];
         
+        // --- FIX HERE ---
+        // Access index 0 safely. If index 0 is null, it stops before trying to read .name
+        const facultyName = currentSession.faculty?.[0]?.name || "Unknown Faculty";
+
         return {
             hasClass: true,
             dateObj: new Date(), 
             classInfo: {
                 fullTitle: currentSession.subject || "No Subject",
-                faculty: currentSession.faculty && currentSession.faculty.length > 0 
-                    ? currentSession.faculty[0].name 
-                    : "Unknown Faculty",
+                faculty: facultyName,
                 room: currentSession.roomNo || "N/A",
                 time: `${currentSession.startTime} - ${currentSession.endTime}`,
                 borderColor: "border-blue-500/30",

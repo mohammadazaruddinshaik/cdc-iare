@@ -325,20 +325,20 @@ export default function AttendanceScanner() {
                 
                 setScanResult({ rollNumber: roll, message: 'Verified', type: 'success', photo: photoUrl });
                 setLastScanned({ rollNumber: roll, photo: photoUrl, timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) });
-                setCooldown(10);
+                setCooldown(3);
             } else {
                 setScanResult({ rollNumber: roll, message: 'Not in Batch', type: 'error' });
                 setTimeout(() => { 
                     setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
                     setIsPaused(false); 
-                }, 3500);
+                }, 2500);
             }
         } else {
             setScanResult({ rollNumber: 'INVALID', message: 'Invalid QR', type: 'error' });
             setTimeout(() => { 
                 setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
                 setIsPaused(false); 
-            }, 3500);
+            }, 2500);
         }
     }, [isPaused, cooldown, presentMap, validStudentSet]);
 
