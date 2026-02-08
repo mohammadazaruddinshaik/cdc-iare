@@ -32,8 +32,31 @@ const calculatePercentage = (present, total) => {
 };
 
 // ============================================================================
-// 1. VISUAL SUB-COMPONENTS
+// 1. VISUAL SUB-COMPONENTS (V1 Visuals Restored)
 // ============================================================================
+
+const ScannerOverlay = ({ cooldown }) => (
+    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-2xl">
+        {cooldown === 0 && (
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] animate-scan-laser z-20 opacity-80"></div>
+        )}
+        {/* V1 Blue Corners */}
+        <div className="absolute top-0 left-0 w-16 sm:w-20 h-16 sm:h-20 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        <div className="absolute top-0 right-0 w-16 sm:w-20 h-16 sm:h-20 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        <div className="absolute bottom-0 left-0 w-16 sm:w-20 h-16 sm:h-20 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        <div className="absolute bottom-0 right-0 w-16 sm:w-20 h-16 sm:h-20 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+
+        {/* V1 Countdown Overlay */}
+        {cooldown > 0 && (
+            <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
+                <div className="text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(59,130,246,0.8)] tabular-nums">
+                    {cooldown}
+                </div>
+                <p className="text-blue-200 font-bold mt-2 text-lg uppercase tracking-widest">Next Scan In</p>
+            </div>
+        )}
+    </div>
+);
 
 const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
     const radius = (size - strokeWidth) / 2;
@@ -44,24 +67,8 @@ const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
         <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
             <svg width={size} height={size} className="transform -rotate-90 drop-shadow-xl">
                 <circle cx={size / 2} cy={size / 2} r={radius} stroke="#E2E8F0" strokeWidth={strokeWidth} fill="transparent" />
-                <circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    stroke="url(#gradient)"
-                    strokeWidth={strokeWidth}
-                    fill="transparent"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    className="transition-all duration-1000 ease-out"
-                />
-                <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#3B82F6" />
-                        <stop offset="100%" stopColor="#1D4ED8" />
-                    </linearGradient>
-                </defs>
+                <circle cx={size / 2} cy={size / 2} r={radius} stroke="url(#gradient)" strokeWidth={strokeWidth} fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                <defs><linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#3B82F6" /><stop offset="100%" stopColor="#1D4ED8" /></linearGradient></defs>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tighter">{percentage}%</span>
@@ -71,35 +78,18 @@ const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
     );
 };
 
-const ScannerOverlay = ({ cooldown }) => (
-    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
-        {/* Laser Animation (Only when NOT in cooldown) */}
-        {cooldown === 0 && (
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] animate-scan-laser z-20 opacity-80"></div>
-        )}
-        
-        {/* Corner Markers */}
-        <div className="absolute top-0 left-0 w-16 h-16 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-md"></div>
-        <div className="absolute top-0 right-0 w-16 h-16 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-md"></div>
-        <div className="absolute bottom-0 left-0 w-16 h-16 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-md"></div>
-        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-md"></div>
-    </div>
-);
-
 const SessionTimer = ({ startTime }) => {
     const [seconds, setSeconds] = useState(0);
     useEffect(() => {
         const timer = setInterval(() => setSeconds(s => s + 1), 1000);
         return () => clearInterval(timer);
     }, []);
-
     const formatDuration = (sec) => {
         const h = Math.floor(sec / 3600);
         const m = Math.floor((sec % 3600) / 60);
         const s = sec % 60;
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
-
     return (
         <div className="flex items-center gap-2 text-white bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-mono border border-white/10 backdrop-blur-md shadow-sm">
             <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 animate-pulse" />
@@ -116,10 +106,7 @@ const HeaderNetworkStatus = ({ isOnline }) => (
 );
 
 const NetworkIndicator = ({ isOnline }) => {
-    const style = isOnline 
-        ? { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', label: 'Strong' }
-        : { bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', label: 'Offline' };
-
+    const style = isOnline ? { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', label: 'Strong' } : { bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', label: 'Offline' };
     return (
         <div className={`${style.bg} ${style.border} border-2 p-3 rounded-2xl flex flex-col items-center justify-center transition-colors duration-300 h-full min-h-[90px]`}>
             {isOnline ? <Signal className={`w-5 h-5 sm:w-6 sm:h-6 ${style.text} mb-1`} /> : <WifiOff className={`w-5 h-5 sm:w-6 sm:h-6 ${style.text} mb-1`} />}
@@ -132,77 +119,44 @@ const NetworkIndicator = ({ isOnline }) => {
 const NetworkErrorModal = ({ onClose }) => (
     <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-4 sm:p-6 animate-in fade-in duration-300">
         <div className="bg-white rounded-[2rem] p-6 sm:p-8 max-w-xs sm:max-w-sm w-full border-4 border-rose-100 shadow-2xl animate-in zoom-in-95 duration-300 text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                <WifiOff className="w-8 h-8 sm:w-10 sm:h-10 text-rose-500 animate-pulse"/>
-            </div>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6"><WifiOff className="w-8 h-8 sm:w-10 sm:h-10 text-rose-500 animate-pulse"/></div>
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 sm:mb-3">No Connection</h3>
-            <p className="text-slate-500 text-sm sm:text-base font-medium leading-relaxed mb-6 sm:mb-8">
-                You need internet to submit. <strong className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">Do not refresh</strong> or you will lose your scanned list.
-            </p>
-            <button onClick={onClose} className="w-full py-3.5 sm:py-4 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-base sm:text-lg transition-colors shadow-lg active:scale-95">
-                Check Again
-            </button>
+            <p className="text-slate-500 text-sm sm:text-base font-medium leading-relaxed mb-6 sm:mb-8">You need internet to submit. <strong className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">Do not refresh</strong> or you will lose your scanned list.</p>
+            <button onClick={onClose} className="w-full py-3.5 sm:py-4 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-base sm:text-lg transition-colors shadow-lg active:scale-95">Check Again</button>
         </div>
     </div>
 );
 
+// MODIFIED: Modal attached to top to avoid keyboard overlap
 const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping, validationString, validateNet }) => {
     const [confirmInput, setConfirmInput] = useState('');
     const validationTarget = requireTyping ? "EXIT" : (validationString || "CONFIRM");
     const displayHint = requireTyping ? "EXIT" : (validationString ? "YOUR USERNAME" : "CONFIRM");
-    
     const isMatch = confirmInput.trim().toUpperCase() === validationTarget.toUpperCase();
     const isDestructive = requireTyping;
     const activeColor = isDestructive ? 'bg-rose-500 hover:bg-rose-600' : 'bg-blue-600 hover:bg-blue-700';
     const shadowColor = isDestructive ? 'shadow-rose-500/30' : 'shadow-blue-500/30';
 
-    const handleConfirmClick = () => {
-         if (validateNet && !validateNet()) return;
-         onConfirm();
-    };
+    const handleConfirmClick = () => { if (validateNet && !validateNet()) return; onConfirm(); };
 
     return (
+        // KEY FIX: items-start + pt-20 moves modal to top on mobile
         <div className="fixed inset-0 z-[999] flex items-start justify-center p-4 overflow-y-auto pt-20 sm:items-center sm:pt-4">
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onCancel}></div>
             <div className="bg-white relative z-10 w-full max-w-sm rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 p-6 sm:p-8 border border-white/20 max-h-[85dvh] overflow-y-auto">
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 ${isDestructive ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-600'}`}>
                     {isDestructive ? <AlertTriangle className="w-7 h-7 sm:w-8 sm:h-8" /> : <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8" />}
                 </div>
-                
                 <h3 className="text-xl sm:text-2xl font-black text-center text-slate-900 mb-2 leading-tight">Confirmation</h3>
                 <p className="text-slate-500 text-center mb-6 sm:mb-8 text-sm font-medium leading-relaxed px-1">{message}</p>
-                
                 <div className="mb-6 sm:mb-8 relative group">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 sm:pl-5 pointer-events-none">
-                        {isMatch ? <Unlock className={`w-5 h-5 ${isDestructive ? 'text-rose-500' : 'text-blue-500'} transition-colors`} /> : <Lock className="w-5 h-5 text-slate-300 transition-colors" />}
-                    </div>
-                    <input 
-                        type="text" 
-                        className={`w-full bg-slate-50 border-2 rounded-2xl py-4 sm:py-5 pl-12 sm:pl-14 pr-4 text-center font-black tracking-[0.15em] text-lg sm:text-xl uppercase outline-none transition-all duration-300 ${isMatch ? (isDestructive ? 'border-rose-500 text-rose-600 bg-rose-50/10' : 'border-blue-500 text-blue-600 bg-blue-50/10') : 'border-slate-200 text-slate-400 focus:border-slate-400 focus:bg-white'}`}
-                        placeholder={displayHint}
-                        value={confirmInput} 
-                        onChange={(e) => setConfirmInput(e.target.value)} 
-                        autoFocus 
-                        autoComplete="off"
-                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 sm:pl-5 pointer-events-none">{isMatch ? <Unlock className={`w-5 h-5 ${isDestructive ? 'text-rose-500' : 'text-blue-500'} transition-colors`} /> : <Lock className="w-5 h-5 text-slate-300 transition-colors" />}</div>
+                    <input type="text" className={`w-full bg-slate-50 border-2 rounded-2xl py-4 sm:py-5 pl-12 sm:pl-14 pr-4 text-center font-black tracking-[0.15em] text-lg sm:text-xl uppercase outline-none transition-all duration-300 ${isMatch ? (isDestructive ? 'border-rose-500 text-rose-600 bg-rose-50/10' : 'border-blue-500 text-blue-600 bg-blue-50/10') : 'border-slate-200 text-slate-400 focus:border-slate-400 focus:bg-white'}`} placeholder={displayHint} value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} autoFocus autoComplete="off"/>
                     <p className="text-[10px] text-center font-bold text-slate-400 mt-2 sm:mt-3 uppercase tracking-wider">Type <span className="text-slate-800">"{displayHint}"</span> to unlock</p>
                 </div>
-
                 <div className="flex gap-3">
-                    <button 
-                        onClick={onCancel} 
-                        className="flex-1 py-3.5 sm:py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-colors text-xs sm:text-sm active:scale-95"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={handleConfirmClick} 
-                        disabled={!isMatch} 
-                        className={`flex-[1.5] py-3.5 sm:py-4 rounded-2xl font-bold text-white shadow-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95 ${isMatch ? `${activeColor} ${shadowColor} scale-100` : 'bg-slate-300 cursor-not-allowed scale-95 opacity-70'}`}
-                    >
-                        {isMatch ? (isDestructive ? 'Exit Session' : 'Confirm') : 'Locked'} 
-                        {isMatch && <ArrowRight className="w-4 h-4" />}
-                    </button>
+                    <button onClick={onCancel} className="flex-1 py-3.5 sm:py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-colors text-xs sm:text-sm active:scale-95">Cancel</button>
+                    <button onClick={handleConfirmClick} disabled={!isMatch} className={`flex-[1.5] py-3.5 sm:py-4 rounded-2xl font-bold text-white shadow-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95 ${isMatch ? `${activeColor} ${shadowColor} scale-100` : 'bg-slate-300 cursor-not-allowed scale-95 opacity-70'}`}>{isMatch ? (isDestructive ? 'Exit Session' : 'Confirm') : 'Locked'} {isMatch && <ArrowRight className="w-4 h-4" />}</button>
                 </div>
             </div>
         </div>
@@ -359,7 +313,7 @@ export default function PostAttendancePage() {
         setCourse('');
     }, [batch, semesterConfig]);
 
-    // QR Init
+    // QR Init (Using your V1 Logic specifically)
     useEffect(() => {
         if (view !== 'scanner') return;
         setCameraError(null);
@@ -367,11 +321,11 @@ export default function PostAttendancePage() {
         const scanner = new Html5Qrcode('qr-reader');
         const startScanner = async () => {
             try {
-                // FIXED: REMOVED aspectRatio entirely to fix detection issues
+                // V1 LOGIC: Exact aspect ratio check you requested
+                const isMobile = window.innerWidth < 768;
                 const config = { 
-                    fps: 10,  // Reduced FPS for better focus/performance
-                    qrbox: { width: 250, height: 250 },
-                    // videoConstraints: { focusMode: "continuous" } // Added focus mode
+                    fps: 30, 
+                    aspectRatio: isMobile ? 0.75 : 1.777 
                 }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
             } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
@@ -409,17 +363,28 @@ export default function PostAttendancePage() {
 
         try {
             const data = JSON.parse(text);
-            const r = data.rollno?.trim().toUpperCase();
-            const h = data.hash;
-            if (r && h) { roll = r; hash = h; } else throw new Error();
+            if (data.rollno) {
+                roll = data.rollno.trim().toUpperCase();
+                hash = data.hash; 
+            } else {
+                roll = data.rollno?.trim().toUpperCase();
+                hash = data.hash || data.qrData; 
+            }
+            if (!roll) throw new Error();
         } catch {
-            setScanResult({ rollNumber: 'INVALID', message: 'Unknown QR Format', type: 'error' });
-            setTimeout(() => { 
-                setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
-                setIsPaused(false); 
-                processingRef.current = false;
-            }, 2000);
-            return;
+            // V1 Fallback logic
+            if (text.length > 5 && text.length < 15) { 
+                roll = text.trim().toUpperCase(); 
+                hash = text; 
+            } else {
+                setScanResult({ rollNumber: 'INVALID', message: 'Unknown QR', type: 'error' });
+                setTimeout(() => { 
+                    setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
+                    setIsPaused(false); 
+                    processingRef.current = false;
+                }, 2000);
+                return;
+            }
         }
 
         if (roll) {
@@ -541,8 +506,8 @@ export default function PostAttendancePage() {
 
     const renderScanner = () => (
         <div className="w-full h-[100dvh] flex flex-col p-2 md:p-4 animate-fade-in relative max-w-7xl mx-auto touch-none select-none">
-            {/* CSS to force hide the library's shaded region if it appears */}
-            <style>{`#qr-shaded-region { display: none !important; }`}</style>
+            {/* CSS to force hide the library's shaded region if it appears + Fix Video Ratio */}
+            <style>{`#qr-shaded-region { display: none !important; } #qr-reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 1.5rem !important; }`}</style>
 
             {/* Header */}
             <div className="flex justify-between items-center bg-slate-900/90 backdrop-blur-md p-3 sm:p-4 rounded-[1.5rem] sm:rounded-3xl border border-white/10 text-white mb-2 sm:mb-4 shadow-2xl z-20 shrink-0">
@@ -552,23 +517,15 @@ export default function PostAttendancePage() {
             
             {/* Camera Area - Flex Grow to fill space */}
             <div className="flex flex-col items-center justify-start flex-1 gap-2 sm:gap-4 relative z-10 min-h-0">
-                {/* MODIFIED: Reduced max-height to 50vh for mobile (better visibility of controls), auto height for desktop */}
+                {/* MODIFIED: Reduced max-height to 50vh for mobile as requested */}
                 <div className="relative w-full flex-1 min-h-0 max-h-[50vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
                     <ScannerOverlay cooldown={cooldown} />
                     <div id="qr-reader" className="w-full h-full object-cover"></div>
-                    {isPaused && scanResult.message && (
+                    {isPaused && scanResult.message && cooldown === 0 && (
                         <div className="absolute inset-0 z-30 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-in zoom-in duration-200">
                              {scanResult.photo && (<div className={`p-1 rounded-full border-4 mb-4 sm:mb-6 ${scanResult.type === 'success' ? 'border-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.4)]' : 'border-rose-500'}`}><img src={scanResult.photo} className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${scanResult.rollNumber}`} /></div>)}
                             <h2 className="text-3xl sm:text-5xl font-black text-white tracking-widest mb-2 sm:mb-3">{scanResult.rollNumber}</h2>
                             <span className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl font-bold text-sm sm:text-lg border ${scanResult.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-rose-500/20 text-rose-300 border-rose-500/50'}`}>{scanResult.message}</span>
-                            
-                            {/* UPDATED: COUNTDOWN MOVED HERE */}
-                            {cooldown > 0 && (
-                                <div className="mt-6 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 delay-150">
-                                   <div className="text-4xl font-black text-white/90 tabular-nums drop-shadow-lg">{cooldown}</div>
-                                   <p className="text-white/50 text-[10px] uppercase font-bold tracking-widest mt-1">Next Scan In</p>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
@@ -628,8 +585,7 @@ export default function PostAttendancePage() {
                             </div>
                         </div>
                     )}
-                    {/* UPDATED: FIXED BUTTON ALIGNMENT */}
-                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-3xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-2">Return to Dashboard <LogOut size={20}/></button>
+                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-3xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">Return to Dashboard <LogOut size={20}/></button>
                 </div>
             </div>
         );
@@ -646,15 +602,6 @@ export default function PostAttendancePage() {
                 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
                 #qr-shaded-region { display: none !important; }
-
-                /* --- GLOBAL CSS FIX FOR TELEGRAM/MOBILE --- */
-                #qr-reader { border: none !important; }
-                #qr-reader video { 
-                    object-fit: cover !important; 
-                    width: 100% !important; 
-                    height: 100% !important; 
-                    border-radius: inherit !important;
-                }
             `}</style>
             {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
             <div className="w-full h-full relative z-10 flex items-center justify-center">

@@ -33,7 +33,7 @@ const calculatePercentage = (present, total) => {
 };
 
 // ============================================================================
-// 1. VISUAL SUB-COMPONENTS
+// 1. VISUAL SUB-COMPONENTS (V1 Visuals)
 // ============================================================================
 
 const CircularProgress = ({ percentage, size = 140, strokeWidth = 10, label = "Total" }) => {
@@ -72,19 +72,27 @@ const CircularProgress = ({ percentage, size = 140, strokeWidth = 10, label = "T
     );
 };
 
-// UPDATED: Simplified Overlay (Countdown logic moved to main render to avoid overlap)
 const ScannerOverlay = ({ cooldown }) => (
-    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
-        {/* Laser Animation */}
+    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-2xl">
         {cooldown === 0 && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] animate-scan-laser z-20 opacity-80"></div>
         )}
         
-        {/* Blue Corners */}
-        <div className="absolute top-0 left-0 w-16 h-16 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-md"></div>
-        <div className="absolute top-0 right-0 w-16 h-16 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-md"></div>
-        <div className="absolute bottom-0 left-0 w-16 h-16 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-md"></div>
-        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-md"></div>
+        {/* V1 Blue Corners */}
+        <div className="absolute top-0 left-0 w-16 sm:w-20 h-16 sm:h-20 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        <div className="absolute top-0 right-0 w-16 sm:w-20 h-16 sm:h-20 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        <div className="absolute bottom-0 left-0 w-16 sm:w-20 h-16 sm:h-20 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        <div className="absolute bottom-0 right-0 w-16 sm:w-20 h-16 sm:h-20 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+
+        {/* V1 Countdown Overlay */}
+        {cooldown > 0 && (
+            <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
+                <div className="text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(59,130,246,0.8)] tabular-nums">
+                    {cooldown}
+                </div>
+                <p className="text-blue-200 font-bold mt-2 text-lg uppercase tracking-widest">Next Scan In</p>
+            </div>
+        )}
     </div>
 );
 
@@ -163,7 +171,7 @@ const NetworkErrorModal = ({ onClose }) => (
     </div>
 );
 
-// UPDATED: Modal fixed to top for mobile compatibility
+// MODIFIED: Modal attached to top to avoid keyboard overlap
 const ConfirmModal = ({ message, onConfirm, onCancel, textToType, isUsernameCheck, validateNet }) => {
     const [confirmInput, setConfirmInput] = useState('');
     const validationTarget = isUsernameCheck ? textToType : (textToType || "CONFIRM");
@@ -171,7 +179,6 @@ const ConfirmModal = ({ message, onConfirm, onCancel, textToType, isUsernameChec
     
     const isMatch = confirmInput.trim().toUpperCase() === (validationTarget || "").toUpperCase();
     const isDestructive = !isUsernameCheck;
-    
     const activeColor = isDestructive ? 'bg-rose-500 hover:bg-rose-600' : 'bg-blue-600 hover:bg-blue-700';
     const shadowColor = isDestructive ? 'shadow-rose-500/30' : 'shadow-blue-500/30';
 
@@ -316,7 +323,6 @@ export default function MultiBatchAttendancePage() {
             timer = setInterval(() => {
                 setCooldown((prev) => {
                     if (prev <= 1) {
-                        // When timer hits 0, unlock scanner
                         setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' });
                         setIsPaused(false);
                         processingRef.current = false;
@@ -329,21 +335,20 @@ export default function MultiBatchAttendancePage() {
         return () => clearInterval(timer);
     }, [cooldown]);
 
+    // SCANNING LOGIC V1
     useEffect(() => {
         if (view !== 'scanner') return;
         setCameraError(null);
         let mounted = true;
         const scanner = new Html5Qrcode('qr-reader');
-        // ... inside the useEffect for scanner ...
         const startScanner = async () => {
             try {
-                // FIXED: Dynamic Aspect Ratio for Laptop/Mobile Compatibility
-                const aspectRatio = window.innerWidth / window.innerHeight;
-
+                // V1 LOGIC: Specific aspect ratios for mobile vs desktop
+                const isMobile = window.innerWidth < 768;
                 const config = { 
                     fps: 30, 
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: aspectRatio 
+                    aspectRatio: isMobile ? 0.75 : 1.777,
+                    qrbox: { width: 250, height: 250 } 
                 }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
             } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
@@ -438,22 +443,14 @@ export default function MultiBatchAttendancePage() {
             } else throw new Error();
         } catch (error) {
             setScanResult({ rollNumber: 'INVALID', message: 'Unknown QR Format', type: 'error' });
-            setTimeout(() => { 
-                setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
-                setIsPaused(false); 
-                processingRef.current = false; 
-            }, 2000);
+            setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); processingRef.current = false; }, 2000);
             return;
         }
 
         if (roll) {
             if (scannedData.has(roll)) {
                 setScanResult({ rollNumber: roll, message: 'Already Scanned', type: 'warning' });
-                setTimeout(() => { 
-                    setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
-                    setIsPaused(false); 
-                    processingRef.current = false; 
-                }, 2500);
+                setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); processingRef.current = false; }, 2500);
             } 
             else if (validStudentMap.has(roll)) {
                 const studentBatch = validStudentMap.get(roll);
@@ -468,11 +465,7 @@ export default function MultiBatchAttendancePage() {
             } 
             else {
                 setScanResult({ rollNumber: roll, message: 'Not in selected batches', type: 'error' });
-                setTimeout(() => { 
-                    setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
-                    setIsPaused(false); 
-                    processingRef.current = false; 
-                }, 3000);
+                setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); processingRef.current = false; }, 3000);
             }
         }
     }, [isPaused, cooldown, scannedData, validStudentMap]);
@@ -687,24 +680,17 @@ export default function MultiBatchAttendancePage() {
             </div>
             
             {/* Camera Area - Flex Grow to fill space */}
-            {/* FIX: Reduced max height to 50vh for mobile */}
             <div className="flex flex-col items-center justify-start flex-1 gap-2 sm:gap-4 relative z-10 min-h-0">
+                {/* MODIFIED: Reduced max-height to 50vh for mobile (better visibility of controls), auto height for desktop */}
                 <div className="relative w-full flex-1 min-h-0 max-h-[50vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
                     <ScannerOverlay cooldown={cooldown} />
+                    <style>{`#qr-reader { border: none !important; width: 100% !important; height: 100% !important; background: transparent !important; } #qr-reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 1.5rem !important; } #qr-reader__scan_region { background: transparent !important; }`}</style>
                     <div id="qr-reader" className="w-full h-full object-cover"></div>
-                    {isPaused && scanResult.message && (
-                        <div className="absolute inset-0 z-30 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-in zoom-in duration-200">
+                    {isPaused && scanResult.message && cooldown === 0 && (
+                        <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in zoom-in duration-200 text-center">
                              {scanResult.photo && (<div className={`p-1 rounded-full border-4 mb-4 sm:mb-6 ${scanResult.type === 'success' ? 'border-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.4)]' : 'border-rose-500'}`}><img src={scanResult.photo} className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${scanResult.rollNumber}&background=random`}/></div>)}
-                            <h2 className="text-3xl md:text-5xl font-black text-white tracking-widest mb-2 sm:mb-3">{scanResult.rollNumber || "Error"}</h2>
-                            <div className={`inline-block px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl font-bold text-sm sm:text-lg uppercase tracking-wider border ${scanResult.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : scanResult.type === 'warning' ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' : 'bg-rose-500/20 text-rose-300 border-rose-500/50'}`}>{scanResult.message}</div>
-                            
-                            {/* UPDATED: COUNTDOWN MOVED HERE */}
-                            {cooldown > 0 && (
-                                <div className="mt-6 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 delay-150">
-                                   <div className="text-4xl font-black text-white/90 tabular-nums drop-shadow-lg">{cooldown}</div>
-                                   <p className="text-white/50 text-[10px] uppercase font-bold tracking-widest mt-1">Next Scan In</p>
-                                </div>
-                            )}
+                            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-widest mb-2 sm:mb-3">{scanResult.rollNumber}</h2>
+                            <span className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl font-bold text-sm sm:text-lg border ${scanResult.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-rose-500/20 text-rose-300 border-rose-500/50'}`}>{scanResult.message}</span>
                         </div>
                     )}
                 </div>
@@ -713,10 +699,10 @@ export default function MultiBatchAttendancePage() {
                 <div className="w-full max-w-xl shrink-0 space-y-2 sm:space-y-4 pb-2">
                      {lastScanned ? (
                          <div className="bg-white/90 backdrop-blur-xl p-3 sm:p-4 rounded-[1.5rem] sm:rounded-3xl shadow-xl flex items-center justify-between border border-white/50 animate-in slide-in-from-bottom duration-500">
-                            <div className="flex items-center gap-3 sm:gap-4"><img src={lastScanned.photo} className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-slate-100 object-cover border-2 border-white shadow-md" alt="Student" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${lastScanned.rollNumber}&background=random`}/><div><p className="text-[10px] sm:text-xs text-blue-600 font-bold uppercase tracking-wider mb-0.5">{lastScanned.batch}</p><p className="font-black text-slate-900 text-lg sm:text-2xl">{lastScanned.rollNumber}</p></div></div><span className="text-xs sm:text-sm font-bold text-slate-400 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">#{scanCount}</span></div>
+                            <div className="flex items-center gap-3 sm:gap-4"><img src={lastScanned.photo} className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-slate-100 object-cover border-2 border-white shadow-md" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${lastScanned.rollNumber}`} /><div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Last Verified</p><p className="font-black text-slate-900 text-lg sm:text-2xl">{lastScanned.rollNumber}</p></div></div><span className="text-xs sm:text-sm font-bold text-slate-400 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">#{scanCount}</span></div>
                     ) : <div className="bg-white/10 backdrop-blur-md p-3 sm:p-4 rounded-[1.5rem] sm:rounded-3xl border border-white/10 text-white/40 text-center text-xs sm:text-sm font-medium h-[64px] sm:h-[88px] flex items-center justify-center">Waiting for first scan...</div>}
                     
-                    <button onClick={() => setShowFinishConfirm(true)} className="w-full bg-blue-600 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-2xl font-bold text-lg sm:text-xl hover:bg-blue-700 shadow-xl shadow-blue-900/30 flex items-center justify-center gap-3 transition-transform active:scale-95 disabled:opacity-50 disabled:scale-100" disabled={scanCount === 0 || isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin w-6 h-6"/> : <><CheckCircle2 className="w-6 h-6"/> Finish Session ({scanCount})</>}</button>
+                    <button onClick={handleFinishClick} disabled={scanCount === 0 || isSubmitting} className="w-full bg-blue-600 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-2xl font-bold text-lg sm:text-xl hover:bg-blue-700 shadow-xl shadow-blue-900/30 flex items-center justify-center gap-3 transition-transform active:scale-95 disabled:opacity-50 disabled:scale-100">{isSubmitting ? <Loader2 className="animate-spin w-6 h-6"/> : <><CheckCircle2 className="w-6 h-6"/> Finish Session ({scanCount})</>}</button>
                 </div>
             </div>
         </div>
@@ -777,7 +763,6 @@ export default function MultiBatchAttendancePage() {
                         );
                     })}
                 </div>
-                {/* UPDATED: FIXED BUTTON ALIGNMENT */}
                 <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-2">Return to Dashboard <LogOut size={20}/></button>
              </div>
         );
@@ -785,27 +770,19 @@ export default function MultiBatchAttendancePage() {
 
     return (
         <div className={`min-h-[100dvh] w-full flex items-center justify-center font-sans relative overflow-hidden transition-colors duration-500 ${view === 'scanner' ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
-<style>{`
-    @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } 
-    .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } 
-    @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } 
-    .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } 
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
-    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } 
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
-    #qr-shaded-region { display: none !important; }
-    
-    /* --- ADD THIS NEW BLOCK BELOW --- */
-    #qr-reader { border: none !important; }
-    #qr-reader video { 
-        object-fit: cover !important; 
-        width: 100% !important; 
-        height: 100% !important; 
-        border-radius: inherit !important;
-    }
-`}</style>            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
+            <style>{`
+                @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } 
+                .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } 
+                @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } 
+                .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } 
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
+                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } 
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
+                #qr-shaded-region { display: none !important; }
+            `}</style>
+            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
             <div className="w-full h-full relative z-10 flex items-center justify-center">
-                {view === 'splash' && renderSplash()} {view === 'sem-select' && renderSemSelection()} {view === 'batches' && renderBatchSelection()} {view === 'courses' && renderCourseMapping()} {view === 'preview' && renderPreview()} {view === 'scanner' && renderScanner()} {view === 'summary' && renderSummary()}
+                {view === 'splash' && renderSplash()} {view === 'selection' && renderSelection()} {view === 'preview' && renderPreview()} {view === 'scanner' && renderScanner()} {view === 'summary' && renderSummary()}
             </div>
             {showExitModal && (<ConfirmModal message="Are you sure you want to end this session? All unsaved data will be lost." textToType="EXIT" isUsernameCheck={false} onConfirm={handleExitSession} onCancel={() => setShowExitModal(false)} validateNet={checkInternetConnection} />)}
             {showFinishConfirm && (<ConfirmModal message={`Submit attendance for ${scanCount} students across ${selectedBatches.length} batches?`} textToType={user?.username || "CONFIRM"} isUsernameCheck={true} onConfirm={submitAttendance} onCancel={() => setShowFinishConfirm(false)} validateNet={checkInternetConnection} />)}
