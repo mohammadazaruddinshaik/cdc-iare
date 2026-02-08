@@ -71,7 +71,7 @@ const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
     );
 };
 
-// UPDATED: Shows a big countdown number when cooldown > 0
+// UPDATED: Removed the cooldown overlay from here to avoid Z-Index conflict
 const ScannerOverlay = ({ cooldown }) => (
     <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
         {/* Laser Animation (Only when NOT in cooldown) */}
@@ -84,18 +84,6 @@ const ScannerOverlay = ({ cooldown }) => (
         <div className="absolute top-0 right-0 w-16 h-16 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-md"></div>
         <div className="absolute bottom-0 left-0 w-16 h-16 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-md"></div>
         <div className="absolute bottom-0 right-0 w-16 h-16 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-md"></div>
-
-        {/* COOLDOWN OVERLAY */}
-        {cooldown > 0 && (
-            <div className="absolute inset-0 z-30 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
-                <div className="text-7xl sm:text-8xl font-black text-white drop-shadow-[0_0_25px_rgba(59,130,246,0.8)] tabular-nums scale-110">
-                    {cooldown}
-                </div>
-                <p className="text-blue-200 font-bold mt-4 text-lg sm:text-xl uppercase tracking-[0.2em] animate-pulse">
-                    Next Scan In...
-                </p>
-            </div>
-        )}
     </div>
 );
 
@@ -159,6 +147,7 @@ const NetworkErrorModal = ({ onClose }) => (
     </div>
 );
 
+// UPDATED: Modal is now positioned at the TOP (items-start + pt-20) to avoid keyboard overlap
 const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping, validationString, validateNet }) => {
     const [confirmInput, setConfirmInput] = useState('');
     const validationTarget = requireTyping ? "EXIT" : (validationString || "CONFIRM");
@@ -175,7 +164,8 @@ const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping, validationS
     };
 
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 overflow-hidden">
+        // KEY FIX HERE: "items-start pt-20" moves it to top on mobile. "sm:items-center" keeps it centered on desktop.
+        <div className="fixed inset-0 z-[999] flex items-start justify-center p-4 overflow-y-auto pt-20 sm:items-center sm:pt-4">
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onCancel}></div>
             <div className="bg-white relative z-10 w-full max-w-sm rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 p-6 sm:p-8 border border-white/20 max-h-[85dvh] overflow-y-auto">
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 ${isDestructive ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-600'}`}>
@@ -574,6 +564,14 @@ export default function PostAttendancePage() {
                              {scanResult.photo && (<div className={`p-1 rounded-full border-4 mb-4 sm:mb-6 ${scanResult.type === 'success' ? 'border-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.4)]' : 'border-rose-500'}`}><img src={scanResult.photo} className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${scanResult.rollNumber}`} /></div>)}
                             <h2 className="text-3xl sm:text-5xl font-black text-white tracking-widest mb-2 sm:mb-3">{scanResult.rollNumber}</h2>
                             <span className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl font-bold text-sm sm:text-lg border ${scanResult.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-rose-500/20 text-rose-300 border-rose-500/50'}`}>{scanResult.message}</span>
+                            
+                            {/* UPDATED: COUNTDOWN MOVED HERE */}
+                            {cooldown > 0 && (
+                                <div className="mt-6 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 delay-150">
+                                   <div className="text-4xl font-black text-white/90 tabular-nums drop-shadow-lg">{cooldown}</div>
+                                   <p className="text-white/50 text-[10px] uppercase font-bold tracking-widest mt-1">Next Scan In</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -633,7 +631,8 @@ export default function PostAttendancePage() {
                             </div>
                         </div>
                     )}
-                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-3xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">Return to Dashboard <LogOut size={20}/></button>
+                    {/* UPDATED: FIXED BUTTON ALIGNMENT */}
+                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-3xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-2">Return to Dashboard <LogOut size={20}/></button>
                 </div>
             </div>
         );
