@@ -211,7 +211,7 @@ const StudentDashboardPage = () => {
             setError(null);
 
             // 1. Minimum loading time promise (2500ms)
-            const minLoadTime = new Promise(resolve => setTimeout(resolve, 2500));
+            const minLoadTime = new Promise(resolve => setTimeout(resolve, 1000));
 
             // 2. Data fetching promise
             const dataFetch = api.get('/api/student/get-dashboard-data');

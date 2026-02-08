@@ -237,7 +237,7 @@ const LogsPage = () => {
             try {
                 // Modified: Wait for both the API call AND a 2.5 second timer
                 const [_, response] = await Promise.all([
-                    new Promise(resolve => setTimeout(resolve, 2500)), // Minimum 2.5s delay
+                    new Promise(resolve => setTimeout(resolve, 1000)), // Minimum 2.5s delay
                     fetch(`${API_URL}/api/student/get-log-data`, {
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' },

@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorPage from './components/ErrorPage'; 
 import Loader from './components/Loader'; 
+import TelegramBlocker from './components/TelegramBlocker'; // <--- IMPORTED
 
 // --- Eager Load (Load immediately) ---
 import LoginPage from './pages/CommonPages/LoginPage';
@@ -188,9 +189,7 @@ function App() {
 
   // Global Error Listener
   useEffect(() => {
-    // NOTE: Removed global 'offline' listener here so individual pages can decide.
     // Only listening for critical application errors now.
-    
     const handleNetworkError = () => setErrorType('network'); // Custom event manually triggered by API calls
     const handleServerError = () => setErrorType('server');   // Custom event manually triggered by API calls
 
@@ -210,14 +209,16 @@ function App() {
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        {/* Only blocking global errors (like 500 server crashes), not connection loss */}
-        {errorType ? (
-          <ErrorPage type={errorType} onRetry={handleRetry} />
-        ) : (
-          <AppRoutes />
-        )}
-      </AuthProvider>
+      {/* Wrapped entire app logic in TelegramBlocker */}
+      <TelegramBlocker>
+        <AuthProvider>
+          {errorType ? (
+            <ErrorPage type={errorType} onRetry={handleRetry} />
+          ) : (
+            <AppRoutes />
+          )}
+        </AuthProvider>
+      </TelegramBlocker>
     </BrowserRouter>
   );
 }

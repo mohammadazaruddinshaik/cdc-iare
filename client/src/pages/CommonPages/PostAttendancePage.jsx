@@ -6,47 +6,91 @@ import {
     Check, LogOut, ScanLine, ArrowRight, BookOpen, ChevronDown, 
     Users, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, 
     Loader2, ShieldCheck, CameraOff, Info, Clock, Wifi, 
-    WifiOff, Signal, Lock, Layers, Calendar
+    WifiOff, Signal, Lock, Layers, Calendar, Unlock
 } from 'lucide-react';
 
 // Environment Variable
 const BACKEND_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
 
-// --- UTILITIES FOR FULLSCREEN ---
+// --- UTILITIES ---
 const toggleFullScreen = (action) => {
     const doc = window.document;
     const docEl = doc.documentElement;
-
     const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
     const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
 
     if (action === 'enter' && !doc.fullscreenElement && requestFullScreen) {
         requestFullScreen.call(docEl).catch(err => console.log("Fullscreen blocked:", err));
     } else if (action === 'exit' && doc.fullscreenElement && cancelFullScreen) {
-        cancelFullScreen.call(doc);
+        cancelFullScreen.call(doc).catch(err => {});
     }
 };
 
+const calculatePercentage = (present, total) => {
+    if (!total || total === 0) return 0;
+    return Math.round((present / total) * 100);
+};
+
 // ============================================================================
-// 1. VISUAL COMPONENTS
+// 1. VISUAL SUB-COMPONENTS
 // ============================================================================
 
+const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (percentage / 100) * circumference;
+
+    return (
+        <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="transform -rotate-90 drop-shadow-xl">
+                <circle cx={size / 2} cy={size / 2} r={radius} stroke="#E2E8F0" strokeWidth={strokeWidth} fill="transparent" />
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="url(#gradient)"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                />
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#3B82F6" /> {/* Blue-500 */}
+                        <stop offset="100%" stopColor="#1D4ED8" /> {/* Blue-700 */}
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tighter">{percentage}%</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Attendance</span>
+            </div>
+        </div>
+    );
+};
+
 const ScannerOverlay = ({ cooldown }) => (
-    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-2xl">
+    // FIX: Removed "border-white/10" to eliminate the faint white box
+    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
+        
+        {/* Laser Animation */}
         {cooldown === 0 && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] animate-scan-laser z-20 opacity-80"></div>
         )}
-        <div className="absolute top-0 left-0 w-16 sm:w-20 h-16 sm:h-20 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-        <div className="absolute top-0 right-0 w-16 sm:w-20 h-16 sm:h-20 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-        <div className="absolute bottom-0 left-0 w-16 sm:w-20 h-16 sm:h-20 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-        <div className="absolute bottom-0 right-0 w-16 sm:w-20 h-16 sm:h-20 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+        
+        {/* Blue Corners (KEPT) */}
+        <div className="absolute top-0 left-0 w-16 h-16 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-md"></div>
+        <div className="absolute top-0 right-0 w-16 h-16 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-md"></div>
+        <div className="absolute bottom-0 left-0 w-16 h-16 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-md"></div>
+        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-md"></div>
 
+        {/* Cooldown Timer */}
         {cooldown > 0 && (
-            <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
-                <div className="text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(59,130,246,0.8)] tabular-nums">
-                    {cooldown}
-                </div>
-                <p className="text-blue-200 font-bold mt-2 text-lg uppercase tracking-widest">Next Scan In</p>
+            <div className="absolute inset-0 z-30 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
+                <div className="text-7xl sm:text-8xl font-black text-white drop-shadow-[0_0_25px_rgba(59,130,246,0.8)] tabular-nums scale-110">{cooldown}</div>
+                <p className="text-blue-200 font-bold mt-4 text-lg sm:text-xl uppercase tracking-[0.2em]">Next Scan</p>
             </div>
         )}
     </div>
@@ -67,32 +111,110 @@ const SessionTimer = ({ startTime }) => {
     };
 
     return (
-        <div className="flex flex-col items-end">
-            <div className="flex items-center gap-2 text-white bg-black/30 px-3 py-1.5 rounded-full text-xs md:text-sm font-mono border border-blue-500/20 backdrop-blur-md">
-                <Clock className="w-3 h-3 md:w-4 md:h-4 animate-pulse text-blue-400" />
-                <span>{formatDuration(seconds)}</span>
-            </div>
+        <div className="flex items-center gap-2 text-white bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-mono border border-white/10 backdrop-blur-md shadow-sm">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 animate-pulse" />
+            <span className="tracking-widest font-bold">{formatDuration(seconds)}</span>
         </div>
     );
 };
 
 const HeaderNetworkStatus = ({ isOnline }) => (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border backdrop-blur-md text-xs font-bold transition-colors duration-300 ${isOnline ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-        {isOnline ? <Signal className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-        <span className="hidden sm:inline">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+    <div className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border backdrop-blur-md text-xs font-bold transition-all duration-300 shadow-sm ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+        {isOnline ? <Signal className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <WifiOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+        <span className="hidden sm:inline tracking-wider">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
     </div>
 );
 
 const NetworkIndicator = ({ isOnline }) => {
     const style = isOnline 
-        ? { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-600', label: 'Strong' }
-        : { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600', label: 'Offline' };
+        ? { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', label: 'Strong' }
+        : { bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', label: 'Offline' };
 
     return (
-        <div className={`${style.bg} ${style.border} border p-3 rounded-2xl flex flex-col items-center justify-center transition-colors duration-300`}>
-            {isOnline ? <Signal className={`w-5 h-5 ${style.text}`} /> : <WifiOff className={`w-5 h-5 ${style.text}`} />}
-            <span className={`text-[10px] font-bold uppercase mt-1 ${style.text}`}>Signal</span>
-            <span className={`text-xs font-semibold ${style.text}`}>{style.label}</span>
+        <div className={`${style.bg} ${style.border} border-2 p-3 rounded-2xl flex flex-col items-center justify-center transition-colors duration-300 h-full min-h-[90px]`}>
+            {isOnline ? <Signal className={`w-5 h-5 sm:w-6 sm:h-6 ${style.text} mb-1`} /> : <WifiOff className={`w-5 h-5 sm:w-6 sm:h-6 ${style.text} mb-1`} />}
+            <span className={`text-[9px] sm:text-[10px] font-black uppercase ${style.text} opacity-70`}>Network</span>
+            <span className={`text-xs sm:text-sm font-bold ${style.text}`}>{style.label}</span>
+        </div>
+    );
+};
+
+const NetworkErrorModal = ({ onClose }) => (
+    <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-4 sm:p-6 animate-in fade-in duration-300">
+        <div className="bg-white rounded-[2rem] p-6 sm:p-8 max-w-xs sm:max-w-sm w-full border-4 border-rose-100 shadow-2xl animate-in zoom-in-95 duration-300 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <WifiOff className="w-8 h-8 sm:w-10 sm:h-10 text-rose-500 animate-pulse"/>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 sm:mb-3">No Connection</h3>
+            <p className="text-slate-500 text-sm sm:text-base font-medium leading-relaxed mb-6 sm:mb-8">
+                You need internet to submit. <strong className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">Do not refresh</strong> or you will lose your scanned list.
+            </p>
+            <button onClick={onClose} className="w-full py-3.5 sm:py-4 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-base sm:text-lg transition-colors shadow-lg active:scale-95">
+                Check Again
+            </button>
+        </div>
+    </div>
+);
+
+const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping, validationString, validateNet }) => {
+    const [confirmInput, setConfirmInput] = useState('');
+    const validationTarget = requireTyping ? "EXIT" : (validationString || "CONFIRM");
+    const displayHint = requireTyping ? "EXIT" : (validationString ? "YOUR USERNAME" : "CONFIRM");
+    
+    const isMatch = confirmInput.trim().toUpperCase() === validationTarget.toUpperCase();
+    const isDestructive = requireTyping;
+    const activeColor = isDestructive ? 'bg-rose-500 hover:bg-rose-600' : 'bg-blue-600 hover:bg-blue-700';
+    const shadowColor = isDestructive ? 'shadow-rose-500/30' : 'shadow-blue-500/30';
+
+    const handleConfirmClick = () => {
+         if (validateNet && !validateNet()) return;
+         onConfirm();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onCancel}></div>
+            <div className="bg-white relative z-10 w-full max-w-sm rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 p-6 sm:p-8 border border-white/20 max-h-[85dvh] overflow-y-auto">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 ${isDestructive ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-600'}`}>
+                    {isDestructive ? <AlertTriangle className="w-7 h-7 sm:w-8 sm:h-8" /> : <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8" />}
+                </div>
+                
+                <h3 className="text-xl sm:text-2xl font-black text-center text-slate-900 mb-2 leading-tight">Confirmation</h3>
+                <p className="text-slate-500 text-center mb-6 sm:mb-8 text-sm font-medium leading-relaxed px-1">{message}</p>
+                
+                <div className="mb-6 sm:mb-8 relative group">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 sm:pl-5 pointer-events-none">
+                        {isMatch ? <Unlock className={`w-5 h-5 ${isDestructive ? 'text-rose-500' : 'text-blue-500'} transition-colors`} /> : <Lock className="w-5 h-5 text-slate-300 transition-colors" />}
+                    </div>
+                    <input 
+                        type="text" 
+                        className={`w-full bg-slate-50 border-2 rounded-2xl py-4 sm:py-5 pl-12 sm:pl-14 pr-4 text-center font-black tracking-[0.15em] text-lg sm:text-xl uppercase outline-none transition-all duration-300 ${isMatch ? (isDestructive ? 'border-rose-500 text-rose-600 bg-rose-50/10' : 'border-blue-500 text-blue-600 bg-blue-50/10') : 'border-slate-200 text-slate-400 focus:border-slate-400 focus:bg-white'}`}
+                        placeholder={displayHint}
+                        value={confirmInput} 
+                        onChange={(e) => setConfirmInput(e.target.value)} 
+                        autoFocus 
+                        autoComplete="off"
+                    />
+                    <p className="text-[10px] text-center font-bold text-slate-400 mt-2 sm:mt-3 uppercase tracking-wider">Type <span className="text-slate-800">"{displayHint}"</span> to unlock</p>
+                </div>
+
+                <div className="flex gap-3">
+                    <button 
+                        onClick={onCancel} 
+                        className="flex-1 py-3.5 sm:py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-colors text-xs sm:text-sm active:scale-95"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleConfirmClick} 
+                        disabled={!isMatch} 
+                        className={`flex-[1.5] py-3.5 sm:py-4 rounded-2xl font-bold text-white shadow-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95 ${isMatch ? `${activeColor} ${shadowColor} scale-100` : 'bg-slate-300 cursor-not-allowed scale-95 opacity-70'}`}
+                    >
+                        {isMatch ? (isDestructive ? 'Exit Session' : 'Confirm') : 'Locked'} 
+                        {isMatch && <ArrowRight className="w-4 h-4" />}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
@@ -100,7 +222,7 @@ const NetworkIndicator = ({ isOnline }) => {
 // ============================================================================
 // 2. MAIN COMPONENT
 // ============================================================================
-export default function AttendanceScanner() {
+export default function PostAttendancePage() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -132,75 +254,77 @@ export default function AttendanceScanner() {
     const [userMsg, setUserMsg] = useState({ text: null, type: 'info' });
     const [showExitModal, setShowExitModal] = useState(false);
     const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+    const [showNetworkErrorModal, setShowNetworkErrorModal] = useState(false);
 
     // Refs
     const scanCallback = useRef(null);
-    // FIX ADDED: Processing lock to prevent race conditions
     const processingRef = useRef(false); 
     
     const SEMESTERS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
-    // ========================================================================
-    // CRITICAL: DISABLE GESTURES & LOCK NAVIGATION
-    // ========================================================================
+    // Update online status
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    const checkInternetConnection = useCallback(() => {
+        if (!navigator.onLine) {
+            setShowNetworkErrorModal(true);
+            return false;
+        }
+        return true;
+    }, []);
+
+    // Prevent Page Refresh / Navigation while in Scanner Mode
+    useEffect(() => {
+        const handleBeforeUnload = (event) => {
+            if (view === 'scanner') {
+                event.preventDefault();
+                event.returnValue = true;
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [view]);
+
+    // Session Lock Effects
     useEffect(() => {
         if (view === 'scanner') {
-            // 1. Prevent Swipe Gestures
             document.body.style.overscrollBehavior = 'none';
             document.body.style.touchAction = 'none';
             document.body.style.overflow = 'hidden';
-
-            // 2. Trap "Back" Button
             window.history.pushState({ page: 'scanner' }, document.title, window.location.href);
 
             const handlePopState = (event) => {
                 event.preventDefault();
-                // Push state again to keep them trapped
                 window.history.pushState({ page: 'scanner' }, document.title, window.location.href);
-                // Force Modal
                 setShowExitModal(true); 
             };
 
-            // 3. Detect Native Fullscreen Exit (Esc / Gestures)
             const handleFullScreenChange = () => {
-                const isFullScreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-                if (!isFullScreen && view === 'scanner') {
-                    // User broke out of fullscreen -> Prompt Exit or Force back
-                    setShowExitModal(true);
-                }
-            };
-
-            // 4. Prevent Reload
-            const handleBeforeUnload = (e) => {
-                e.preventDefault();
-                e.returnValue = ''; 
+                const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+                if (!isFS && view === 'scanner') setShowExitModal(true);
             };
 
             window.addEventListener('popstate', handlePopState);
-            window.addEventListener('beforeunload', handleBeforeUnload);
             document.addEventListener('fullscreenchange', handleFullScreenChange);
-            document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
-            document.addEventListener('mozfullscreenchange', handleFullScreenChange);
-            document.addEventListener('msfullscreenchange', handleFullScreenChange);
 
             return () => {
-                document.body.style.overscrollBehavior = '';
-                document.body.style.touchAction = '';
-                document.body.style.overflow = '';
+                document.body.style.overscrollBehavior = ''; document.body.style.touchAction = ''; document.body.style.overflow = '';
                 window.removeEventListener('popstate', handlePopState);
-                window.removeEventListener('beforeunload', handleBeforeUnload);
                 document.removeEventListener('fullscreenchange', handleFullScreenChange);
-                document.removeEventListener('webkitfullscreenchange', handleFullScreenChange);
-                document.removeEventListener('mozfullscreenchange', handleFullScreenChange);
-                document.removeEventListener('msfullscreenchange', handleFullScreenChange);
             };
         }
     }, [view]);
 
-    // ========================================================================
-    // OTHER EFFECTS
-    // ========================================================================
-
+    // Cooldown Timer
     useEffect(() => {
         let timer;
         if (cooldown > 0) {
@@ -208,12 +332,12 @@ export default function AttendanceScanner() {
         } else if (cooldown === 0 && isPaused && scanResult.type === 'success') {
             setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' });
             setIsPaused(false);
-            // FIX ADDED: Unlock the scanner when cooldown finishes
             processingRef.current = false; 
         }
         return () => clearInterval(timer);
     }, [cooldown, isPaused, scanResult.type]);
 
+    // Data Fetching
     useEffect(() => {
         setSemesterConfig([]); setAvailableBatches([]); setAvailableCourses([]); setBatch(''); setCourse('');
         if (!semester) return;
@@ -226,7 +350,7 @@ export default function AttendanceScanner() {
                     setSemesterConfig(result.data.config);
                     setAvailableBatches(result.data.config.map(item => item.name));
                 }
-            } catch (err) { console.error(err); setUserMsg({ text: "Failed to load config.", type: "error" }); } 
+            } catch (err) { setUserMsg({ text: "Failed to load config.", type: "error" }); } 
             finally { setIsLoadingData(false); }
         };
         fetchConfig();
@@ -239,30 +363,28 @@ export default function AttendanceScanner() {
         setCourse('');
     }, [batch, semesterConfig]);
 
+    // QR Init
     useEffect(() => {
         if (view !== 'scanner') return;
         setCameraError(null);
         let mounted = true;
         const scanner = new Html5Qrcode('qr-reader');
-
         const startScanner = async () => {
             try {
-                const isMobile = window.innerWidth < 768;
-                const config = { fps: 30, aspectRatio: isMobile ? 0.75 : 1.777 }; 
+                const config = { 
+                    fps: 30, 
+                    aspectRatio: window.innerWidth < 768 ? 0.75 : 1.777,
+                    qrbox: { width: 250, height: 250 } 
+                }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
-            } catch (err) { if (mounted) setCameraError("Camera permission denied or HTTPS required."); }
+            } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
         };
         startScanner();
         return () => { mounted = false; if(scanner.isScanning) scanner.stop().catch(console.error); };
     }, [view]);
 
-    // ========================================================================
-    // LOGIC
-    // ========================================================================
-
     const handleFetchStudents = async (e) => {
         e.preventDefault();
-        if (!semester || !batch || !course) return;
         setIsLoadingData(true);
         try {
             const response = await fetch(`${BACKEND_URL}/api/students-by-batch/?semname=${semester}&batch=${batch}`, { method: 'GET', credentials: 'include' });
@@ -275,34 +397,13 @@ export default function AttendanceScanner() {
         finally { setIsLoadingData(false); }
     };
 
-    const handleStartScanning = () => {
-        // TRIGGER FULLSCREEN
-        toggleFullScreen('enter');
-        setSessionStartTime(new Date());
-        setView('scanner');
-    };
+    const handleStartScanning = () => { toggleFullScreen('enter'); setSessionStartTime(new Date()); setView('scanner'); };
+    const handleExitSession = () => { toggleFullScreen('exit'); navigate(user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard', { replace: true }); };
+    const handleCancelExit = () => { setShowExitModal(false); toggleFullScreen('enter'); };
+    const handleCancelFinish = () => { setShowFinishConfirm(false); toggleFullScreen('enter'); };
 
-    const handleExitSession = () => {
-        // EXIT FULLSCREEN ON CONFIRMED EXIT
-        toggleFullScreen('exit');
-        const destination = user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard';
-        navigate(destination, { replace: true });
-    };
-
-    const handleCancelExit = () => {
-        setShowExitModal(false);
-        // If user cancels exit, Force Fullscreen Again
-        toggleFullScreen('enter');
-    };
-
-    // ------------------------------------------------------------------------
-    // FIXED SCAN HANDLER (Strict JSON + Race Condition Fix)
-    // ------------------------------------------------------------------------
     const handleScan = useCallback((text) => {
-        // 1. BLOCKING: If locked, paused, or cooling down, ignore this frame immediately.
         if (processingRef.current || isPaused || cooldown > 0) return;
-
-        // 2. LOCK: Stop any other frames from entering
         processingRef.current = true;
         setIsPaused(true);
 
@@ -310,80 +411,52 @@ export default function AttendanceScanner() {
         let hash = null;
 
         try {
-            // 3. PARSING: Strict JSON check based on user structure
             const data = JSON.parse(text);
-
-            if (data.rollno && data.hash) {
-                roll = data.rollno.trim().toUpperCase();
-                hash = data.hash;
-            } else {
-                throw new Error("Invalid JSON Structure");
-            }
-        } catch (error) {
-            // 4. INVALID QR HANDLING
-            // If it's not JSON, ignore it (do NOT fallback to raw text)
-            // This prevents random objects/texts from registering as students
+            const r = data.rollno?.trim().toUpperCase();
+            const h = data.hash;
+            if (r && h) { roll = r; hash = h; } else throw new Error();
+        } catch {
             setScanResult({ rollNumber: 'INVALID', message: 'Unknown QR Format', type: 'error' });
-            
             setTimeout(() => { 
                 setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
                 setIsPaused(false); 
-                processingRef.current = false; // Unlock
+                processingRef.current = false;
             }, 2000);
             return;
         }
 
-        // 5. LOGIC IF VALID JSON FOUND
         if (roll) {
-            // CHECK 1: Is the student in the batch?
             if (!validStudentSet.has(roll)) {
                 setScanResult({ rollNumber: roll, message: 'Not in Batch', type: 'error' });
                 setTimeout(() => { 
                     setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
                     setIsPaused(false); 
-                    processingRef.current = false; // Unlock
+                    processingRef.current = false;
                 }, 2500);
-                return;
-            }
-
-            // CHECK 2: Already Scanned?
-            if (presentMap[roll]) {
+            } else if (presentMap[roll]) {
                 setScanResult({ rollNumber: roll, message: 'Already Scanned', type: 'warning' });
                 setTimeout(() => { 
                     setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
                     setIsPaused(false); 
-                    processingRef.current = false; // Unlock
-                }, 3500);
-                return;
+                    processingRef.current = false;
+                }, 2500);
+            } else {
+                setPresentMap(prev => ({ ...prev, [roll]: hash }));
+                setScanCount(prev => prev + 1);
+                const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${roll}/${roll}.jpg`;
+                setScanResult({ rollNumber: roll, message: 'Verified', type: 'success', photo: photoUrl });
+                setLastScanned({ rollNumber: roll, photo: photoUrl, timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) });
+                setCooldown(3); 
             }
-
-            // SUCCESS
-            setPresentMap(prev => ({ ...prev, [roll]: hash }));
-            setScanCount(prev => prev + 1);
-            
-            const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${roll}/${roll}.jpg`;
-            
-            setScanResult({ 
-                rollNumber: roll, 
-                message: 'Verified', 
-                type: 'success', 
-                photo: photoUrl 
-            });
-            
-            setLastScanned({ 
-                rollNumber: roll, 
-                photo: photoUrl, 
-                timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) 
-            });
-
-            // Start Cooldown (The useEffect will handle the unlock when cooldown hits 0)
-            setCooldown(3); 
         }
     }, [isPaused, cooldown, presentMap, validStudentSet]);
 
     scanCallback.current = handleScan;
 
+    const handleFinishClick = () => { if (checkInternetConnection()) setShowFinishConfirm(true); };
+
     const submitAttendance = async () => {
+        if (!checkInternetConnection()) return;
         setShowFinishConfirm(false);
         setIsSubmitting(true);
         const payload = {
@@ -394,43 +467,32 @@ export default function AttendanceScanner() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'include'
             });
             const result = await response.json(); 
-
-            if (response.ok) {
-                setAttendanceReport({ ...result, status: 'success' });
+            if (response.ok || result.message?.toLowerCase().includes("already posted")) {
+                setAttendanceReport({ ...result, status: response.ok ? 'success' : 'error' });
                 setView('summary');
                 toggleFullScreen('exit');
-            } else {
-                const msg = result.message || "Submission failed";
-                if (msg.toLowerCase().includes("already posted")) {
-                    setAttendanceReport({ message: msg, status: 'error' });
-                    setView('summary');
-                    toggleFullScreen('exit');
-                    return; 
-                }
-                throw new Error(msg);
-            }
-        } catch (error) { 
-            setUserMsg({ text: error.message, type: "error" }); 
-        } finally { 
-            setIsSubmitting(false); 
-        }
+            } else throw new Error(result.message);
+        } catch (error) { setUserMsg({ text: error.message, type: "error" }); } 
+        finally { setIsSubmitting(false); }
     };
 
     // ========================================================================
-    // RENDER
+    // RENDER FUNCTIONS
     // ========================================================================
 
     const renderSplash = () => (
-        <div className="flex flex-col items-center justify-center text-center px-6 animate-fade-in min-h-[80vh]">
-            <div className="mb-8 relative">
-                <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-                {user?.role === 'admin' ? <ShieldCheck className="w-20 h-20 text-blue-600 relative z-10" /> : <BookOpen className="w-20 h-20 text-blue-600 relative z-10" />}
+        <div className="flex flex-col items-center justify-center text-center px-4 sm:px-6 animate-fade-in min-h-[60vh] sm:min-h-[80vh] relative">
+            <div className="absolute top-4 left-4 sm:top-8 sm:left-8">
+                <button onClick={() => navigate(user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-medium bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm hover:bg-white transition-all text-sm sm:text-base"><ArrowLeft className="w-4 h-4" /> Dashboard</button>
             </div>
-            <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight">
-                {user?.role === 'admin' ? 'Admin Portal' : 'Faculty Portal'}
+            <div className="mb-8 sm:mb-10 relative mt-10">
+                <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+                {user?.role === 'admin' ? <ShieldCheck className="w-20 h-20 sm:w-24 sm:h-24 text-blue-600 relative z-10" /> : <BookOpen className="w-20 h-20 sm:w-24 sm:h-24 text-blue-600 relative z-10" />}
+            </div>
+            <h1 className="text-4xl sm:text-7xl font-black text-slate-900 tracking-tight mb-4">
+                Attendance<span className="text-blue-600">Scanner</span>
             </h1>
-            <p className="text-slate-500 mt-4 text-base sm:text-lg max-w-md">Secure attendance management with real-time network monitoring</p>
-            <button onClick={() => setView('selection')} className="mt-12 bg-slate-900 text-white py-4 px-10 rounded-2xl font-bold text-lg hover:bg-slate-800 transition shadow-xl flex items-center gap-3 group w-full sm:w-auto justify-center">
+            <button onClick={() => setView('selection')} className="mt-8 sm:mt-12 bg-slate-900 text-white py-4 sm:py-5 px-10 sm:px-12 rounded-2xl font-bold text-lg hover:bg-black transition-all shadow-2xl shadow-blue-500/20 flex items-center gap-3 group w-full sm:w-auto justify-center active:scale-95">
                 Start Session <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
             </button>
         </div>
@@ -438,218 +500,144 @@ export default function AttendanceScanner() {
 
     const renderSelection = () => (
         <div className="w-full max-w-lg mx-auto p-4 animate-fade-in flex flex-col justify-center min-h-[80vh]">
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setView('splash')} className="p-2 hover:bg-slate-100 rounded-full transition text-slate-500"><ArrowLeft className="w-6 h-6" /></button>
-                        <h2 className="text-2xl font-bold text-slate-800">Session Setup</h2>
-                    </div>
-                    <div className="bg-blue-50 text-blue-600 p-2 rounded-full"><Layers className="w-5 h-5" /></div>
+            <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-8 border border-white/50 relative overflow-hidden">
+                <div className="flex items-center gap-4 mb-8 sm:mb-10">
+                    <button onClick={() => setView('splash')} className="p-2 sm:p-3 hover:bg-slate-100 rounded-full transition text-slate-500"><ArrowLeft className="w-6 h-6" /></button>
+                    <div><h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Setup Session</h2><p className="text-slate-500 font-medium text-xs sm:text-sm">Configure class details</p></div>
                 </div>
-
-                <form onSubmit={handleFetchStudents} className="space-y-6 relative z-10">
+                <form onSubmit={handleFetchStudents} className="space-y-4 sm:space-y-6">
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Academic Semester</label>
-                        <div className="relative group">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
-                            <select value={semester} onChange={e => setSemester(e.target.value)} required className="w-full bg-slate-50 border-2 border-slate-100 hover:border-blue-200 rounded-2xl py-4 pl-12 pr-10 font-bold text-slate-700 appearance-none focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer text-base">
-                                <option value="" disabled>Select Semester</option>
-                                {SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}
-                            </select>
-                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
-                        </div>
+                        <div className="relative"><select value={semester} onChange={e => setSemester(e.target.value)} required className="w-full bg-slate-50 border-2 border-slate-100 hover:border-blue-200 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-5 font-bold text-slate-700 appearance-none outline-none focus:border-blue-500 transition-all cursor-pointer text-sm sm:text-base"><option value="" disabled>Select Semester</option>{SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}</select><ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/></div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Student Batch</label>
-                        <div className="relative group">
-                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
-                            <select value={batch} onChange={e => setBatch(e.target.value)} required disabled={!semester} className="w-full bg-slate-50 border-2 border-slate-100 hover:border-blue-200 rounded-2xl py-4 pl-12 pr-10 font-bold text-slate-700 appearance-none focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-base">
-                                <option value="" disabled>{isLoadingData ? "Loading..." : "Select Batch"}</option>
-                                {availableBatches.map(b => <option key={b} value={b}>{b}</option>)}
-                            </select>
-                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
-                        </div>
+                        <div className="relative"><select value={batch} onChange={e => setBatch(e.target.value)} required disabled={!semester} className="w-full bg-slate-50 border-2 border-slate-100 hover:border-blue-200 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-5 font-bold text-slate-700 appearance-none outline-none focus:border-blue-500 transition-all cursor-pointer disabled:opacity-50 text-sm sm:text-base"><option value="" disabled>Select Batch</option>{availableBatches.map(b => <option key={b} value={b}>{b}</option>)}</select><ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/></div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Course Code</label>
-                        <div className="relative group">
-                            <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
-                            <select value={course} onChange={e => setCourse(e.target.value)} required disabled={!batch} className="w-full bg-slate-50 border-2 border-slate-100 hover:border-blue-200 rounded-2xl py-4 pl-12 pr-10 font-bold text-slate-700 appearance-none focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-base">
-                                <option value="" disabled>{(!batch) ? "Select Batch First" : "Select Course"}</option>
-                                {availableCourses.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
-                        </div>
+                        <div className="relative"><select value={course} onChange={e => setCourse(e.target.value)} required disabled={!batch} className="w-full bg-slate-50 border-2 border-slate-100 hover:border-blue-200 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-5 font-bold text-slate-700 appearance-none outline-none focus:border-blue-500 transition-all cursor-pointer disabled:opacity-50 text-sm sm:text-base"><option value="" disabled>Select Course</option>{availableCourses.map(c => <option key={c} value={c}>{c}</option>)}</select><ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/></div>
                     </div>
-                    <button type="submit" disabled={isLoadingData || !batch || !course} className="w-full mt-6 bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg hover:bg-black transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:shadow-none active:scale-95">
-                        {isLoadingData ? <Loader2 className="animate-spin w-5 h-5"/> : <>Proceed <ArrowRight className="w-5 h-5"/></>}
-                    </button>
+                    <button type="submit" disabled={isLoadingData || !course} className="w-full mt-6 sm:mt-8 bg-slate-900 text-white py-4 sm:py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-slate-200 hover:bg-black">{isLoadingData ? <Loader2 className="animate-spin w-6 h-6"/> : <>Proceed <ArrowRight className="w-5 h-5"/></>}</button>
                 </form>
             </div>
         </div>
     );
 
     const renderPreview = () => (
-        // Minimal Pre-Flight Container (h-auto my-auto max-w-lg)
         <div className="w-full max-w-lg mx-auto p-4 animate-fade-in flex flex-col justify-center h-auto my-auto">
-             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-                <div className="bg-slate-900 p-5 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                    <h2 className="text-xl font-bold relative z-10">Pre-Flight Check</h2>
-                    <p className="text-slate-400 relative z-10 mt-1 text-xs">{validStudentSet.size} students loaded</p>
+             <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/50">
+                <div className="bg-slate-900 p-6 sm:p-8 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <h2 className="text-2xl sm:text-3xl font-black relative z-10 mb-1">Pre-Flight</h2>
+                    <p className="text-slate-400 relative z-10 text-xs sm:text-sm font-medium">{validStudentSet.size} students loaded successfully</p>
                 </div>
-                <div className="p-5">
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <NetworkIndicator isOnline={isOnline} />
-                        <div className="bg-blue-50 border border-blue-100 p-2 rounded-xl flex flex-col items-center justify-center text-center">
-                            <Clock className="text-blue-600 mb-1 w-4 h-4" />
-                            <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wide">Time</span>
-                            <span className="text-sm font-bold text-blue-900">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
-                        </div>
-                    </div>
-                    <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
-                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                            <span className="text-slate-500 font-medium text-xs">Batch</span>
-                            <span className="text-slate-900 font-bold text-sm">{batch} <span className="text-slate-400 text-[10px] font-normal">({semester})</span></span>
-                        </div>
-                        <div className="flex justify-between items-center pt-1">
-                            <span className="text-slate-500 font-medium text-xs">Course</span>
-                            <span className="text-slate-900 font-bold text-sm truncate max-w-[120px]">{course}</span>
-                        </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <button onClick={() => setView('selection')} className="flex-1 py-3 bg-white border-2 border-slate-200 font-bold text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition text-sm">Back</button>
-                        <button onClick={handleStartScanning} className="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-xl shadow-blue-200 flex items-center justify-center gap-2 transition active:scale-95 text-sm"><ShieldCheck className="w-4 h-4" /> Start Safe Mode</button>
-                    </div>
+                <div className="p-6 sm:p-8">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8"><NetworkIndicator isOnline={isOnline} /><div className="bg-blue-50 border-2 border-blue-100 p-3 sm:p-4 rounded-2xl flex flex-col items-center justify-center text-center h-full min-h-[90px]"><Clock className="text-blue-600 w-5 h-5 sm:w-6 sm:h-6 mb-1" /><span className="text-[9px] sm:text-[10px] font-black text-blue-400 uppercase opacity-70">Local Time</span><span className="text-xs sm:text-sm font-bold text-blue-900">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div></div>
+                    <div className="flex flex-col sm:flex-row gap-3"><button onClick={() => setView('selection')} className="flex-1 py-3.5 sm:py-4 bg-white border-2 border-slate-200 font-bold text-slate-600 rounded-2xl hover:bg-slate-50 transition-colors active:scale-95 text-sm">Back</button><button onClick={handleStartScanning} className="flex-[2] py-3.5 sm:py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">Start Scanning <ShieldCheck className="w-5 h-5" /></button></div>
                 </div>
             </div>
         </div>
     );
 
     const renderScanner = () => (
-        <div className="w-full h-full flex flex-col p-2 md:p-4 animate-fade-in relative max-w-7xl mx-auto touch-none select-none">
-            <div className="flex justify-between items-center bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 text-white mb-3 md:mb-6 shadow-lg">
-                <div className="flex flex-col"><h3 className="font-bold text-lg md:text-xl leading-tight">{batch} &bull; {semester}</h3><p className="text-slate-300 text-xs md:text-sm truncate max-w-[150px] md:max-w-xs">{course}</p></div>
-                <div className="flex items-center gap-2 md:gap-4"><HeaderNetworkStatus isOnline={isOnline} /><SessionTimer startTime={sessionStartTime} /><button onClick={() => setShowExitModal(true)} className="bg-red-500/20 p-2 rounded-full hover:bg-red-500/40 text-red-300 transition-colors"><LogOut className="w-5 h-5" /></button></div>
+        <div className="w-full h-[100dvh] flex flex-col p-2 md:p-4 animate-fade-in relative max-w-7xl mx-auto touch-none select-none">
+            {/* CSS to force hide the library's shaded region if it appears */}
+            <style>{`#qr-shaded-region { display: none !important; }`}</style>
+
+            {/* Header */}
+            <div className="flex justify-between items-center bg-slate-900/90 backdrop-blur-md p-3 sm:p-4 rounded-[1.5rem] sm:rounded-3xl border border-white/10 text-white mb-2 sm:mb-4 shadow-2xl z-20 shrink-0">
+                <div className="flex flex-col"><h3 className="font-bold text-lg sm:text-xl leading-none">{batch}</h3><p className="text-blue-300 text-[10px] sm:text-xs font-medium tracking-wide uppercase mt-1">{semester}</p></div>
+                <div className="flex items-center gap-2 sm:gap-3"><HeaderNetworkStatus isOnline={isOnline} /><SessionTimer startTime={sessionStartTime} /><button onClick={() => setShowExitModal(true)} className="bg-rose-500/20 p-2 sm:p-2.5 rounded-full text-rose-300 hover:bg-rose-500/30 transition-colors active:scale-95"><LogOut className="w-4 h-4 sm:w-5 sm:h-5" /></button></div>
             </div>
-            <div className="flex flex-col items-center justify-start flex-1 gap-4 md:gap-6">
-                <div className="relative w-full max-w-5xl h-[60vh] md:h-auto md:aspect-video rounded-3xl overflow-hidden shadow-2xl bg-black">
+            
+            {/* Camera Area - Flex Grow to fill space */}
+            {/* FIX: Increased max height to 75vh for mobile */}
+            <div className="flex flex-col items-center justify-start flex-1 gap-2 sm:gap-4 relative z-10 min-h-0">
+                <div className="relative w-full flex-1 min-h-0 max-h-[75vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
                     <ScannerOverlay cooldown={cooldown} />
-                    <style>{`#qr-reader { border: none !important; width: 100% !important; height: 100% !important; background: transparent !important; } #qr-reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 1.5rem !important; } #qr-reader__scan_region { background: transparent !important; }`}</style>
-                    <div id="qr-reader" className="w-full h-full object-cover opacity-100"></div>
-                    {cameraError && (<div className="absolute inset-0 z-20 bg-slate-900/95 flex flex-col items-center justify-center text-center p-6"><CameraOff className="w-12 h-12 text-red-500 mb-4" /><h3 className="text-xl font-bold text-white">Camera Error</h3><p className="text-slate-400 mt-2 text-sm">{cameraError}</p></div>)}
-                    {isPaused && scanResult.message && cooldown === 0 && (
-                        <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in zoom-in duration-200 text-center">
-                             {scanResult.photo && (<div className="relative mb-4"><img src={scanResult.photo} alt="Student" className={`w-32 h-32 md:w-40 md:h-40 rounded-full border-4 ${scanResult.type === 'success' ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.6)]' : 'border-red-500'} object-cover`} onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${scanResult.rollNumber}&background=random`}/>{scanResult.type === 'success' && <div className="absolute bottom-0 right-0 bg-green-500 text-white p-2 rounded-full border-4 border-black"><Check className="w-6 h-6"/></div>}</div>)}
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-widest drop-shadow-lg break-all mx-4 leading-tight">{scanResult.rollNumber}</h2>
-                            <div className="mt-4 mx-4"><span className={`inline-block text-sm sm:text-lg md:text-xl font-bold px-6 py-3 rounded-full border break-words whitespace-normal max-w-full leading-tight shadow-xl ${scanResult.type === 'success' ? 'bg-green-500/20 text-green-300 border-green-500/50' : scanResult.type === 'warning' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' : 'bg-red-500/20 text-red-300 border-red-500/50'}`}>{scanResult.message}</span></div>
+                    <div id="qr-reader" className="w-full h-full object-cover"></div>
+                    {isPaused && scanResult.message && (
+                        <div className="absolute inset-0 z-30 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-in zoom-in duration-200">
+                             {scanResult.photo && (<div className={`p-1 rounded-full border-4 mb-4 sm:mb-6 ${scanResult.type === 'success' ? 'border-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.4)]' : 'border-rose-500'}`}><img src={scanResult.photo} className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${scanResult.rollNumber}`} /></div>)}
+                            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-widest mb-2 sm:mb-3">{scanResult.rollNumber}</h2>
+                            <span className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl font-bold text-sm sm:text-lg border ${scanResult.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-rose-500/20 text-rose-300 border-rose-500/50'}`}>{scanResult.message}</span>
                         </div>
                     )}
                 </div>
-                <div className="w-full max-w-xl">
+
+                {/* Bottom Controls */}
+                <div className="w-full max-w-xl shrink-0 space-y-2 sm:space-y-4">
                      {lastScanned ? (
-                         <div key={lastScanned.rollNumber} className="bg-white/95 backdrop-blur-xl p-3 md:p-4 rounded-2xl shadow-xl flex items-center justify-between border border-white/50 animate-in slide-in-from-bottom duration-500">
-                            <div className="flex items-center gap-4"><img src={lastScanned.photo} className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-slate-200 object-cover border-2 border-white shadow-md" alt="Student" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${lastScanned.rollNumber}&background=random`}/><div><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Last Verified</p><p className="font-black text-slate-800 text-xl md:text-2xl">{lastScanned.rollNumber}</p></div></div>
-                            <div className="text-right flex flex-col items-end gap-1"><span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-green-200"><Check className="w-3 h-3"/> {lastScanned.timestamp}</span><span className="text-xs font-bold text-slate-400">#{scanCount}</span></div>
-                         </div>
-                    ) : (
-                        <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex items-center justify-center gap-3 text-white/40"><ScanLine className="w-5 h-5 animate-pulse" /><span className="text-sm">Ready to scan...</span></div>
-                    )}
-                </div>
-                <div className="w-full max-w-xl mt-2 pb-4">
-                    {/* BUTTON: "Finish" */}
-                    <button onClick={() => setShowFinishConfirm(true)} className="w-full bg-blue-600 text-white py-3 md:py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:scale-100" disabled={scanCount === 0 || isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin w-5 h-5"/> : <><CheckCircle2 className="w-5 h-5"/> Finish ({scanCount})</>}
-                    </button>
+                         <div className="bg-white/90 backdrop-blur-xl p-3 sm:p-4 rounded-[1.5rem] sm:rounded-3xl shadow-xl flex items-center justify-between border border-white/50 animate-in slide-in-from-bottom duration-500">
+                            <div className="flex items-center gap-3 sm:gap-4"><img src={lastScanned.photo} className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-slate-100 object-cover border-2 border-white shadow-md" onError={(e) => e.target.src = `https://ui-avatars.com/api/?name=${lastScanned.rollNumber}`} /><div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Last Verified</p><p className="font-black text-slate-900 text-lg sm:text-2xl">{lastScanned.rollNumber}</p></div></div><span className="text-xs sm:text-sm font-bold text-slate-400 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">#{scanCount}</span></div>
+                    ) : <div className="bg-white/10 backdrop-blur-md p-3 sm:p-4 rounded-[1.5rem] sm:rounded-3xl border border-white/10 text-white/40 text-center text-xs sm:text-sm font-medium h-[64px] sm:h-[88px] flex items-center justify-center">Waiting for first scan...</div>}
+                    
+                    <button onClick={handleFinishClick} disabled={scanCount === 0 || isSubmitting} className="w-full bg-blue-600 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-2xl font-bold text-lg sm:text-xl hover:bg-blue-700 shadow-xl shadow-blue-900/30 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all flex items-center justify-center gap-3">{isSubmitting ? <Loader2 className="animate-spin w-6 h-6"/> : <><CheckCircle2 className="w-6 h-6"/> Finish Session ({scanCount})</>}</button>
                 </div>
             </div>
         </div>
     );
 
     const renderSummary = () => {
-        if (attendanceReport?.status === 'error') {
-            return (
-                <div className="w-full max-w-md mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in text-center p-8 m-4 border-2 border-amber-100">
-                    <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-amber-200 shadow-lg animate-bounce"><AlertTriangle className="w-10 h-10" /></div>
-                    <h2 className="text-3xl font-bold text-slate-900 mb-2">Submission Failed</h2>
-                    <p className="text-slate-500 mb-6 px-4">{attendanceReport.message}</p>
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-left mb-8">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"><Info size={14}/> Session Details</div>
-                        <div className="grid grid-cols-2 gap-4"><div><span className="text-xs text-slate-500 block">Batch</span><span className="font-bold text-slate-800">{batch}</span></div><div><span className="text-xs text-slate-500 block">Date</span><span className="font-bold text-slate-800">{new Date().toISOString().split('T')[0]}</span></div></div>
-                    </div>
-                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg">Return to Dashboard</button>
+        if (!attendanceReport) return null;
+        const total = validStudentSet.size;
+        const present = attendanceReport.presentiesCount || 0;
+        const rate = calculatePercentage(present, total);
+        const mismatched = (attendanceReport.mismatchedStudents || []).filter(s => s && s.trim() !== "");
+
+        if (attendanceReport.status === 'error' && !attendanceReport.presentiesCount) {
+             return (
+                <div className="w-full max-w-md mx-auto bg-white rounded-[2rem] shadow-2xl p-6 sm:p-8 m-4 text-center border-4 border-rose-50 animate-fade-in">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6"><AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-rose-500" /></div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">Submission Failed</h2>
+                    <p className="text-slate-500 mb-6 sm:mb-8 font-medium">{attendanceReport.message}</p>
+                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold transition shadow-xl active:scale-95">Return to Dashboard</button>
                 </div>
             );
         }
-        return (
-             <div className="w-full max-w-md mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in text-center p-8 m-4">
-                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-green-200 shadow-lg"><CheckCircle2 className="w-10 h-10" /></div>
-                {attendanceReport ? (
-                    <>
-                        <h2 className="text-3xl font-bold text-slate-900">Success!</h2>
-                        <p className="text-slate-500 mt-2">{attendanceReport.message}</p>
-                        <div className="grid grid-cols-3 gap-3 mt-8">
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[10px] text-slate-500 font-bold uppercase">Total</p><p className="text-2xl font-black text-slate-900">{attendanceReport.totalMarked}</p></div>
-                            <div className="bg-green-50 p-3 rounded-xl border border-green-100"><p className="text-[10px] text-green-600 font-bold uppercase">Present</p><p className="text-2xl font-black text-green-700">{attendanceReport.presentiesCount}</p></div>
-                            <div className="bg-red-50 p-3 rounded-xl border border-red-100"><p className="text-[10px] text-red-600 font-bold uppercase">Absent</p><p className="text-2xl font-black text-red-700">{attendanceReport.absenteesCount}</p></div>
-                        </div>
-                        {attendanceReport.mismatchedStudents && attendanceReport.mismatchedStudents.filter(s => s).length > 0 && (
-                            <div className="mt-6 bg-amber-50 border border-amber-200 p-4 rounded-xl text-left">
-                                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm mb-2"><AlertTriangle className="w-4 h-4"/> Mismatched / Invalid</div>
-                                <div className="flex flex-wrap gap-2">{attendanceReport.mismatchedStudents.filter(s => s).map((roll, idx) => (<span key={idx} className="bg-white px-2 py-1 rounded border border-amber-200 text-xs font-mono text-amber-800">{roll}</span>))}</div>
-                            </div>
-                        )}
-                    </>
-                ) : <p className="text-slate-500">Report data not available.</p>}
-                <button onClick={handleExitSession} className="w-full mt-8 bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg">Return to Dashboard</button>
-             </div>
-        );
-    };
 
-    const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping }) => {
-        const [confirmInput, setConfirmInput] = useState('');
-        // NOTE: Strictly require typing "EXIT" on exit attempts
-        const requiredText = requireTyping ? "EXIT" : user?.username || user?.name || "CONFIRM";
-        const isMatch = confirmInput.trim().toUpperCase() === requiredText.toUpperCase();
-        
         return (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[999] p-4 animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in scale-95 duration-200">
-                    <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-4" />
-                    <h3 className="text-xl font-bold text-center mb-2">Confirmation</h3>
-                    <p className="text-slate-600 text-center mb-6">{message}</p>
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{requireTyping ? "Type EXIT to confirm" : "Type your username to confirm"}</label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input type="text" placeholder={requireTyping ? "EXIT" : "Enter your username"} className="w-full p-3 pl-10 border-2 border-slate-200 rounded-xl font-mono text-center font-bold tracking-widest focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all uppercase" value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} autoFocus />
+            <div className="w-full max-w-lg mx-auto bg-white rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden animate-fade-in m-4 border border-slate-100">
+                <div className="bg-slate-50 p-6 sm:p-8 text-center relative border-b border-slate-100">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900">Session Complete</h2>
+                    <p className="text-slate-400 text-[10px] sm:text-xs mt-1 uppercase font-bold tracking-widest">{course}</p>
+                </div>
+                <div className="p-6 sm:p-8 flex flex-col items-center">
+                    <div className="mb-6 sm:mb-8 scale-110"><CircularProgress percentage={rate} /></div>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mb-6 sm:mb-8">
+                        <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl text-center border border-slate-100"><p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1">Total</p><p className="text-lg sm:text-2xl font-black text-slate-900">{total}</p></div>
+                        <div className="bg-emerald-50 p-3 sm:p-4 rounded-2xl text-center border border-emerald-100"><p className="text-[9px] sm:text-[10px] text-emerald-600 font-black uppercase tracking-wider mb-1">Present</p><p className="text-lg sm:text-2xl font-black text-emerald-700">{present}</p></div>
+                        <div className="bg-rose-50 p-3 sm:p-4 rounded-2xl text-center border border-rose-100"><p className="text-[9px] sm:text-[10px] text-rose-600 font-black uppercase tracking-wider mb-1">Absent</p><p className="text-lg sm:text-2xl font-black text-rose-700">{attendanceReport.absenteesCount || 0}</p></div>
+                    </div>
+                    {mismatched.length > 0 && (
+                        <div className="w-full mb-6 bg-amber-50 border border-amber-200 rounded-3xl overflow-hidden flex flex-col">
+                            <div className="px-5 py-3 border-b border-amber-100 flex justify-between items-center bg-amber-50/50">
+                                <p className="text-amber-800 font-black text-xs uppercase flex items-center gap-2"><AlertTriangle size={14}/> Mismatched ({mismatched.length})</p>
+                                <span className="text-[10px] font-bold text-amber-600 bg-white px-2 py-0.5 rounded-full border border-amber-100">Scroll to view</span>
+                            </div>
+                            <div className="p-4 max-h-[140px] overflow-y-auto custom-scrollbar bg-white/50">
+                                <div className="flex flex-wrap gap-2">{mismatched.map((r, i) => <span key={i} className="bg-white px-2 py-1 rounded-lg border border-amber-200 text-[10px] font-mono font-bold text-amber-800 shadow-sm">{r}</span>)}</div>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <button onClick={onCancel} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold transition-colors">Cancel</button>
-                        <button onClick={onConfirm} disabled={!isMatch} className={`flex-1 py-3 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${isMatch ? 'bg-blue-600 hover:bg-blue-700 shadow-lg' : 'bg-slate-300 cursor-not-allowed opacity-70'}`}>{isMatch ? <Check size={18}/> : <Lock size={18}/>} Confirm</button>
-                    </div>
+                    )}
+                    <button onClick={handleExitSession} className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-3xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">Return to Dashboard <LogOut size={20}/></button>
                 </div>
             </div>
         );
     };
 
     return (
-        <div className={`min-h-screen w-full flex items-center justify-center font-sans relative overflow-hidden transition-colors duration-500 ${view === 'scanner' ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
-            <style>{`@keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; }`}</style>
-            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
+        <div className={`min-h-[100dvh] w-full flex items-center justify-center font-sans relative overflow-hidden transition-colors duration-500 ${view === 'scanner' ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
+            <style>{`@keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } #qr-shaded-region { display: none !important; }`}</style>
+            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
             <div className="w-full h-full relative z-10 flex items-center justify-center">
-                {view === 'splash' && renderSplash()}
-                {view === 'selection' && renderSelection()}
-                {view === 'preview' && renderPreview()}
-                {view === 'scanner' && renderScanner()}
-                {view === 'summary' && renderSummary()}
+                {view === 'splash' && renderSplash()} {view === 'selection' && renderSelection()} {view === 'preview' && renderPreview()} {view === 'scanner' && renderScanner()} {view === 'summary' && renderSummary()}
             </div>
-            {/* FORCE 'EXIT' TYPING WHEN EXITING SESSION */}
-            {showExitModal && <ConfirmModal message="Are you sure you want to end this session? All unsaved data will be lost." requireTyping={true} onConfirm={handleExitSession} onCancel={handleCancelExit} />}
-            {showFinishConfirm && <ConfirmModal message="Finish scanning and submit attendance?" requireTyping={false} onConfirm={submitAttendance} onCancel={() => setShowFinishConfirm(false)} />}
-            {userMsg.text && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-xl z-50 flex items-center gap-3 animate-fade-in border border-slate-200">{userMsg.type === 'error' ? <AlertTriangle className="text-red-500"/> : <Info className="text-blue-500"/>}<p className="font-medium text-slate-800">{userMsg.text}</p><button onClick={() => setUserMsg({text: null})}><XCircle className="w-5 h-5 text-slate-400"/></button></div>}
+            {showExitModal && (<ConfirmModal message="Unsaved data will be permanently lost." requireTyping={true} onConfirm={handleExitSession} onCancel={handleCancelExit} validationString={user?.username || user?.name} validateNet={checkInternetConnection} />)}
+            {showFinishConfirm && (<ConfirmModal message="Finalize and upload attendance list?" requireTyping={false} onConfirm={submitAttendance} onCancel={handleCancelFinish} validationString={user?.username || user?.name} validateNet={checkInternetConnection} />)}
+            {showNetworkErrorModal && <NetworkErrorModal onClose={() => setShowNetworkErrorModal(false)} />}
+            {userMsg.text && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-2xl shadow-slate-200 z-50 flex items-center gap-3 animate-fade-in border border-slate-100 w-11/12 max-w-sm justify-between sm:w-auto"><div className="flex items-center gap-3">{userMsg.type === 'error' ? <AlertTriangle className="text-rose-500 shrink-0"/> : <Info className="text-blue-500 shrink-0"/>}<p className="font-bold text-slate-700 text-xs sm:text-sm">{userMsg.text}</p></div><button onClick={() => setUserMsg({text: null})}><XCircle className="w-5 h-5 text-slate-400 hover:text-slate-600 transition shrink-0"/></button></div>}
         </div>
     );
 }

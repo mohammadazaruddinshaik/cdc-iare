@@ -476,7 +476,7 @@ const ProfilePage = () => {
                         headers: { 'Content-Type': 'application/json' },
                         credentials: "include",
                     }),
-                    new Promise(resolve => setTimeout(resolve, 2500)) // 2.5 seconds delay
+                    new Promise(resolve => setTimeout(resolve, 1000)) // 2.5 seconds delay
                 ]);
 
                 if (response.status === 401 || response.status === 403) {
