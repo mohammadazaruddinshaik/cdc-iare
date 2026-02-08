@@ -58,8 +58,8 @@ const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
                 />
                 <defs>
                     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#3B82F6" /> {/* Blue-500 */}
-                        <stop offset="100%" stopColor="#1D4ED8" /> {/* Blue-700 */}
+                        <stop offset="0%" stopColor="#3B82F6" />
+                        <stop offset="100%" stopColor="#1D4ED8" />
                     </linearGradient>
                 </defs>
             </svg>
@@ -71,26 +71,29 @@ const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
     );
 };
 
+// UPDATED: Shows a big countdown number when cooldown > 0
 const ScannerOverlay = ({ cooldown }) => (
-    // FIX: Removed "border-white/10" to eliminate the faint white box
     <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
-        
-        {/* Laser Animation */}
+        {/* Laser Animation (Only when NOT in cooldown) */}
         {cooldown === 0 && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] animate-scan-laser z-20 opacity-80"></div>
         )}
         
-        {/* Blue Corners (KEPT) */}
+        {/* Corner Markers */}
         <div className="absolute top-0 left-0 w-16 h-16 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-md"></div>
         <div className="absolute top-0 right-0 w-16 h-16 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-md"></div>
         <div className="absolute bottom-0 left-0 w-16 h-16 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-md"></div>
         <div className="absolute bottom-0 right-0 w-16 h-16 border-b-[6px] border-r-[6px] border-blue-500 rounded-br-3xl drop-shadow-md"></div>
 
-        {/* Cooldown Timer */}
+        {/* COOLDOWN OVERLAY */}
         {cooldown > 0 && (
-            <div className="absolute inset-0 z-30 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
-                <div className="text-7xl sm:text-8xl font-black text-white drop-shadow-[0_0_25px_rgba(59,130,246,0.8)] tabular-nums scale-110">{cooldown}</div>
-                <p className="text-blue-200 font-bold mt-4 text-lg sm:text-xl uppercase tracking-[0.2em]">Next Scan</p>
+            <div className="absolute inset-0 z-30 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
+                <div className="text-7xl sm:text-8xl font-black text-white drop-shadow-[0_0_25px_rgba(59,130,246,0.8)] tabular-nums scale-110">
+                    {cooldown}
+                </div>
+                <p className="text-blue-200 font-bold mt-4 text-lg sm:text-xl uppercase tracking-[0.2em] animate-pulse">
+                    Next Scan In...
+                </p>
             </div>
         )}
     </div>
@@ -324,18 +327,25 @@ export default function PostAttendancePage() {
         }
     }, [view]);
 
-    // Cooldown Timer
+    // UPDATED: Cooldown Timer Logic
     useEffect(() => {
         let timer;
         if (cooldown > 0) {
-            timer = setInterval(() => setCooldown((prev) => prev - 1), 1000);
-        } else if (cooldown === 0 && isPaused && scanResult.type === 'success') {
-            setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' });
-            setIsPaused(false);
-            processingRef.current = false; 
+            timer = setInterval(() => {
+                setCooldown((prev) => {
+                    if (prev <= 1) {
+                        // When timer hits 0, unlock scanner
+                        setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' });
+                        setIsPaused(false);
+                        processingRef.current = false;
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
         }
         return () => clearInterval(timer);
-    }, [cooldown, isPaused, scanResult.type]);
+    }, [cooldown]);
 
     // Data Fetching
     useEffect(() => {
@@ -369,18 +379,16 @@ export default function PostAttendancePage() {
         setCameraError(null);
         let mounted = true;
         const scanner = new Html5Qrcode('qr-reader');
-        // ... inside the useEffect for scanner ...
-const startScanner = async () => {
-    try {
-        const config = { 
-            fps: 30, 
-            // REMOVE the aspectRatio line below
-            // aspectRatio: window.innerWidth < 768 ? 0.75 : 1.777, 
-            qrbox: { width: 250, height: 250 } 
-        }; 
-        await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
-    } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
-};
+        const startScanner = async () => {
+            try {
+                const config = { 
+                    fps: 30, 
+                    // aspectRatio REMOVED to fix camera stretching
+                    qrbox: { width: 250, height: 250 } 
+                }; 
+                await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
+            } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
+        };
         startScanner();
         return () => { mounted = false; if(scanner.isScanning) scanner.stop().catch(console.error); };
     }, [view]);
@@ -404,6 +412,7 @@ const startScanner = async () => {
     const handleCancelExit = () => { setShowExitModal(false); toggleFullScreen('enter'); };
     const handleCancelFinish = () => { setShowFinishConfirm(false); toggleFullScreen('enter'); };
 
+    // UPDATED: Handle Scan with 3s Timer
     const handleScan = useCallback((text) => {
         if (processingRef.current || isPaused || cooldown > 0) return;
         processingRef.current = true;
@@ -448,6 +457,8 @@ const startScanner = async () => {
                 const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${roll}/${roll}.jpg`;
                 setScanResult({ rollNumber: roll, message: 'Verified', type: 'success', photo: photoUrl });
                 setLastScanned({ rollNumber: roll, photo: photoUrl, timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) });
+                
+                // START 3 SECOND TIMER
                 setCooldown(3); 
             }
         }
@@ -554,7 +565,6 @@ const startScanner = async () => {
             </div>
             
             {/* Camera Area - Flex Grow to fill space */}
-            {/* FIX: Increased max height to 75vh for mobile */}
             <div className="flex flex-col items-center justify-start flex-1 gap-2 sm:gap-4 relative z-10 min-h-0">
                 <div className="relative w-full flex-1 min-h-0 max-h-[75vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
                     <ScannerOverlay cooldown={cooldown} />
@@ -632,24 +642,24 @@ const startScanner = async () => {
     return (
         <div className={`min-h-[100dvh] w-full flex items-center justify-center font-sans relative overflow-hidden transition-colors duration-500 ${view === 'scanner' ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
             <style>{`
-    @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } 
-    .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } 
-    @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } 
-    .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } 
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
-    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } 
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
-    #qr-shaded-region { display: none !important; }
-    
-    /* --- ADD THIS NEW BLOCK BELOW --- */
-    #qr-reader { border: none !important; }
-    #qr-reader video { 
-        object-fit: cover !important; 
-        width: 100% !important; 
-        height: 100% !important; 
-        border-radius: inherit !important;
-    }
-`}</style>
+                @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } 
+                .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } 
+                @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } 
+                .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } 
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
+                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } 
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
+                #qr-shaded-region { display: none !important; }
+
+                /* --- GLOBAL CSS FIX FOR TELEGRAM/MOBILE --- */
+                #qr-reader { border: none !important; }
+                #qr-reader video { 
+                    object-fit: cover !important; 
+                    width: 100% !important; 
+                    height: 100% !important; 
+                    border-radius: inherit !important;
+                }
+            `}</style>
             {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
             <div className="w-full h-full relative z-10 flex items-center justify-center">
                 {view === 'splash' && renderSplash()} {view === 'selection' && renderSelection()} {view === 'preview' && renderPreview()} {view === 'scanner' && renderScanner()} {view === 'summary' && renderSummary()}

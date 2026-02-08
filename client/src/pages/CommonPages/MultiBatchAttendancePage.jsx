@@ -59,8 +59,8 @@ const CircularProgress = ({ percentage, size = 140, strokeWidth = 10, label = "T
                 />
                 <defs>
                     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#3B82F6" /> {/* Blue-500 */}
-                        <stop offset="100%" stopColor="#1D4ED8" /> {/* Blue-700 */}
+                        <stop offset="0%" stopColor="#3B82F6" />
+                        <stop offset="100%" stopColor="#1D4ED8" />
                     </linearGradient>
                 </defs>
             </svg>
@@ -73,15 +73,13 @@ const CircularProgress = ({ percentage, size = 140, strokeWidth = 10, label = "T
 };
 
 const ScannerOverlay = ({ cooldown }) => (
-    // FIX: Removed "border-white/10" to remove the white box
     <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
-        
         {/* Laser Animation */}
         {cooldown === 0 && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] animate-scan-laser z-20 opacity-80"></div>
         )}
         
-        {/* Blue Corners (Restored) */}
+        {/* Blue Corners */}
         <div className="absolute top-0 left-0 w-16 h-16 border-t-[6px] border-l-[6px] border-blue-500 rounded-tl-3xl drop-shadow-md"></div>
         <div className="absolute top-0 right-0 w-16 h-16 border-t-[6px] border-r-[6px] border-blue-500 rounded-tr-3xl drop-shadow-md"></div>
         <div className="absolute bottom-0 left-0 w-16 h-16 border-b-[6px] border-l-[6px] border-blue-500 rounded-bl-3xl drop-shadow-md"></div>
@@ -316,19 +314,25 @@ export default function MultiBatchAttendancePage() {
         }
     }, [view]);
 
-    // COOLDOWN LOGIC
+    // UPDATED: Robust Cooldown Logic
     useEffect(() => {
         let timer;
         if (cooldown > 0) {
-            timer = setInterval(() => setCooldown(p => p - 1), 1000);
-        } else if (cooldown === 0 && isPaused && scanResult.type === 'success') { 
-            // Unlock logic here
-            setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
-            setIsPaused(false); 
-            processingRef.current = false;
+            timer = setInterval(() => {
+                setCooldown((prev) => {
+                    if (prev <= 1) {
+                        // When timer hits 0, unlock scanner
+                        setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' });
+                        setIsPaused(false);
+                        processingRef.current = false;
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
         }
         return () => clearInterval(timer);
-    }, [cooldown, isPaused, scanResult.type]);
+    }, [cooldown]);
 
     useEffect(() => {
         if (view !== 'scanner') return;
@@ -453,6 +457,8 @@ export default function MultiBatchAttendancePage() {
                 const photoUrl = `https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/${roll}/${roll}.jpg`;
                 setScanResult({ rollNumber: roll, message: `Verified (${studentBatch})`, type: 'success', photo: photoUrl });
                 setLastScanned({ rollNumber: roll, photo: photoUrl, batch: studentBatch, timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) });
+                
+                // START 3 SECOND TIMER
                 setCooldown(3); 
             } 
             else {
