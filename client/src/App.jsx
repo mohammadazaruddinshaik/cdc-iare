@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorPage from './components/ErrorPage'; 
 import Loader from './components/Loader'; 
-import TelegramBlocker from './components/TelegramBlocker'; // <--- IMPORTED
+// TelegramBlocker import removed
 
 // --- Eager Load (Load immediately) ---
 import LoginPage from './pages/CommonPages/LoginPage';
@@ -51,7 +51,6 @@ const InboxPage = lazy(() => import('./pages/StudentPages/AnnouncementsPage'));
 /**
  * --- NetworkGuard ---
  * Wraps ONLY the specific routes that must fail when offline.
- * If you want a page to work offline, do NOT wrap it with this.
  */
 const NetworkGuard = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -79,7 +78,6 @@ const NetworkGuard = ({ children }) => {
 /**
  * --- SessionGuard ---
  * Wraps all protected routes.
- * Checks if Auth is ready.
  */
 const SessionGuard = () => {
   const { loading } = useAuth();
@@ -104,44 +102,37 @@ const AppRoutes = () => {
       <Route element={<SessionGuard />}>
         
         {/* --- Common Routes --- */}
-        {/* Example: Leaderboard requires internet, so we wrap it in NetworkGuard */}
         <Route path="/leaderboard" element={
           <NetworkGuard>
             <LeaderboardPage />
           </NetworkGuard>
         } />
         
-        {/* Timetable might be cached, so we allow it offline (No NetworkGuard) */}
         <Route path="/timetable" element={<TimeTablePage />} />
 
         {/* --- Shared Admin & Faculty Routes --- */}
         <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
-          {/* USER REQUEST: No Network Guard for these specific pages */}
           <Route path="/post-attendance" element={<PostAttendance />} />
           <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
           <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
-          
           <Route path="/batch-report" element={<BatchWiseReport />} />
           <Route path="/faculty/action" element={<FacultyActionPage />} />
         </Route>
 
         {/* --- Admin Only Routes --- */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
-          {/* Dashboards often need live data, so we guard them */}
           <Route path="/admin/dashboard" element={
             <NetworkGuard>
               <AdminDashboard />
             </NetworkGuard>
           } />
           
-          {/* USER REQUEST: These pages are included WITHOUT NetworkGuard (Accessible offline) */}
           <Route path="/admin/manage-students" element={<ManageStudentPage />} />
           <Route path="/admin/manage-faculty" element={<ManageFacultyPage />} />
           <Route path="/admin/manage-attendance" element={<ManageAttendancePage />} />
           <Route path="/admin/create-timetable" element={<CreateTimetablePage />} />
           <Route path="/modify-timetable" element={<ModifyTimetablePage />} />
 
-          {/* Other Admin Routes */}
           <Route path="/admin/profile" element={<AdminProfilePage />} />
           <Route path="/admin/timetable" element={<AdminTimetablePage />} />
           <Route path="/admin/attendance" element={<ViewAttendance />} />
@@ -187,11 +178,9 @@ const AppRoutes = () => {
 function App() {
   const [errorType, setErrorType] = useState(null);
 
-  // Global Error Listener
   useEffect(() => {
-    // Only listening for critical application errors now.
-    const handleNetworkError = () => setErrorType('network'); // Custom event manually triggered by API calls
-    const handleServerError = () => setErrorType('server');   // Custom event manually triggered by API calls
+    const handleNetworkError = () => setErrorType('network'); 
+    const handleServerError = () => setErrorType('server');   
 
     window.addEventListener('app-network-error', handleNetworkError);
     window.addEventListener('app-server-error', handleServerError);
@@ -209,16 +198,14 @@ function App() {
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      {/* Wrapped entire app logic in TelegramBlocker */}
-      <TelegramBlocker>
-        <AuthProvider>
-          {errorType ? (
-            <ErrorPage type={errorType} onRetry={handleRetry} />
-          ) : (
-            <AppRoutes />
-          )}
-        </AuthProvider>
-      </TelegramBlocker>
+      {/* TelegramBlocker removed */}
+      <AuthProvider>
+        {errorType ? (
+          <ErrorPage type={errorType} onRetry={handleRetry} />
+        ) : (
+          <AppRoutes />
+        )}
+      </AuthProvider>
     </BrowserRouter>
   );
 }
