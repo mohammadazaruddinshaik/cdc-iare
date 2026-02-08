@@ -335,13 +335,14 @@ export default function MultiBatchAttendancePage() {
         setCameraError(null);
         let mounted = true;
         const scanner = new Html5Qrcode('qr-reader');
+        // ... inside the useEffect for scanner ...
         const startScanner = async () => {
             try {
-                // Responsive Aspect Ratio for mobile
                 const config = { 
                     fps: 30, 
-                    aspectRatio: window.innerWidth < 768 ? 0.75 : 1.777,
-                    qrbox: { width: 250, height: 250 }
+                    // REMOVE the aspectRatio line below
+                    // aspectRatio: window.innerWidth < 768 ? 0.75 : 1.777, 
+                    qrbox: { width: 250, height: 250 } 
                 }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
             } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
@@ -760,8 +761,25 @@ export default function MultiBatchAttendancePage() {
 
     return (
         <div className={`min-h-[100dvh] w-full flex items-center justify-center font-sans relative overflow-hidden transition-colors duration-500 ${view === 'scanner' ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
-            <style>{`@keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }`}</style>
-            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
+<style>{`
+    @keyframes fade-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } } 
+    .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } 
+    @keyframes scan-laser { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } } 
+    .animate-scan-laser { animation: scan-laser 2.5s ease-in-out infinite; } 
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); } 
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
+    #qr-shaded-region { display: none !important; }
+    
+    /* --- ADD THIS NEW BLOCK BELOW --- */
+    #qr-reader { border: none !important; }
+    #qr-reader video { 
+        object-fit: cover !important; 
+        width: 100% !important; 
+        height: 100% !important; 
+        border-radius: inherit !important;
+    }
+`}</style>            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
             <div className="w-full h-full relative z-10 flex items-center justify-center">
                 {view === 'splash' && renderSplash()} {view === 'sem-select' && renderSemSelection()} {view === 'batches' && renderBatchSelection()} {view === 'courses' && renderCourseMapping()} {view === 'preview' && renderPreview()} {view === 'scanner' && renderScanner()} {view === 'summary' && renderSummary()}
             </div>
