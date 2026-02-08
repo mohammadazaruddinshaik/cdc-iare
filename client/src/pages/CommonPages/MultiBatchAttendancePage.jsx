@@ -163,7 +163,7 @@ const NetworkErrorModal = ({ onClose }) => (
     </div>
 );
 
-// UPDATED: Fixed position (top) to allow keyboard use on mobile
+// UPDATED: Modal fixed to top for mobile compatibility
 const ConfirmModal = ({ message, onConfirm, onCancel, textToType, isUsernameCheck, validateNet }) => {
     const [confirmInput, setConfirmInput] = useState('');
     const validationTarget = isUsernameCheck ? textToType : (textToType || "CONFIRM");
@@ -181,6 +181,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel, textToType, isUsernameChec
     };
 
     return (
+        // KEY FIX: items-start + pt-20 moves modal to top
         <div className="fixed inset-0 z-[999] flex items-start justify-center p-4 overflow-y-auto pt-20 sm:items-center sm:pt-4">
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onCancel}></div>
             <div className="bg-white relative z-10 w-full max-w-sm rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 p-6 sm:p-8 border border-white/20 max-h-[85dvh] overflow-y-auto">

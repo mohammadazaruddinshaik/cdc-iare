@@ -367,13 +367,11 @@ export default function PostAttendancePage() {
         const scanner = new Html5Qrcode('qr-reader');
         const startScanner = async () => {
             try {
-                // FIXED: Dynamic Aspect Ratio for Laptop/Mobile Compatibility
-                const aspectRatio = window.innerWidth / window.innerHeight;
-                
+                // FIXED: REMOVED aspectRatio entirely to fix detection issues
                 const config = { 
-                    fps: 30, 
+                    fps: 10,  // Reduced FPS for better focus/performance
                     qrbox: { width: 250, height: 250 },
-                    aspectRatio: aspectRatio 
+                    // videoConstraints: { focusMode: "continuous" } // Added focus mode
                 }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
             } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
