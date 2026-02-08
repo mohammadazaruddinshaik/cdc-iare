@@ -1,33 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Globe, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Copy, Check, AlertTriangle, ExternalLink } from 'lucide-react';
 
 const TelegramBlocker = ({ children }) => {
-    // 1. Run detection IMMEDIATELY (before render) to prevent "flashing" the broken app
-    const [isBlocked, setIsBlocked] = useState(() => {
-        if (typeof window === 'undefined') return false; // Server-side safety
+    const [debugUA, setDebugUA] = useState('');
 
-        const ua = window.navigator.userAgent.toLowerCase();
+    // 1. Run detection IMMEDIATELY (Lazy Initializer)
+    const [isBlocked, setIsBlocked] = useState(() => {
+        if (typeof window === 'undefined') return false;
+
+        const ua = window.navigator.userAgent; // Keep original case for reading
+        const lowerUA = ua.toLowerCase();
         
         // --- DETECTION LOGIC ---
-        
-        // 1. Telegram specific (mostly iOS/Desktop)
-        const isTelegram = ua.includes('telegram') || window.TelegramWebviewProxy !== undefined;
-        
-        // 2. Generic Android WebView (Critical for Telegram Android)
-        // Standard Chrome on Android does NOT contain "wv" or "version/x.x" combined with Chrome
-        const isAndroidWebView = /android/.test(ua) && (/wv/.test(ua) || /version\//.test(ua));
 
-        // 3. Instagram/Facebook/Messenger (just in case)
-        const isMeta = ua.includes('instagram') || ua.includes('fbav') || ua.includes('fban');
+        // 1. iOS Detection (Easy)
+        // Telegram iOS explicitly says "Telegram"
+        const isIOS = /iphone|ipad|ipod/.test(lowerUA);
+        const isTelegramIOS = isIOS && (lowerUA.includes('telegram') || window.TelegramWebviewProxy);
 
-        // Block if any of these are true
-        return isTelegram || isAndroidWebView || isMeta;
+        // 2. Android Detection (Hard)
+        const isAndroid = /android/.test(lowerUA);
+        
+        // THE FIX: 
+        // Real Chrome on Android looks like: "... Chrome/100.0.0 Mobile Safari/..."
+        // Telegram/WebViews look like: "... Version/4.0 Chrome/100.0.0 Mobile Safari/..."
+        // The presence of "wv" OR "version/" is the smoking gun for an in-app browser.
+        const isAndroidWebView = isAndroid && (
+            lowerUA.includes('wv') || 
+            lowerUA.includes('version/') || 
+            lowerUA.includes('fban') || // Facebook
+            lowerUA.includes('fbav') || // Facebook
+            lowerUA.includes('instagram') 
+        );
+
+        // 3. Strict Mode: If it's Android but doesn't have "chrome" or "firefox", it's likely a wrapper.
+        // (Optional: safer to keep commented out unless the above fails)
+        // const isSuspiciousAndroid = isAndroid && !lowerUA.includes('chrome') && !lowerUA.includes('firefox');
+
+        return isTelegramIOS || isAndroidWebView;
     });
 
     const [copied, setCopied] = useState(false);
 
-    // Lock scroll if blocked so they can't swipe away easily
     useEffect(() => {
+        // Set Debug UA for visibility
+        setDebugUA(window.navigator.userAgent);
+        
         if (isBlocked) {
             document.body.style.overflow = 'hidden';
         } else {
@@ -58,7 +76,7 @@ const TelegramBlocker = ({ children }) => {
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-slate-900 to-slate-900 -z-10"></div>
             
-            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border-4 border-rose-100 relative overflow-hidden">
+            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border-4 border-rose-100 relative overflow-hidden z-10">
                 {/* Decoration */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
@@ -68,7 +86,7 @@ const TelegramBlocker = ({ children }) => {
 
                 <h1 className="text-2xl font-black text-slate-900 mb-2">Browser Not Supported</h1>
                 <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">
-                    Telegram's browser breaks the camera and location features.
+                    This browser blocks camera access.
                 </p>
 
                 {/* Android-Specific Instruction */}
@@ -80,7 +98,7 @@ const TelegramBlocker = ({ children }) => {
                         <div className="flex items-start gap-3">
                             <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center shrink-0 font-bold text-slate-600 text-xs">1</div>
                             <p className="text-xs font-semibold text-slate-600">
-                                Tap the <strong className="text-slate-900">3 dots (⋮)</strong> in the top right corner.
+                                Tap the <strong className="text-slate-900">3 dots (⋮)</strong> in the top right.
                             </p>
                         </div>
                         <div className="flex items-start gap-3">
@@ -100,10 +118,12 @@ const TelegramBlocker = ({ children }) => {
                         {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                         {copied ? "Link Copied!" : "Copy Link manually"}
                     </button>
-                    <p className="text-[10px] text-slate-400 font-bold mt-3 uppercase tracking-wider">
-                        Paste in Chrome or Safari
-                    </p>
                 </div>
+            </div>
+
+            {/* DEBUG RIBBON: This will help us find the issue if it persists */}
+            <div className="absolute bottom-0 left-0 w-full bg-black/80 text-white/50 text-[10px] p-2 break-all font-mono text-center z-0">
+                User Agent: {debugUA}
             </div>
         </div>
     );
