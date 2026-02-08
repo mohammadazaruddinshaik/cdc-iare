@@ -768,6 +768,7 @@ export default function MultiBatchAttendancePage() {
         );
     };
 
+    // --- MAIN RENDER (FIXED) ---
     return (
         <div className={`min-h-[100dvh] w-full flex items-center justify-center font-sans relative overflow-hidden transition-colors duration-500 ${view === 'scanner' ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
             <style>{`
@@ -780,10 +781,25 @@ export default function MultiBatchAttendancePage() {
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; } 
                 #qr-shaded-region { display: none !important; }
             `}</style>
-            {view !== 'scanner' && (<><div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div><div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div><div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div></>)}
+            
+            {view !== 'scanner' && (
+                <>
+                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-slate-50 to-slate-50 -z-10"></div>
+                    <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+                    <div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div>
+                </>
+            )}
+
             <div className="w-full h-full relative z-10 flex items-center justify-center">
-                {view === 'splash' && renderSplash()} {view === 'selection' && renderSelection()} {view === 'preview' && renderPreview()} {view === 'scanner' && renderScanner()} {view === 'summary' && renderSummary()}
+                {view === 'splash' && renderSplash()} 
+                {view === 'sem-select' && renderSemSelection()} 
+                {view === 'batches' && renderBatchSelection()} 
+                {view === 'courses' && renderCourseMapping()} 
+                {view === 'preview' && renderPreview()} 
+                {view === 'scanner' && renderScanner()} 
+                {view === 'summary' && renderSummary()}
             </div>
+
             {showExitModal && (<ConfirmModal message="Are you sure you want to end this session? All unsaved data will be lost." textToType="EXIT" isUsernameCheck={false} onConfirm={handleExitSession} onCancel={() => setShowExitModal(false)} validateNet={checkInternetConnection} />)}
             {showFinishConfirm && (<ConfirmModal message={`Submit attendance for ${scanCount} students across ${selectedBatches.length} batches?`} textToType={user?.username || "CONFIRM"} isUsernameCheck={true} onConfirm={submitAttendance} onCancel={() => setShowFinishConfirm(false)} validateNet={checkInternetConnection} />)}
             {showNetworkErrorModal && <NetworkErrorModal onClose={() => setShowNetworkErrorModal(false)} />}
