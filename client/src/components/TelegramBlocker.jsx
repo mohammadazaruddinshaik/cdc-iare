@@ -2,37 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Copy, Check, AlertTriangle } from 'lucide-react';
 
 const TelegramBlocker = ({ children }) => {
-    const [debugUA, setDebugUA] = useState('');
-    
-    // --- STATE INITIALIZATION ---
+    const [debugInfo, setDebugInfo] = useState({ ua: '', ref: '' });
+
+    // 1. Initialize State (Lazy Load)
     const [isBlocked, setIsBlocked] = useState(() => {
         if (typeof window === 'undefined') return false;
 
         const ua = window.navigator.userAgent.toLowerCase();
         const referrer = document.referrer ? document.referrer.toLowerCase() : '';
-
-        // 1. CHECK USER AGENT (Standard)
-        const isTelegramUA = ua.includes('telegram') || ua.includes('tg/');
         
-        // 2. CHECK REFERRER (New: Did they come from the app?)
-        // Telegram often leaves a referrer like "android-app://org.telegram.messenger"
-        const isTelegramReferrer = referrer.includes('telegram') || referrer.includes('org.telegram');
+        // --- DETECTION 1: The "Smoking Gun" (Referrer) ---
+        // If they came from the Telegram Android App, this is usually set.
+        const isTelegramReferrer = referrer.includes('android-app://org.telegram') || referrer.includes('telegram.org');
 
-        // 3. CHECK WEBVIEW SIGNATURES (Android)
-        // "wv" = WebView. "Version/" is also a strong indicator of WebView on Android.
+        // --- DETECTION 2: User Agent Checks ---
+        // "wv" = WebView (Standard Android WebView)
+        // "version/" = Most in-app browsers use this (Chrome usually doesn't)
+        // "telegram" = Explicit Telegram (iOS/Desktop)
+        const isTelegramUA = ua.includes('telegram') || ua.includes('tg/');
         const isAndroidWebView = /android/.test(ua) && (/wv/.test(ua) || /version\//.test(ua));
 
-        return isTelegramUA || isTelegramReferrer || isAndroidWebView;
+        return isTelegramReferrer || isTelegramUA || isAndroidWebView;
     });
 
     const [copied, setCopied] = useState(false);
 
-    // --- EFFECT: WATCH FOR LATE INJECTION ---
+    // --- EFFECT: Debugging & Poll for Proxy ---
     useEffect(() => {
-        setDebugUA(navigator.userAgent); // For debugging
+        setDebugInfo({ ua: navigator.userAgent, ref: document.referrer });
 
-        // Telegram sometimes injects its proxy object 1-2 seconds AFTER load.
-        // We poll for it briefly.
+        // Backup: Poll for the Telegram Proxy Object (sometimes injects late)
         const interval = setInterval(() => {
             if (window.TelegramWebviewProxy !== undefined) {
                 setIsBlocked(true);
@@ -40,16 +39,11 @@ const TelegramBlocker = ({ children }) => {
             }
         }, 500);
 
-        // Stop checking after 5 seconds to save resources
-        const timeout = setTimeout(() => clearInterval(interval), 5000);
-
-        return () => {
-            clearInterval(interval);
-            clearTimeout(timeout);
-        };
+        setTimeout(() => clearInterval(interval), 3000);
+        return () => clearInterval(interval);
     }, []);
 
-    // Lock Scroll if blocked
+    // Lock scroll if blocked
     useEffect(() => {
         if (isBlocked) {
             document.body.style.overflow = 'hidden';
@@ -67,48 +61,61 @@ const TelegramBlocker = ({ children }) => {
     };
 
     // --- RENDER ---
-
-    if (!isBlocked) {
-        // RENDER THE APP (But keep the debug ribbon visible for you to check)
+    
+    // 1. IF BLOCKED
+    if (isBlocked) {
         return (
-            <>
-                {children}
-                {/* KEEP THIS DEBUG BAR VISIBLE TEMPORARILY.
-                   Ask a student to send a screenshot of this bar if it STILL fails.
-                */}
-                <div style={{
-                    position: 'fixed', bottom: 0, left: 0, right: 0, 
-                    background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: '10px', 
-                    padding: '8px', zIndex: 99999, pointerEvents: 'none', textAlign: 'center'
-                }}>
-                    DEBUG: {debugUA} | Ref: {document.referrer}
+            <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300 font-sans min-h-[100dvh] overflow-hidden overscroll-none touch-none">
+                <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border-4 border-rose-100 relative overflow-hidden z-10">
+                    <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-rose-100">
+                        <AlertTriangle className="w-10 h-10 text-rose-500 animate-pulse" />
+                    </div>
+
+                    <h1 className="text-2xl font-black text-slate-900 mb-2">Use Chrome Browser</h1>
+                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">
+                        Telegram's built-in browser breaks the camera.
+                    </p>
+
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6 text-left text-xs text-slate-600">
+                        1. Tap <strong className="text-slate-900">3 dots (⋮)</strong> top right.<br/>
+                        2. Select <strong className="text-slate-900">Open in Chrome</strong>.
+                    </div>
+
+                    <button onClick={handleCopyLink} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-base shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                        {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                        {copied ? "Link Copied" : "Copy Link"}
+                    </button>
                 </div>
-            </>
+            </div>
         );
     }
 
-    // BLOCK SCREEN
+    // 2. IF NOT BLOCKED (Render App + Safety CSS + Debug Bar)
     return (
-        <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300 font-sans min-h-[100dvh] overflow-hidden overscroll-none touch-none">
-            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border-4 border-rose-100 relative overflow-hidden z-10">
-                <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-rose-100">
-                    <AlertTriangle className="w-10 h-10 text-rose-500 animate-pulse" />
-                </div>
+        <>
+            {/* SAFETY CSS: If detection fails, this FORCES the camera to look correct */}
+            <style>{`
+                #qr-reader video { 
+                    object-fit: cover !important; 
+                    width: 100% !important; 
+                    height: 100% !important; 
+                }
+            `}</style>
+            
+            {children}
 
-                <h1 className="text-2xl font-black text-slate-900 mb-2">Browser Not Supported</h1>
-                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">
-                    Please open in Chrome to use the Camera.
-                </p>
-
-                <div className="relative group">
-                    <button onClick={handleCopyLink} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-base shadow-lg active:scale-95 flex items-center justify-center gap-2">
-                        {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                        {copied ? "Copied!" : "Copy Link"}
-                    </button>
-                    <p className="text-[10px] text-slate-400 font-bold mt-3 uppercase tracking-wider">Paste in Chrome</p>
-                </div>
+            {/* DEBUG BAR: Only visible if detection FAILS. 
+                If you still see the app in Telegram, send me a screenshot of this bar. */}
+            <div style={{
+                position: 'fixed', bottom: 0, left: 0, right: 0, 
+                background: 'rgba(0,0,0,0.9)', color: '#00ff00', fontSize: '10px', 
+                padding: '12px', zIndex: 999999, fontFamily: 'monospace', 
+                textAlign: 'center', pointerEvents: 'none', borderTop: '1px solid #004400'
+            }}>
+                UA: {debugInfo.ua.substring(0, 50)}... <br/>
+                REF: {debugInfo.ref || 'None'}
             </div>
-        </div>
+        </>
     );
 };
 
