@@ -72,7 +72,7 @@ const CircularProgress = ({ percentage, size = 140, strokeWidth = 10, label = "T
     );
 };
 
-// UPDATED: Removed overlay logic to prevent conflict
+// UPDATED: Simplified Overlay (Countdown logic moved to main render to avoid overlap)
 const ScannerOverlay = ({ cooldown }) => (
     <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
         {/* Laser Animation */}
@@ -163,7 +163,7 @@ const NetworkErrorModal = ({ onClose }) => (
     </div>
 );
 
-// UPDATED: Modal fixed to top for mobile compatibility
+// UPDATED: Fixed position (top) to allow keyboard use on mobile
 const ConfirmModal = ({ message, onConfirm, onCancel, textToType, isUsernameCheck, validateNet }) => {
     const [confirmInput, setConfirmInput] = useState('');
     const validationTarget = isUsernameCheck ? textToType : (textToType || "CONFIRM");
@@ -181,7 +181,6 @@ const ConfirmModal = ({ message, onConfirm, onCancel, textToType, isUsernameChec
     };
 
     return (
-        // KEY FIX: items-start + pt-20 moves modal to top
         <div className="fixed inset-0 z-[999] flex items-start justify-center p-4 overflow-y-auto pt-20 sm:items-center sm:pt-4">
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onCancel}></div>
             <div className="bg-white relative z-10 w-full max-w-sm rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 p-6 sm:p-8 border border-white/20 max-h-[85dvh] overflow-y-auto">
@@ -337,11 +336,13 @@ export default function MultiBatchAttendancePage() {
         // ... inside the useEffect for scanner ...
         const startScanner = async () => {
             try {
+                // FIXED: Dynamic Aspect Ratio for Laptop/Mobile Compatibility
+                const aspectRatio = window.innerWidth / window.innerHeight;
+
                 const config = { 
                     fps: 30, 
-                    // REMOVE the aspectRatio line below
-                    // aspectRatio: window.innerWidth < 768 ? 0.75 : 1.777, 
-                    qrbox: { width: 250, height: 250 } 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: aspectRatio 
                 }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
             } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
@@ -436,14 +437,22 @@ export default function MultiBatchAttendancePage() {
             } else throw new Error();
         } catch (error) {
             setScanResult({ rollNumber: 'INVALID', message: 'Unknown QR Format', type: 'error' });
-            setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); processingRef.current = false; }, 2000);
+            setTimeout(() => { 
+                setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
+                setIsPaused(false); 
+                processingRef.current = false; 
+            }, 2000);
             return;
         }
 
         if (roll) {
             if (scannedData.has(roll)) {
                 setScanResult({ rollNumber: roll, message: 'Already Scanned', type: 'warning' });
-                setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); processingRef.current = false; }, 2500);
+                setTimeout(() => { 
+                    setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
+                    setIsPaused(false); 
+                    processingRef.current = false; 
+                }, 2500);
             } 
             else if (validStudentMap.has(roll)) {
                 const studentBatch = validStudentMap.get(roll);
@@ -458,7 +467,11 @@ export default function MultiBatchAttendancePage() {
             } 
             else {
                 setScanResult({ rollNumber: roll, message: 'Not in selected batches', type: 'error' });
-                setTimeout(() => { setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); setIsPaused(false); processingRef.current = false; }, 3000);
+                setTimeout(() => { 
+                    setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' }); 
+                    setIsPaused(false); 
+                    processingRef.current = false; 
+                }, 3000);
             }
         }
     }, [isPaused, cooldown, scannedData, validStudentMap]);
@@ -673,9 +686,9 @@ export default function MultiBatchAttendancePage() {
             </div>
             
             {/* Camera Area - Flex Grow to fill space */}
-            {/* FIX: Increased max height to 75vh for mobile */}
+            {/* FIX: Reduced max height to 50vh for mobile */}
             <div className="flex flex-col items-center justify-start flex-1 gap-2 sm:gap-4 relative z-10 min-h-0">
-                <div className="relative w-full flex-1 min-h-0 max-h-[75vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
+                <div className="relative w-full flex-1 min-h-0 max-h-[50vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
                     <ScannerOverlay cooldown={cooldown} />
                     <div id="qr-reader" className="w-full h-full object-cover"></div>
                     {isPaused && scanResult.message && (

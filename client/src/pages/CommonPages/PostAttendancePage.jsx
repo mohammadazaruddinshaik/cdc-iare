@@ -71,7 +71,6 @@ const CircularProgress = ({ percentage, size = 160, strokeWidth = 12 }) => {
     );
 };
 
-// UPDATED: Removed the cooldown overlay from here to avoid Z-Index conflict
 const ScannerOverlay = ({ cooldown }) => (
     <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-[2rem]">
         {/* Laser Animation (Only when NOT in cooldown) */}
@@ -147,7 +146,6 @@ const NetworkErrorModal = ({ onClose }) => (
     </div>
 );
 
-// UPDATED: Modal is now positioned at the TOP (items-start + pt-20) to avoid keyboard overlap
 const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping, validationString, validateNet }) => {
     const [confirmInput, setConfirmInput] = useState('');
     const validationTarget = requireTyping ? "EXIT" : (validationString || "CONFIRM");
@@ -164,7 +162,6 @@ const ConfirmModal = ({ message, onConfirm, onCancel, requireTyping, validationS
     };
 
     return (
-        // KEY FIX HERE: "items-start pt-20" moves it to top on mobile. "sm:items-center" keeps it centered on desktop.
         <div className="fixed inset-0 z-[999] flex items-start justify-center p-4 overflow-y-auto pt-20 sm:items-center sm:pt-4">
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onCancel}></div>
             <div className="bg-white relative z-10 w-full max-w-sm rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 p-6 sm:p-8 border border-white/20 max-h-[85dvh] overflow-y-auto">
@@ -317,14 +314,13 @@ export default function PostAttendancePage() {
         }
     }, [view]);
 
-    // UPDATED: Cooldown Timer Logic
+    // Cooldown Timer
     useEffect(() => {
         let timer;
         if (cooldown > 0) {
             timer = setInterval(() => {
                 setCooldown((prev) => {
                     if (prev <= 1) {
-                        // When timer hits 0, unlock scanner
                         setScanResult({ rollNumber: null, message: 'Align QR Code', type: 'info' });
                         setIsPaused(false);
                         processingRef.current = false;
@@ -371,10 +367,13 @@ export default function PostAttendancePage() {
         const scanner = new Html5Qrcode('qr-reader');
         const startScanner = async () => {
             try {
+                // FIXED: Dynamic Aspect Ratio for Laptop/Mobile Compatibility
+                const aspectRatio = window.innerWidth / window.innerHeight;
+                
                 const config = { 
                     fps: 30, 
-                    // aspectRatio REMOVED to fix camera stretching
-                    qrbox: { width: 250, height: 250 } 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: aspectRatio 
                 }; 
                 await scanner.start({ facingMode: 'environment' }, config, (decoded) => scanCallback.current?.(decoded), () => {});
             } catch (err) { if (mounted) setCameraError("Camera permission denied."); }
@@ -402,7 +401,6 @@ export default function PostAttendancePage() {
     const handleCancelExit = () => { setShowExitModal(false); toggleFullScreen('enter'); };
     const handleCancelFinish = () => { setShowFinishConfirm(false); toggleFullScreen('enter'); };
 
-    // UPDATED: Handle Scan with 3s Timer
     const handleScan = useCallback((text) => {
         if (processingRef.current || isPaused || cooldown > 0) return;
         processingRef.current = true;
@@ -556,7 +554,8 @@ export default function PostAttendancePage() {
             
             {/* Camera Area - Flex Grow to fill space */}
             <div className="flex flex-col items-center justify-start flex-1 gap-2 sm:gap-4 relative z-10 min-h-0">
-                <div className="relative w-full flex-1 min-h-0 max-h-[75vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
+                {/* MODIFIED: Reduced max-height to 50vh for mobile (better visibility of controls), auto height for desktop */}
+                <div className="relative w-full flex-1 min-h-0 max-h-[50vh] sm:max-h-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-[4px] sm:border-[6px] border-slate-800">
                     <ScannerOverlay cooldown={cooldown} />
                     <div id="qr-reader" className="w-full h-full object-cover"></div>
                     {isPaused && scanResult.message && (
