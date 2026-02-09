@@ -154,6 +154,7 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                 github: currentHandles.github || ''
             });
             setApiMessage({ type: '', text: '' });
+            setIsLoading(false); // --- FIX 1: Reset loading state when modal opens ---
         }
     }, [isOpen, currentHandles]);
 
@@ -188,6 +189,7 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                 setTimeout(() => {
                     onUpdateSuccess(result.codingProfile);
                     onClose();
+                    setIsLoading(false); // Ensure loading is off after close
                 }, 1000);
             } else {
                 setIsLoading(false);
@@ -206,11 +208,12 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                 <div className="flex justify-between items-start mb-8">
                     <div>
                         <h2 className="text-2xl font-black text-gray-900 tracking-tight">Coding Profiles</h2>
-                        <p className="text-gray-500 text-sm mt-1 font-medium">  Link platforms to view activity and rankings.</p>
+                        <p className="text-gray-500 text-sm mt-1 font-medium">Link platforms to view activity and rankings.</p>
                     </div>
                     <button onClick={onClose} className="p-2 -mr-2 -mt-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X size={20} />
                     </button>
+                    
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -234,18 +237,15 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                                         placeholder={platform.placeholder}
                                         className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-14 pr-4 py-3 text-gray-900 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all font-mono"
                                     />
-                                    {handles[platform.id] && (
-                                        <div className="absolute right-3 text-green-500">
-                                            <CheckCircle size={16} />
-                                        </div>
-                                    )}
+                                    {/* --- FIX 2: Tick box removed from here --- */}
                                 </div>
                             </div>
                         ))}
                     </div>
+                                        <p className="text-gray-500 text-sm mt-1 font-medium">Note : Newly updated handles will be reflected in the leaderboard every Wednesday.</p>
+
 
                     {apiMessage.text && <StatusMessage type={apiMessage.type} message={apiMessage.text} />}
-
                     <div className="flex gap-3 pt-6 mt-2">
                         <button type="button" onClick={onClose} className="flex-1 py-3.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 border border-gray-200 transition-colors font-bold text-sm" disabled={isLoading}>
                             Cancel
@@ -254,6 +254,7 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             {isLoading ? 'Saving...' : 'Save Profiles'}
                         </button>
+                        
                     </div>
                 </form>
             </div>

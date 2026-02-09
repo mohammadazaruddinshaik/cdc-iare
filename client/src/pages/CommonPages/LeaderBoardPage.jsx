@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
     Search, LayoutGrid, List, 
     ChevronLeft, ChevronRight, X, User, Filter,
-    Download, FileText, Image, Loader2, FileDown
+    Download, Loader2
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
@@ -21,54 +21,41 @@ const ASSETS = {
     hackerrank: null
 };
 
-// --- CUSTOM HOOKS (Industry Standard) ---
+// --- CACHE CONFIGURATION ---
+const CACHE_KEY = 'LEADERBOARD_DATA_V1';
+const CACHE_DURATION = 15 * 60 * 1000; // 15 Minutes
 
-/**
- * useMediaQuery
- * Performance optimized: Uses matchMedia listener instead of resize event.
- * Prevents re-renders when mobile address bar retracts on scroll.
- */
+// --- CUSTOM HOOKS ---
 const useMediaQuery = (query) => {
     const [matches, setMatches] = useState(false);
-
     useEffect(() => {
         const media = window.matchMedia(query);
-        if (media.matches !== matches) {
-            setMatches(media.matches);
-        }
+        if (media.matches !== matches) setMatches(media.matches);
         const listener = () => setMatches(media.matches);
         media.addEventListener('change', listener);
         return () => media.removeEventListener('change', listener);
     }, [matches, query]);
-
     return matches;
 };
 
-/**
- * useSearchDebounce
- * Returns both the debounced value AND a loading state.
- */
 function useSearchDebounce(value, delay = 300) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
-        if (value !== debouncedValue) {
-            setIsSearching(true);
-        }
-        
+        if (value !== debouncedValue) setIsSearching(true);
         const handler = setTimeout(() => {
             setDebouncedValue(value);
             setIsSearching(false);
         }, delay);
-
         return () => clearTimeout(handler);
     }, [value, delay, debouncedValue]);
 
     return { debouncedValue, isSearching };
 }
 
-// --- CONFIGURATION ---
+// --- STYLES & SUB-COMPONENTS ---
+
 const PODIUM_STYLES = {
     1: {
         wrapper: 'order-2 z-20 -mt-2 lg:-mt-4 scale-100 lg:scale-105', 
@@ -103,10 +90,8 @@ const BRAND_STYLES = {
     github: { border: 'border-white/20', bg: 'bg-white/5 hover:bg-white/10', text: 'text-slate-200' },
 };
 
-// --- MEMOIZED COMPONENTS ---
-
-const SkeletonRow = () => (
-    <div className="h-20 w-full bg-[#0F172A]/60 border border-white/5 rounded-xl animate-pulse flex items-center px-4 gap-4">
+const SkeletonRow = React.memo(() => (
+    <div className="h-20 w-full bg-[#0F172A]/60 border border-white/5 rounded-xl animate-pulse flex items-center px-4 gap-4 transform-gpu">
         <div className="w-8 h-8 bg-slate-700/30 rounded-full"></div>
         <div className="w-10 h-10 bg-slate-700/30 rounded-full shrink-0"></div>
         <div className="flex-1 space-y-2">
@@ -115,17 +100,17 @@ const SkeletonRow = () => (
         </div>
         <div className="w-16 h-6 bg-slate-700/30 rounded"></div>
     </div>
-);
+));
 
 const ListRankBadge = React.memo(({ rank }) => {
-    if (rank > 3) return <span className="text-sm font-mono font-bold text-slate-500 w-8 text-center">#{rank}</span>;
+    if (rank > 3) return <span className="text-sm font-mono font-bold text-slate-500 w-8 text-center block">#{rank}</span>;
     const colors = {
         1: 'border-yellow-500 text-yellow-400 bg-yellow-500/10 shadow-[0_0_10px_rgba(234,179,8,0.2)]',
         2: 'border-slate-400 text-slate-300 bg-slate-400/10 shadow-[0_0_10px_rgba(148,163,184,0.1)]',
         3: 'border-orange-500 text-orange-400 bg-orange-500/10 shadow-[0_0_10px_rgba(249,115,22,0.1)]'
     };
     return (
-        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm ${colors[rank]}`}>
+        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm shrink-0 ${colors[rank]}`}>
             {rank}
         </div>
     );
@@ -157,21 +142,20 @@ const StudentAvatar = React.memo(({ rollNo, size = "md", rank }) => {
 
     return (
         <div className={`relative ${sizeClasses[size]} flex-shrink-0`}>
-            <div className={`relative w-full h-full rounded-full p-[2px] ring-2 ${ringColor} bg-[#071225] overflow-hidden shadow-2xl z-10 transition-all duration-300`}>
+            <div className={`relative w-full h-full rounded-full p-[2px] ring-2 ${ringColor} bg-[#071225] overflow-hidden shadow-2xl z-10`}>
                 {!error ? (
                     <>
-                        {!imgLoaded && (
-                            <div className="absolute inset-0 bg-slate-800 animate-pulse z-20 flex items-center justify-center">
-                                <User size={size === 'sm' ? 12 : 16} className="text-slate-600 opacity-50" />
-                            </div>
-                        )}
+                        <div className={`absolute inset-0 bg-slate-800 flex items-center justify-center transition-opacity duration-500 ${imgLoaded ? 'opacity-0' : 'opacity-100'}`}>
+                            <User size={size === 'sm' ? 12 : 16} className="text-slate-600 opacity-50" />
+                        </div>
                         <img 
                             src={imgSrc} 
                             alt="Student" 
                             loading="lazy"
+                            decoding="async"
                             onLoad={() => setImgLoaded(true)}
                             onError={() => setError(true)} 
-                            className={`w-full h-full object-cover rounded-full transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                            className={`w-full h-full object-cover rounded-full transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
                         />
                     </>
                 ) : (
@@ -189,6 +173,7 @@ const BrandTile = React.memo(({ type, score, url, compact = false }) => {
     const assetSrc = ASSETS[type];
     const numericScore = score ? parseInt(score, 10) : 0;
     const displayScore = isNaN(numericScore) ? 0 : numericScore;
+    
     const Container = url ? 'a' : 'div';
     const containerProps = url 
         ? { href: url, target: "_blank", rel: "noopener noreferrer", className: "block h-full hover:opacity-80 transition-opacity cursor-pointer" }
@@ -204,7 +189,7 @@ const BrandTile = React.memo(({ type, score, url, compact = false }) => {
             `}>
                 <div className="shrink-0 flex items-center justify-center">
                     {assetSrc ? (
-                        <img src={assetSrc} alt={type} loading="lazy" className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} object-contain opacity-90`} />
+                        <img src={assetSrc} alt={type} loading="lazy" width={16} height={16} className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} object-contain opacity-90`} />
                     ) : (
                         <div className="w-3 h-3 rounded-full bg-white/10" />
                     )}
@@ -265,37 +250,93 @@ const HeroCard = React.memo(({ coder, rank }) => {
     );
 });
 
-// --- FOOTER (Strictly Optimized) ---
-const StudentStickyFooter = React.memo(({ myData }) => {
-    const [isVisible, setIsVisible] = useState(false);
-    const visibleRef = useRef(false); // Ref to track value without re-rendering logic
+// --- NEW MEMOIZED COMPONENT FOR ROW ---
+// This is the key fix. By extracting this, we ensure individual rows don't re-render 
+// unless their specific props change, even if the parent re-renders.
+const StudentRow = React.memo(({ coder, isMobile, viewMode, isMe }) => {
+    return (
+        <div 
+            className={`
+                relative bg-[#0F172A]/60 backdrop-blur-md border border-white/5 rounded-xl transition-all duration-300 group transform-gpu
+                ${viewMode === 'grid' && !isMobile 
+                    ? 'p-5 flex flex-col items-center hover:-translate-y-1 hover:shadow-xl hover:border-blue-500/20' 
+                    : 'p-3 lg:px-8 lg:py-3 hover:bg-gradient-to-r hover:from-[#1E293B] hover:to-[#0F172A] hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/10 hover:scale-[1.005]'
+                }
+                ${isMe ? 'ring-1 ring-blue-500/50 bg-blue-500/5' : ''}
+            `}
+        >
+            {isMobile ? (
+                <div className="flex items-center justify-between gap-3 p-1">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="font-mono font-bold text-slate-500 text-sm w-6 text-center">#{coder.rank}</span>
+                        <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="sm" />
+                        <div className="min-w-0">
+                            <div className="font-bold text-white text-sm truncate">{coder.displayName}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">{coder.displayId}</div>
+                        </div>
+                    </div>
+                    <div className="shrink-0 text-right pl-2">
+                        <div className="font-black text-white text-base tracking-tight">
+                            {(coder.totalScore || 0).toLocaleString()}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                viewMode === 'list' ? (
+                    <div className="grid grid-cols-12 gap-6 items-center">
+                        <div className="col-span-1 flex justify-center"><ListRankBadge rank={coder.rank} /></div>
+                        <div className="col-span-4 flex items-center gap-4 pl-2">
+                            <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="md" />
+                            <div className="min-w-0">
+                                <h4 className="font-bold text-white text-base truncate group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-slate-300 transition-colors">{coder.displayId}</span>
+                                    <span className="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-blue-200 border border-white/10">{coder.batch}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-span-5 flex justify-center">
+                            <div className="grid grid-cols-4 gap-2 w-full max-w-lg">
+                                <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
+                                <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
+                                <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
+                                <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
+                            </div>
+                        </div>
+                        <div className="col-span-2 text-right pr-4">
+                            <span className="text-xl font-black text-white tracking-tighter tabular-nums group-hover:text-blue-200 transition-colors">{(coder.totalScore || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <div className="absolute top-4 left-4"><ListRankBadge rank={coder.rank} /></div>
+                        <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="lg" />
+                        <div className="mt-4 text-center w-full">
+                            <h4 className="font-bold text-white text-lg truncate px-1 group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
+                            <div className="flex justify-center gap-2 mt-2">
+                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-black/30 px-2 py-0.5 rounded border border-white/10">{coder.displayId}</span>
+                            </div>
+                        </div>
+                        <div className="w-full mt-4 space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
+                                <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
+                                <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
+                                <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
+                            </div>
+                            <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase">Total</span>
+                                <span className="text-xl font-black text-white">{(coder.totalScore || 0).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </>
+                )
+            )}
+        </div>
+    );
+});
 
-    useEffect(() => {
-        let rafId;
-        
-        const handleScroll = () => {
-            if (!rafId) {
-                rafId = requestAnimationFrame(() => {
-                    const currentScroll = window.scrollY;
-                    const shouldBeVisible = currentScroll > 100;
-
-                    // STRICT CHECK: Only update state if it actually changed
-                    if (shouldBeVisible !== visibleRef.current) {
-                        visibleRef.current = shouldBeVisible;
-                        setIsVisible(shouldBeVisible);
-                    }
-                    rafId = null;
-                });
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (rafId) cancelAnimationFrame(rafId);
-        };
-    }, []);
-
+const StudentStickyFooter = React.memo(({ myData, isVisible }) => {
     if (!myData) return null;
 
     return (
@@ -336,7 +377,8 @@ const StudentStickyFooter = React.memo(({ myData }) => {
     );
 });
 
-// --- MAIN COMPONENT ---
+// --- MAIN PAGE ---
+
 const LeaderBoardPage = () => {
     const { user, logout } = useAuth();
     
@@ -351,12 +393,12 @@ const LeaderBoardPage = () => {
     const [rawSearchTerm, setRawSearchTerm] = useState('');
     const [selectedBatch, setSelectedBatch] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
-
-    // Optimized Hooks
-    // 1. Prevents scroll re-renders (Mobile)
-    const isMobile = useMediaQuery('(max-width: 768px)');
     
-    // 2. Handles search loading state automatically
+    // Footer Visibility
+    const [showStickyFooter, setShowStickyFooter] = useState(false);
+    const topSentinelRef = useRef(null);
+
+    const isMobile = useMediaQuery('(max-width: 768px)');
     const { debouncedValue: searchTerm, isSearching } = useSearchDebounce(rawSearchTerm, 350);
 
     const [pdfLimit, setPdfLimit] = useState('');
@@ -368,12 +410,45 @@ const LeaderBoardPage = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [currentPage]);
 
-    // --- DATA FETCHING ---
+    // --- INTERSECTION OBSERVER ---
+    useEffect(() => {
+        if (!myData) return;
+        const observer = new IntersectionObserver(([entry]) => {
+            setShowStickyFooter(!entry.isIntersecting);
+        }, { threshold: 0 });
+        if (topSentinelRef.current) observer.observe(topSentinelRef.current);
+        return () => observer.disconnect();
+    }, [myData]);
+
+    // --- SMART FETCH WITH CACHING ---
     useEffect(() => {
         if (!user) return; 
-        const fetchData = async () => {
+
+        const loadData = async () => {
             try {
-                const start = Date.now();
+                // 1. Check Session Storage first
+                const cachedDataString = sessionStorage.getItem(CACHE_KEY);
+
+                if (cachedDataString) {
+                    try {
+                        const cached = JSON.parse(cachedDataString);
+                        const now = Date.now();
+                        // Check if cache is still valid (less than 15 mins old)
+                        if (cached.timestamp && (now - cached.timestamp < CACHE_DURATION)) {
+                            setAvailableBatches(cached.batches || ['All']);
+                            setAllCoders(cached.allCoders || []);
+                            setMyData(cached.myData);
+                            setInitialLoading(false);
+                            setAnimate(true);
+                            return; 
+                        }
+                    } catch (e) {
+                        console.error("Cache parse error", e);
+                        sessionStorage.removeItem(CACHE_KEY);
+                    }
+                }
+
+                // 2. If no valid cache, Fetch from Network
                 const url = `${import.meta.env.VITE_BASE_URL}/api/leaderboard`;
                 const res = await fetch(url, { method: 'GET', credentials: 'include' });
 
@@ -382,11 +457,10 @@ const LeaderBoardPage = () => {
                 
                 const data = await res.json();
                 
-                if (data.batches) setAvailableBatches(['All', ...data.batches.sort()]);
-
+                const batches = ['All', ...(data.batches || []).sort()];
                 const toTitleCase = (str) => str?.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'Student';
                 
-                const parsed = (data.AllCoders || []).map(c => ({
+                const parsedCoders = (data.AllCoders || []).map(c => ({
                     ...c,
                     displayName: toTitleCase(c.name),
                     displayId: c.rollno,
@@ -398,21 +472,33 @@ const LeaderBoardPage = () => {
                 .sort((a,b) => b.totalScore - a.totalScore)
                 .map((c, i) => ({...c, rank: i + 1}));
 
-                const delta = Date.now() - start;
-                if (delta < 800) await new Promise(r => setTimeout(r, 800 - delta));
+                const myPositionData = parsedCoders.find(c => c.rank === data.myPosition);
 
-                setAllCoders(parsed);
-                if (data.myPosition) setMyData(parsed.find(c => c.rank === data.myPosition));
+                // 3. Save to Session Storage
+                const cachePayload = {
+                    timestamp: Date.now(),
+                    batches: batches,
+                    allCoders: parsedCoders,
+                    myData: myPositionData
+                };
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(cachePayload));
 
-            } catch (e) { console.error("Fetch error:", e); } finally {
+                setAvailableBatches(batches);
+                setAllCoders(parsedCoders);
+                setMyData(myPositionData);
+
+            } catch (e) { 
+                console.error("Fetch error:", e); 
+            } finally {
                 setInitialLoading(false);
                 setTimeout(() => setAnimate(true), 100);
             }
         };
-        fetchData();
+
+        loadData();
     }, [user, logout]);
 
-    // --- MEMOIZED FILTERING ---
+    // --- FILTERING ---
     const filteredData = useMemo(() => {
         const lowerSearch = searchTerm.toLowerCase().trim();
         if (!lowerSearch && selectedBatch === 'All') return allCoders;
@@ -433,6 +519,7 @@ const LeaderBoardPage = () => {
 
     const totalPages = Math.ceil(effectiveData.length / itemsPerPage);
 
+    // --- DOWNLOAD HANDLER ---
     const handleDownload = async (actionType) => {
         if (downloadingType) return;
         setDownloadingType(actionType);
@@ -472,7 +559,9 @@ const LeaderBoardPage = () => {
     };
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans ${myData ? 'pb-24 sm:pb-32' : 'pb-10'}`}>
+        <div className={`min-h-[100dvh] bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] text-white font-sans ${myData ? 'pb-24 sm:pb-32' : 'pb-10'}`}>
+            <div ref={topSentinelRef} className="absolute top-0 w-full h-px opacity-0 pointer-events-none" />
+
             <div className="relative px-4 pt-4 pb-6 z-20">
                 <Header animate={animate} />
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4"></div>
@@ -534,7 +623,6 @@ const LeaderBoardPage = () => {
                                     ${isMobile ? 'flex-1 mr-2' : 'w-64 focus-within:w-80 px-4 focus-within:bg-[#0F172A] focus-within:border-blue-500/50'}
                                 `}>
                                     <div className="text-slate-400 pointer-events-none">
-                                        {/* Show Spinner inside search bar if searching */}
                                         {isSearching ? <Loader2 size={16} className="animate-spin text-blue-400" /> : <Search size={16} />}
                                     </div>
                                     <input 
@@ -584,7 +672,6 @@ const LeaderBoardPage = () => {
 
                         {/* --- LIST / GRID CONTENT --- */}
                         <div className="animate-slide-up-fade min-h-[400px]">
-                            {/* SEARCH LOADING STATE */}
                             {isSearching ? (
                                 <div className="space-y-4">
                                     {[...Array(6)].map((_, i) => <SkeletonRow key={i} />)}
@@ -605,84 +692,13 @@ const LeaderBoardPage = () => {
                                     )}
 
                                     {paginatedData.map((coder) => (
-                                        <div key={coder.displayId} 
-                                            className={`
-                                                relative bg-[#0F172A]/60 backdrop-blur-md border border-white/5 rounded-xl transition-all duration-300 group
-                                                ${viewMode === 'grid' && !isMobile 
-                                                    ? 'p-5 flex flex-col items-center hover:-translate-y-1 hover:shadow-xl hover:border-blue-500/20' 
-                                                    : 'p-3 lg:px-8 lg:py-3 hover:bg-gradient-to-r hover:from-[#1E293B] hover:to-[#0F172A] hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/10 hover:scale-[1.005]'
-                                                }
-                                                ${myData?.displayId === coder.displayId ? 'ring-1 ring-blue-500/50 bg-blue-500/5' : ''}
-                                            `}
-                                        >
-                                            {isMobile ? (
-                                                <div className="flex items-center justify-between gap-3 p-1">
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        <span className="font-mono font-bold text-slate-500 text-sm w-6 text-center">#{coder.rank}</span>
-                                                        <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="sm" />
-                                                        <div className="min-w-0">
-                                                            <div className="font-bold text-white text-sm truncate">{coder.displayName}</div>
-                                                            <div className="text-[10px] text-slate-500 font-mono">{coder.displayId}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="shrink-0 text-right pl-2">
-                                                        <div className="font-black text-white text-base tracking-tight">
-                                                            {coder.totalScore.toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                viewMode === 'list' ? (
-                                                    <div className="grid grid-cols-12 gap-6 items-center">
-                                                        <div className="col-span-1 flex justify-center"><ListRankBadge rank={coder.rank} /></div>
-                                                        <div className="col-span-4 flex items-center gap-4 pl-2">
-                                                            <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="md" />
-                                                            <div className="min-w-0">
-                                                                <h4 className="font-bold text-white text-base truncate group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-slate-300 transition-colors">{coder.displayId}</span>
-                                                                    <span className="text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded text-blue-200 border border-white/10">{coder.batch}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-span-5 flex justify-center">
-                                                            <div className="grid grid-cols-4 gap-2 w-full max-w-lg">
-                                                                <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
-                                                                <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
-                                                                <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
-                                                                <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-span-2 text-right pr-4">
-                                                            <span className="text-xl font-black text-white tracking-tighter tabular-nums group-hover:text-blue-200 transition-colors">{(coder.totalScore || 0).toLocaleString()}</span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="absolute top-4 left-4"><ListRankBadge rank={coder.rank} /></div>
-                                                        <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="lg" />
-                                                        <div className="mt-4 text-center w-full">
-                                                            <h4 className="font-bold text-white text-lg truncate px-1 group-hover:text-blue-300 transition-colors">{coder.displayName}</h4>
-                                                            <div className="flex justify-center gap-2 mt-2">
-                                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-black/30 px-2 py-0.5 rounded border border-white/10">{coder.displayId}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="w-full mt-4 space-y-3">
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <BrandTile type="leetcode" score={coder.scores?.leetcode} url={coder.handles?.leetcode} />
-                                                                <BrandTile type="gfg" score={coder.scores?.gfg} url={coder.handles?.gfg} />
-                                                                <BrandTile type="codechef" score={coder.scores?.codechef} url={coder.handles?.codechef} />
-                                                                <BrandTile type="github" score={coder.scores?.github} url={coder.handles?.github} />
-                                                            </div>
-                                                            <div className="flex justify-between items-center pt-3 border-t border-white/10">
-                                                                <span className="text-[9px] text-slate-400 font-bold uppercase">Total</span>
-                                                                <span className="text-xl font-black text-white">{(coder.totalScore || 0).toLocaleString()}</span>
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )
-                                            )}
-                                        </div>
+                                        <StudentRow 
+                                            key={coder.displayId} 
+                                            coder={coder} 
+                                            isMobile={isMobile} 
+                                            viewMode={viewMode}
+                                            isMe={myData?.displayId === coder.displayId}
+                                        />
                                     ))}
                                 </div>
                             )}
@@ -715,7 +731,7 @@ const LeaderBoardPage = () => {
                 )}
             </main>
 
-            {myData && <StudentStickyFooter myData={myData} />}
+            {myData && <StudentStickyFooter myData={myData} isVisible={showStickyFooter} />}
         </div>
     );
 };
