@@ -298,7 +298,7 @@ const LoginPage = () => {
                         case 'admin': targetPath = '/admin/dashboard'; break;
                         case 'faculty': targetPath = '/faculty/dashboard'; break;
                         case 'student': targetPath = '/student/dashboard'; break;
-                        default: setError("Login successful, but role is unknown."); return;
+                        default: setError("Login Unsuccessful!"); return;
                     }
                     window.location.href = targetPath;
                 }, 1500);
@@ -311,7 +311,7 @@ const LoginPage = () => {
             
             let errorMessage = err.message || 'Network error. Please try again.';
             if (errorMessage === 'Failed to fetch' || errorMessage.includes("NetworkError")) {
-                errorMessage = "Something went wrong! Try again later.";
+                errorMessage = "You're currently offline. Please reconnect to continue.";
             }
             
             setError(errorMessage);
@@ -423,14 +423,14 @@ const LoginPage = () => {
                                     <label className="text-xs font-bold text-gray-500 ml-3 uppercase tracking-wider">Username</label>
                                     <div className="relative group">
                                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                                        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} onFocus={() => setActiveField('username')} onBlur={() => setActiveField(null)} className="w-full bg-white border-2 border-gray-100 rounded-full py-3 pl-10 pr-4 text-sm font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:shadow-lg transition-all outline-none" placeholder="Enter Username" />
+                                        <input type="text" value={username} onChange={(e) => setUsername(e.target.value.trim())} onFocus={() => setActiveField('username')} onBlur={() => setActiveField(null)} className="w-full bg-white border-2 border-gray-100 rounded-full py-3 pl-10 pr-4 text-sm font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:shadow-lg transition-all outline-none" placeholder="Enter Username" />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-500 ml-3 uppercase tracking-wider">Password</label>
                                     <div className="relative group">
-                                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setActiveField('password')} onBlur={() => setActiveField(null)} onPaste={(e) => { e.preventDefault(); return false; }} onCopy={(e) => { e.preventDefault(); return false; }} className="w-full bg-white border-2 border-gray-100 rounded-full py-3 pl-4 pr-10 text-sm font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:shadow-lg transition-all outline-none" placeholder="••••••••" />
+                                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value.trim())} onFocus={() => setActiveField('password')} onBlur={() => setActiveField(null)} onPaste={(e) => { e.preventDefault(); return false; }} onCopy={(e) => { e.preventDefault(); return false; }} className="w-full bg-white border-2 border-gray-100 rounded-full py-3 pl-4 pr-10 text-sm font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:shadow-lg transition-all outline-none" placeholder="••••••••" />
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors">{showPassword ? <Unlock size={18} /> : <Lock size={18} />}</button>
                                     </div>
                                 </div>

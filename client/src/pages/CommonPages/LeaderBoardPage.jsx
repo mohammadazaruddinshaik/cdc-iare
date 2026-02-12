@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
     Search, LayoutGrid, List, 
     ChevronLeft, ChevronRight, X, User, Filter,
@@ -250,9 +250,6 @@ const HeroCard = React.memo(({ coder, rank }) => {
     );
 });
 
-// --- NEW MEMOIZED COMPONENT FOR ROW ---
-// This is the key fix. By extracting this, we ensure individual rows don't re-render 
-// unless their specific props change, even if the parent re-renders.
 const StudentRow = React.memo(({ coder, isMobile, viewMode, isMe }) => {
     return (
         <div 
@@ -283,7 +280,7 @@ const StudentRow = React.memo(({ coder, isMobile, viewMode, isMe }) => {
                 </div>
             ) : (
                 viewMode === 'list' ? (
-                    <div className="grid grid-cols-12 gap-6 items-center">
+                    <div className="grid grid-cols-12 gap-6 items-center w-full">
                         <div className="col-span-1 flex justify-center"><ListRankBadge rank={coder.rank} /></div>
                         <div className="col-span-4 flex items-center gap-4 pl-2">
                             <StudentAvatar rollNo={coder.displayId} rank={coder.rank} size="md" />
@@ -406,9 +403,13 @@ const LeaderBoardPage = () => {
 
     const itemsPerPage = viewMode === 'list' ? 12 : 8;
 
-    useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [currentPage]);
+    // --- SCROLL TO TOP ---
+    const handlePageChange = useCallback((newPage) => {
+        setCurrentPage(newPage);
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 0);
+    }, []);
 
     // --- INTERSECTION OBSERVER ---
     useEffect(() => {
@@ -661,9 +662,9 @@ const LeaderBoardPage = () => {
                                     <>
                                         <div className="w-px h-6 bg-white/10"></div>
                                         <div className="flex items-center gap-1 px-2">
-                                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronLeft size={16} /></button>
+                                            <button onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronLeft size={16} /></button>
                                             <span className="text-xs font-mono font-bold text-slate-400 select-none">{currentPage}/{totalPages}</span>
-                                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronRight size={16} /></button>
+                                            <button onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage >= totalPages} className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"><ChevronRight size={16} /></button>
                                         </div>
                                     </>
                                 )}
@@ -708,7 +709,7 @@ const LeaderBoardPage = () => {
                             <div className="mt-10 flex justify-center pb-8">
                                 <div className="inline-flex bg-[#0F172A] rounded-full p-2 border border-white/10 shadow-lg ring-1 ring-white/5 gap-4 items-center">
                                     <button 
-                                        onClick={() => { setCurrentPage(p => Math.max(1, p-1)); }}
+                                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                                         disabled={currentPage === 1}
                                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
                                     >
@@ -718,7 +719,7 @@ const LeaderBoardPage = () => {
                                         <span className="text-white font-bold mr-2">{currentPage}</span> / <span className="ml-2">{totalPages}</span>
                                     </div>
                                     <button 
-                                        onClick={() => { setCurrentPage(p => Math.min(totalPages, p+1)); }}
+                                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                                         disabled={currentPage >= totalPages}
                                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white"
                                     >

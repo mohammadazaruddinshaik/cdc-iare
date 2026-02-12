@@ -55,7 +55,7 @@ const FacultyActionPage = () => {
 
     const actionItems = [
         {
-            title: "Scan for a Single Batch",
+            title: "Single-Batch QR Scan",
             icon: <QrCode className="w-8 h-8 text-blue-600" />,
             description: "Use the camera to scan QR codes for one specific batch in a session.",
             bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50",
@@ -89,15 +89,6 @@ const FacultyActionPage = () => {
             {/* Main Content */}
             <main className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
                 <div className="w-full max-w-6xl mx-auto">
-                    <div className={`text-center mb-8 md:mb-12 transition-all duration-1000 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: '200ms' }}>
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">
-                            Welcome, {user.name || (user.role === 'admin' ? "Administrator" : "Faculty")}
-                        </h1>
-                        <p className="mt-2 text-gray-500">
-                            {user.role === 'admin' ? "System Administration & Attendance Control" : "Select an action to proceed"}
-                        </p>
-                    </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                         {actionItems.map((item, index) => (
                             <div
@@ -107,10 +98,6 @@ const FacultyActionPage = () => {
                                 style={{ transitionDelay: `${400 + index * 150}ms` }}
                             >
                                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-full transition-transform duration-1000"></div>
-
-                                <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-white/60 rounded-2xl shadow-md backdrop-blur-sm transform group-hover:rotate-12 transition-transform duration-300 mb-4">
-                                    {item.icon}
-                                </div>
 
                                 <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-2">{item.title}</h3>
                                 
