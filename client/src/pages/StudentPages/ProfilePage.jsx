@@ -242,7 +242,6 @@ const UpdateHandlesModal = ({ isOpen, onClose, currentHandles, onUpdateSuccess }
                             </div>
                         ))}
                     </div>
-                                        <p className="text-gray-500 text-sm mt-1 font-medium">Note : Newly updated handles will be reflected in the leaderboard every Wednesday.</p>
 
 
                     {apiMessage.text && <StatusMessage type={apiMessage.type} message={apiMessage.text} />}
