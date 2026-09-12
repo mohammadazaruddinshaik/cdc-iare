@@ -6,12 +6,13 @@ import {
     LogIn, User, Linkedin, Github,  Lock, Unlock,
     QrCode, Trophy, CheckCircle, 
     Battery, Wifi, Signal, Terminal, ScanLine, Server, Loader2, ChevronDown,
-    Handshake, XCircle, X, Info, Building2
+    Handshake, XCircle, X, Info, Building2, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import IARELogo from '../../assets/logo.png';
 import AzarImg from '../../assets/azaruddin.png';
+import PadmajaImg from '../../assets/IARE10209_0.png';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 const EncDec_SECRET_KEY = import.meta.env.VITE_ENC_KEY; 
@@ -51,32 +52,108 @@ const decryptData = (ciphertext) => {
 const teamMentor = {
     name: 'Dr. B Padmaja',
     role: 'Advisor',
-    image: 'https://iare.irins.org/profile_images/217071.jpg',
+    image: PadmajaImg,
 };
 
 const teamDevelopers = [
     {
         name: 'Burugu Sai Nitin',
-        role: 'Software Engineer',
+        role: 'Student Developer',
         image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66F6/23951A66F6.jpg',
         linkedin: 'https://www.linkedin.com/in/burugu-sai-nitin/',
         github: 'https://github.com/Immnitin'
     },
     {
         name: 'Shaik Mohammad Azaruddin',
-        role: 'Software Engineer',
+        role: 'Student Developer',
         image: AzarImg,
         linkedin: 'https://www.linkedin.com/in/mohammadazaruddinshaik/',
         github: 'https://github.com/mohammadazaruddinshaik'
     },
     {
         name: 'Tavva Sandeep Kumar Reddy',
-        role: 'Software Engineer',
+        role: 'Student Developer',
         image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66H0/23951A66H0.jpg',
         linkedin: 'https://www.linkedin.com/in/tavva-sandeep-kumar-rddy-705966355/',
         github: 'https://github.com/SandeepReddy100'
     },
 ];
+
+const teamMembers = [
+    {
+        name: 'Dr. B Padmaja',
+        role: 'Advisor',
+        image: PadmajaImg,
+        type: 'advisor',
+    },
+    {
+        name: 'Burugu Sai Nitin',
+        role: 'Student Developer',
+        image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66F6/23951A66F6.jpg',
+        linkedin: 'https://www.linkedin.com/in/burugu-sai-nitin/',
+        github: 'https://github.com/Immnitin',
+        type: 'developer',
+    },
+    {
+        name: 'Shaik Mohammad Azaruddin',
+        role: 'Student Developer',
+        image: AzarImg,
+        linkedin: 'https://www.linkedin.com/in/mohammadazaruddinshaik/',
+        github: 'https://github.com/mohammadazaruddinshaik',
+        type: 'developer',
+    },
+    {
+        name: 'Tavva Sandeep Kumar Reddy',
+        role: 'Student Developer',
+        image: 'https://iare-data.s3.ap-south-1.amazonaws.com/uploads/STUDENTS/23951A66H0/23951A66H0.jpg',
+        linkedin: 'https://www.linkedin.com/in/tavva-sandeep-kumar-rddy-705966355/',
+        github: 'https://github.com/SandeepReddy100',
+        type: 'developer',
+    },
+];
+
+const ContributorsPreview = ({ onNavigate }) => (
+    <div className="mt-8 border-t border-gray-100 pt-5">
+        <button
+            type="button"
+            onClick={onNavigate}
+            className="group -mx-3 flex w-full flex-col gap-2 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            aria-label={`Meet the team — ${teamMembers.length} contributors including an advisor. Scroll to contributor section.`}
+        >
+            <span className="flex min-w-0 items-center gap-3">
+                <span className="flex shrink-0 -space-x-2">
+                    {teamMembers.map((member) => (
+                        <img
+                            key={member.name}
+                            src={member.image}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-7 w-7 rounded-full object-cover ring-2 ring-white"
+                        />
+                    ))}
+                </span>
+
+                <span className="block min-w-0">
+                    <span className="block text-xs font-semibold text-gray-700">
+                        Built &amp; maintained by the team
+                    </span>
+
+                    <span className="block text-[11px] text-gray-400">
+                        {teamMembers.length - 1} Student Developers • 1 Advisor
+                    </span>
+                </span>
+            </span>
+
+            <span className="ml-[calc(1.75rem+0.75rem)] flex shrink-0 items-center gap-1 text-xs font-semibold text-blue-600 transition-colors group-hover:text-indigo-600 sm:ml-0">
+                Meet the team
+                <ArrowRight
+                    size={13}
+                    className="transition-transform group-hover:translate-x-0.5"
+                />
+            </span>
+        </button>
+    </div>
+);
 
 
 // --- SUB-COMPONENTS ---
@@ -204,7 +281,7 @@ const MockPhoneScreen = ({ activeField }) => {
                     ) : (
                         <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="flex-1 flex flex-col p-4 pt-12 h-full justify-between">
                             <div className="flex justify-between items-center">
-                                <div><h2 className="text-white text-lg font-bold tracking-tight">Hi, User</h2><p className="text-gray-400 text-[10px] font-medium mt-0.5">CSE (AI & ML) • Sem 6</p></div>
+                                <div><h2 className="text-white text-lg font-bold tracking-tight">Hi, Student</h2><p className="text-gray-400 text-[10px] font-medium mt-0.5">CSE (AI & ML) • Sem 6</p></div>
                                 <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-md shadow-lg"><User size={14} className="text-white"/></div>
                             </div>
                             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-3 flex items-center justify-between shadow-xl shadow-blue-900/30 cursor-pointer hover:scale-[1.02] transition-transform mt-2">
@@ -250,6 +327,14 @@ const LoginPage = () => {
             } else {
                 setIsScrolled(false);
             }
+        }
+    };
+
+
+    const scrollToTeam = () => {
+        const teamSection = document.getElementById('meet-team');
+        if (teamSection) {
+            teamSection.scrollIntoView({ behavior: 'smooth' });
         }
     };
 
@@ -318,13 +403,6 @@ const LoginPage = () => {
             setActiveField('error');
             setIsLoading(false);
             setTimeout(() => { setActiveField(null); }, 2500);
-        }
-    };
-
-    const scrollToTeam = () => {
-        const teamSection = document.getElementById('meet-team');
-        if (teamSection && scrollContainerRef.current) {
-            teamSection.scrollIntoView({ behavior: 'smooth' });
         }
     };
 
@@ -450,22 +528,16 @@ const LoginPage = () => {
                                 </motion.button>
                             </form>
 
-                            <div className="mt-8 flex justify-center">
-    {/* HIGHLIGHTED SECTION */}
-    <motion.div 
-        onClick={scrollToTeam} 
-        className="flex flex-col items-center cursor-pointer group p-2" 
-        whileHover={{ y: 5 }}
-    >
-        {/* CHANGED: Text is now darker (gray-900), slightly larger (text-xs), and says "Developers" */}
-        <span className="text-xs font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-[0.15em] uppercase mb-1">
-    View Contributors
-        </span>
-        
-        {/* CHANGED: Icon is now darker (gray-500) so it is visible even without hovering */}
-        <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-blue-600 animate-bounce" />
-    </motion.div>
-</div>
+                            <div className="mt-2 flex justify-center">
+                                    <motion.div 
+                                        onClick={scrollToTeam} 
+                                        className="flex flex-col items-center cursor-pointer group p-2" 
+                                        whileHover={{ y: 5 }}
+                                    >        
+                                    <ContributorsPreview onNavigate={scrollToTeam} />
+                                    
+                                    </motion.div>
+                                </div>
                         </div>
                     </div>
                 </div>
