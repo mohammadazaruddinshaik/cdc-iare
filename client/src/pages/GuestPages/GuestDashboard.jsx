@@ -156,7 +156,7 @@ const GuestDashboardPage = () => {
 
         const fetchGuestData = async () => {
             try {
-                const response = await fetch(`${backendUrl}/api/guest/dashboard-data`, {
+                const response = await fetch(`${backendUrl}/api/guest_faculty/get-dashboard-data`, {
                     method: "GET",
                     credentials: "include"
                 });
