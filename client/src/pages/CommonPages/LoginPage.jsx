@@ -362,13 +362,13 @@ const LoginPage = () => {
             });
             
             const result = await response.json();
-            
             // --- DECRYPTION LOGIC ---
             let data = null;
             if (result.data) {
                 data = decryptData(result.data);
             } else if (result.error) {
                 const decryptedError = decryptData(result.error);
+                console.log(decryptedError)
                 throw new Error(decryptedError || result.error || 'Login failed.');
             }
 
@@ -376,20 +376,20 @@ const LoginPage = () => {
                 setActiveField('success');
                 
                 // REMOVED localStorage.setItem
-
                 setTimeout(() => {
                     let targetPath = '/';
                     switch (data.role) {
                         case 'admin': targetPath = '/admin/dashboard'; break;
                         case 'faculty': targetPath = '/faculty/dashboard'; break;
                         case 'student': targetPath = '/student/dashboard'; break;
+                        case 'guest_faculty': targetPath = '/guest/dashboard'; break;
                         default: setError("Login Unsuccessful!"); return;
                     }
                     window.location.href = targetPath;
                 }, 1500);
 
             } else {
-                throw new Error(data?.message || 'Unauthorized Access');
+                throw new Error(data?.message || 'Unauthorized');
             }
         } catch (err) {
             console.error('Login Process Error:', err);

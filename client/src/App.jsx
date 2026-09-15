@@ -6,7 +6,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorPage from './components/ErrorPage'; 
 import Loader from './components/Loader'; 
-// TelegramBlocker import removed
 
 // --- Eager Load (Load immediately) ---
 import LoginPage from './pages/CommonPages/LoginPage';
@@ -47,6 +46,11 @@ const StudentDashboard = lazy(() => import('./pages/StudentPages/StudentDashboar
 const StudentProfilePage = lazy(() => import('./pages/StudentPages/ProfilePage'));
 const LogsPage = lazy(() => import('./pages/StudentPages/LogsPage'));
 const InboxPage = lazy(() => import('./pages/StudentPages/AnnouncementsPage'));
+
+// 5. Guest Pages 
+const GuestDashboard = lazy(() => import('./pages/GuestPages/GuestDashboard'));
+const GuestSessionWiseReportPage = lazy(() => import('./pages/GuestPages/GuestSessionWiseReportPage'));
+
 
 /**
  * --- NetworkGuard ---
@@ -110,8 +114,8 @@ const AppRoutes = () => {
         
         <Route path="/timetable" element={<TimeTablePage />} />
 
-        {/* --- Shared Admin & Faculty Routes --- */}
-        <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty']} />}>
+        {/* --- Shared Admin, Faculty & Guest Routes --- */}
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'faculty', 'guest_faculty']} />}>
           <Route path="/post-attendance" element={<PostAttendance />} />
           <Route path="/post-attendance-multiple" element={<MultiBatchAttendancePage />} />
           <Route path="/mark-attendance" element={<FacultyMarkAttendancePage />} />
@@ -167,7 +171,16 @@ const AppRoutes = () => {
           <Route path="/inbox" element={<InboxPage />} />
         </Route>
 
-        {/* --- 404 Not Found --- */}
+        {/* --- Guest Only Routes --- */}
+        <Route element={<ProtectedRoute requiredRole="guest_faculty" />}>
+          <Route path="/guest/dashboard" element={
+            <NetworkGuard>
+              <GuestDashboard />
+            </NetworkGuard>
+          } />
+          <Route path="/guest/session-report" element={<GuestSessionWiseReportPage />} />
+        </Route>
+
         <Route path="*" element={<ErrorPage type="notfound" />} />
       </Route>
     </Routes>
@@ -198,7 +211,6 @@ function App() {
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      {/* TelegramBlocker removed */}
       <AuthProvider>
         {errorType ? (
           <ErrorPage type={errorType} onRetry={handleRetry} />
