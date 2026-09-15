@@ -156,7 +156,7 @@ const GuestDashboardPage = () => {
 
         const fetchGuestData = async () => {
             try {
-                const response = await fetch(`${backendUrl}/api/guest_faculty/get-dashboard-data`, {
+                const response = await fetch(`${backendUrl}/api/guest/dashboard-data`, {
                     method: "GET",
                     credentials: "include"
                 });
@@ -191,7 +191,7 @@ const GuestDashboardPage = () => {
         const morning = [];
         const afternoon = [];
 
-        if (apiData.attendanceSummary) {
+        if (apiData.attendanceSummary && Array.isArray(apiData.attendanceSummary)) {
             apiData.attendanceSummary.forEach(semGroup => {
                 // Handle Forenoon (Morning) Batches
                 if (semGroup.fnBatches && Array.isArray(semGroup.fnBatches)) {
@@ -202,7 +202,7 @@ const GuestDashboardPage = () => {
                             present: batch.presentCount,
                             total: batch.totalCount,
                             status: isPending ? 'pending' : 'marked',
-                            course: batch.course || ''
+                            course: batch.course || 'Unknown'
                         });
                     });
                 }
@@ -216,7 +216,7 @@ const GuestDashboardPage = () => {
                             present: batch.presentCount,
                             total: batch.totalCount,
                             status: isPending ? 'pending' : 'marked',
-                            course: batch.course || ''
+                            course: batch.course || 'Unknown'
                         });
                     });
                 }
@@ -239,7 +239,16 @@ const GuestDashboardPage = () => {
         };
     }, [apiData]);
 
-    // 3. Render
+    // 3. Helper to format faculty name dynamically
+    const getFormattedName = () => {
+        const rawName = apiData?.faculty?.name || '';
+        // Strips out "Master" and "Guest Faculty" to isolate the real name
+        let cleanName = rawName.replace(/master/i, '').replace(/guest\s*faculty/i, '').trim();
+        // Fallback in case the name was literally just "Master Guest Faculty"
+        return cleanName || 'Faculty';
+    };
+
+    // 4. Render
     if (isLoading) {
         return <Loader />;
     }
@@ -257,8 +266,6 @@ const GuestDashboardPage = () => {
         { title: "Today's Classes", icon: <Clock className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />, count: processedData.stats.todayClassesCount, description: "Scheduled sessions for today", bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", path: "/guest/schedule", actionText: "View Schedule" },
         { title: "Assigned Batches", icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />, count: processedData.stats.batchesCount, description: "Total student batches assigned", bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", path: "/guest/batches", actionText: "View Details" },
         { title: "Assigned Subjects", icon: <BookOpen className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />, count: processedData.stats.subjectsCount, description: "Courses you are handling", bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50", path: "/guest/subjects", actionText: "View Subjects" },
-        
-        // ---> UPDATED: Directly routes to the common post-attendance page <---
         { title: "Mark Attendance", icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />, description: "Update student attendance now", bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", path: "/post-attendance", actionText: "Mark Now" },
     ];
 
@@ -285,10 +292,9 @@ const GuestDashboardPage = () => {
         },
     ];
 
+    // Removed Batch Wise and Monthly reports
     const reportItems = [
-        { title: "Session Report", icon: <FileText className="w-6 h-6 text-red-600" />, path: '/session-report', bgColor: "bg-gradient-to-br from-red-100 via-red-50 to-pink-50" },
-        { title: "Batch Wise Report", icon: <FileText className="w-6 h-6 text-cyan-600" />, path: '/batch-report', bgColor: "bg-gradient-to-br from-cyan-100 via-cyan-50 to-teal-50" },
-        { title: "Monthly Report", icon: <FileText className="w-6 h-6 text-emerald-600" />, path: '/monthly-report', bgColor: "bg-gradient-to-br from-emerald-100 via-emerald-50 to-green-50" },
+        { title: "Session Report", icon: <FileText className="w-6 h-6 text-red-600" />, path: '/guest/session-report', bgColor: "bg-gradient-to-br from-red-100 via-red-50 to-pink-50" },
     ];
 
     return (
@@ -303,10 +309,16 @@ const GuestDashboardPage = () => {
                 <div className="px-4 sm:px-6 lg:px-8 relative z-10 pb-6 lg:pb-8 pt-2">
                     <Header animate={animate} />
                     
-                    {apiData.faculty?.name && (
+                    {/* Updated Welcome Section with Cleaned Name and Guest Suffix */}
+                    {apiData.faculty && (
                         <div className={`mt-2 mb-4 transition-all duration-1000 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
                             <p className="text-blue-200 text-sm font-medium">Welcome back,</p>
-                            <h1 className="text-2xl font-bold text-white">{apiData.faculty.name}</h1>
+                            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                                {getFormattedName()}
+                                <span className="text-[10px] uppercase tracking-wider font-bold bg-white/20 text-blue-100 px-2 py-1 rounded-md border border-white/20 shadow-sm">
+                                    Guest
+                                </span>
+                            </h1>
                         </div>
                     )}
 
@@ -335,7 +347,8 @@ const GuestDashboardPage = () => {
                         
                         <div>
                              <SectionHeader title="Download Reports" animate={animate} delay={600} />
-                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                             {/* Reduced grid layout width since we only have 1 report now */}
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                                 {reportItems.map((item, index) => (
                                     <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex items-center justify-between border border-white/20 relative overflow-hidden group min-h-[80px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${600 + index * 100}ms` }}>
                                         <div className="flex items-center relative z-10">
