@@ -60,10 +60,7 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const response = await api.get('/api/me');
-        
-        // --- THE FIX IS HERE ---
-        // Your backend sends { data: "encrypted_string" }
-        // So we need response.data.data
+      
         const encryptedContent = response.data.data || response.data;
 
         // 2. Decrypt
