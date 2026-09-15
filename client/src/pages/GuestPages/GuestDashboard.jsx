@@ -1,29 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, CalendarCheck, FileText, ArrowRight, AlertCircle, Clock, BookOpen, UserCheck } from 'lucide-react';
+import { 
+    Users, CalendarCheck, FileText, ArrowRight, 
+    AlertCircle, Clock, BookOpen, UserCheck, 
+    Building2, Mail, IdCard 
+} from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
 import Loader from '../../components/Loader';
 
 // --- Reusable UI Components ---
-
-const AnimatedNumber = ({ value }) => {
-    const [displayValue, setDisplayValue] = useState(0);
-
-    useEffect(() => {
-        let startTime = null;
-        const duration = 1500;
-        const animation = (currentTime) => {
-            if (!startTime) startTime = currentTime;
-            const progress = Math.min((currentTime - startTime) / duration, 1);
-            setDisplayValue(Math.floor(progress * value));
-            if (progress < 1) requestAnimationFrame(animation);
-        };
-        requestAnimationFrame(animation);
-    }, [value]);
-
-    return <span>{displayValue}</span>;
-};
 
 const CircularStats = ({ data, colorText, shadowColor, gradientId, gradientColors }) => {
     if (!Array.isArray(data) || data.length === 0) return null;
@@ -156,6 +142,7 @@ const GuestDashboardPage = () => {
 
         const fetchGuestData = async () => {
             try {
+                // Maintained the exact endpoint as requested
                 const response = await fetch(`${backendUrl}/api/guest_faculty/get-dashboard-data`, {
                     method: "GET",
                     credentials: "include"
@@ -227,24 +214,14 @@ const GuestDashboardPage = () => {
         }
 
         return {
-            stats: { 
-                todayClassesCount: apiData.todayClasses?.length || 0,
-                batchesCount: apiData.faculty?.batches_assigned?.length || 0,
-                subjectsCount: apiData.faculty?.subjects_assigned?.length || 0
-            },
-            sessions: { 
-                morning, 
-                afternoon 
-            }
+            sessions: { morning, afternoon }
         };
     }, [apiData]);
 
     // 3. Helper to format faculty name dynamically
     const getFormattedName = () => {
         const rawName = apiData?.faculty?.name || '';
-        // Strips out "Master" and "Guest Faculty" to isolate the real name
         let cleanName = rawName.replace(/master/i, '').replace(/guest\s*faculty/i, '').trim();
-        // Fallback in case the name was literally just "Master Guest Faculty"
         return cleanName || 'Faculty';
     };
 
@@ -255,18 +232,91 @@ const GuestDashboardPage = () => {
     
     if (error || !processedData) return (
         <div className="min-h-screen flex items-center justify-center">
-            <div className="bg-white p-8 rounded-lg shadow text-red-600">
-                Error: {error || 'No Data'} 
-                <button onClick={() => window.location.reload()} className="ml-4 underline text-blue-600">Retry</button>
+            <div className="bg-white p-8 rounded-lg shadow text-red-600 flex flex-col items-center gap-4">
+                <span className="font-semibold">Error: {error || 'No Data Available'}</span>
+                <button onClick={() => window.location.reload()} className="bg-red-50 text-red-700 px-4 py-2 rounded-md border border-red-200 hover:bg-red-100 transition-colors">Retry Connection</button>
             </div>
         </div>
     );
 
+    // Advanced Rendering logic for cards to show ACTUAL data
     const guestItems = [
-        { title: "Today's Classes", icon: <Clock className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />, count: processedData.stats.todayClassesCount, description: "Scheduled sessions for today", bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", path: "/guest/schedule", actionText: "View Schedule" },
-        { title: "Assigned Batches", icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />, count: processedData.stats.batchesCount, description: "Total student batches assigned", bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", path: "/guest/batches", actionText: "View Details" },
-        { title: "Assigned Subjects", icon: <BookOpen className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />, count: processedData.stats.subjectsCount, description: "Courses you are handling", bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50", path: "/guest/subjects", actionText: "View Subjects" },
-        { title: "Mark Attendance", icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />, description: "Update student attendance now", bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", path: "/post-attendance", actionText: "Mark Now" },
+        { 
+            title: "Today's Schedule", 
+            icon: <Clock className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />, 
+            bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", 
+            path: "/guest/schedule", 
+            actionText: "View Schedule",
+            renderContent: () => (
+                <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2">
+                    {apiData.todayClasses?.length > 0 ? (
+                        apiData.todayClasses.map((cls, i) => (
+                            <div key={i} className="flex justify-between items-center text-xs bg-white/60 p-2 rounded border border-white/50 shadow-sm">
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-blue-800">{cls.subject}</span>
+                                    <span className="text-[10px] text-blue-600 font-semibold">{cls.session} • Room {cls.roomNo}</span>
+                                </div>
+                                <span className="text-gray-600 font-medium bg-blue-100/50 px-2 py-1 rounded-md">{cls.startTime}</span>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="h-full flex items-center text-sm text-gray-500 italic">No classes scheduled today.</div>
+                    )}
+                </div>
+            )
+        },
+        { 
+            title: "Assigned Batches", 
+            icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />, 
+            bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", 
+            path: "/guest/batches", 
+            actionText: "View Details",
+            renderContent: () => (
+                <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-1.5 content-start">
+                    {apiData.faculty?.batches_assigned?.length > 0 ? (
+                        apiData.faculty.batches_assigned.map((batch, i) => (
+                            <span key={i} className="text-[11px] font-bold bg-green-200/50 text-green-800 px-2.5 py-1 rounded-md border border-green-300/50 shadow-sm flex items-center justify-center">
+                                {batch}
+                            </span>
+                        ))
+                    ) : (
+                        <div className="h-full flex items-center text-sm text-gray-500 italic">No batches assigned yet.</div>
+                    )}
+                </div>
+            )
+        },
+        { 
+            title: "Assigned Subjects", 
+            icon: <BookOpen className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />, 
+            bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50", 
+            path: "/guest/subjects", 
+            actionText: "View Subjects",
+            renderContent: () => (
+                <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-2 content-start">
+                    {apiData.faculty?.subjects_assigned?.length > 0 ? (
+                        apiData.faculty.subjects_assigned.map((sub, i) => (
+                            <span key={i} className="text-xs font-bold bg-orange-200/50 text-orange-800 px-3 py-1.5 rounded-md border border-orange-300/50 shadow-sm flex items-center justify-center">
+                                {sub}
+                            </span>
+                        ))
+                    ) : (
+                        <div className="h-full flex items-center text-sm text-gray-500 italic">No subjects assigned yet.</div>
+                    )}
+                </div>
+            )
+        },
+        { 
+            title: "Mark Attendance", 
+            icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />, 
+            bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", 
+            path: "/post-attendance", 
+            actionText: "Mark Now",
+            renderContent: () => (
+                <div className="mt-2 h-[90px] flex flex-col justify-center text-sm text-gray-700 leading-relaxed font-medium">
+                    <p>Access the attendance portal to mark status for your current and upcoming assigned sessions.</p>
+                </div>
+            )
+        },
     ];
 
     const sessionItems = [
@@ -292,53 +342,79 @@ const GuestDashboardPage = () => {
         },
     ];
 
-    // Removed Batch Wise and Monthly reports
     const reportItems = [
         { title: "Session Report", icon: <FileText className="w-6 h-6 text-red-600" />, path: '/guest/session-report', bgColor: "bg-gradient-to-br from-red-100 via-red-50 to-pink-50" },
     ];
 
     return (
         <div className="min-h-screen text-gray-800 font-sans bg-gradient-to-br from-[#F0F2F5] to-[#E5E7EB] overflow-x-hidden">
-             <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 20px; } @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+             <style>{`.custom-scrollbar::-webkit-scrollbar { width: 5px; } .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; } .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.15); border-radius: 10px; } @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
              
              <header className="bg-gradient-to-br from-[#071225] via-[#0A1B3A] to-[#071225] w-full rounded-bl-[1.5rem] rounded-br-[1.5rem] sm:rounded-bl-[2rem] sm:rounded-br-[2rem] relative overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
                     <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
                 </div>
+                
                 <div className="px-4 sm:px-6 lg:px-8 relative z-10 pb-6 lg:pb-8 pt-2">
                     <Header animate={animate} />
                     
-                    {/* Updated Welcome Section with Cleaned Name and Guest Suffix */}
+                    {/* Enhanced Data-Rich Welcome Section */}
                     {apiData.faculty && (
-                        <div className={`mt-2 mb-4 transition-all duration-1000 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
-                            <p className="text-blue-200 text-sm font-medium">Welcome back,</p>
-                            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <div className={`mt-4 mb-6 transition-all duration-1000 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+                            <p className="text-blue-200/80 text-sm font-medium mb-1 tracking-wide">Welcome back,</p>
+                            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                                 {getFormattedName()}
-                                <span className="text-[10px] uppercase tracking-wider font-bold bg-white/20 text-blue-100 px-2 py-1 rounded-md border border-white/20 shadow-sm">
+                                <span className="text-[10px] uppercase tracking-widest font-bold bg-white/10 text-blue-100 px-2.5 py-1 rounded-md border border-white/20 shadow-sm backdrop-blur-sm mt-1">
                                     Guest
                                 </span>
                             </h1>
+                            
+                            {/* Rich Data Header Subtitle */}
+                            <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-3 text-sm text-blue-100/90 font-medium bg-white/5 inline-flex p-2 rounded-lg border border-white/10 backdrop-blur-sm">
+                                <span className="flex items-center gap-1.5">
+                                    <IdCard className="w-4 h-4 opacity-70"/> {apiData.faculty.facultyid}
+                                </span>
+                                <span className="w-1.5 h-1.5 bg-blue-400/50 rounded-full"></span>
+                                <span className="flex items-center gap-1.5">
+                                    <Building2 className="w-4 h-4 opacity-70"/> {apiData.faculty.dept} Department
+                                </span>
+                                <span className="w-1.5 h-1.5 bg-blue-400/50 rounded-full"></span>
+                                <span className="flex items-center gap-1.5">
+                                    <Mail className="w-4 h-4 opacity-70"/> {apiData.faculty.email}
+                                </span>
+                            </div>
                         </div>
                     )}
 
-                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-3"></div>
+                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-4"></div>
                     
                     <section className="space-y-6 lg:space-y-8">
                         <div>
                             <SectionHeader title="Dashboard Overview" animate={animate} delay={300} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
                                 {guestItems.map((item, index) => (
-                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col border border-white/20 relative overflow-hidden group min-h-[140px] lg:min-h-[150px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${300 + index * 100}ms` }}>
+                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between border border-white/30 relative overflow-hidden group min-h-[170px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${300 + index * 100}ms` }}>
                                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000"></div>
-                                        <div className="flex items-start justify-between mb-2 relative z-10">
-                                            <h3 className="font-bold text-sm lg:text-base leading-tight pr-2">{item.title}</h3>
-                                            <div className="w-9 h-9 lg:w-10 lg:h-10 bg-white/40 rounded-lg lg:rounded-xl flex items-center justify-center shadow-md backdrop-blur-sm transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0">{item.icon}</div>
+                                        
+                                        <div className="w-full">
+                                            <div className="flex items-start justify-between mb-1 relative z-10">
+                                                <h3 className="font-bold text-sm lg:text-[15px] leading-tight text-gray-900">{item.title}</h3>
+                                                <div className="w-8 h-8 lg:w-9 lg:h-9 bg-white/50 rounded-lg flex items-center justify-center shadow-sm backdrop-blur-sm transform group-hover:rotate-6 transition-transform duration-300 flex-shrink-0">
+                                                    {item.icon}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Dynamic Rendered Content (Actual Data) */}
+                                            <div className="relative z-10 w-full">
+                                                {item.renderContent()}
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-gray-600 mb-3 h-8">{item.description}</p>
-                                        <div className="flex items-end justify-between mt-auto">
-                                            {item.count !== undefined ? <p className="text-2xl lg:text-3xl font-bold bg-gradient-to-br from-gray-800 to-gray-600 bg-clip-text text-transparent"><AnimatedNumber value={item.count} /></p> : <div />}
-                                            <div className="bg-gray-800 text-white font-bold py-1.5 px-3 rounded-md text-xs self-end shadow-md">{item.actionText}</div>
+
+                                        <div className="flex items-end justify-end mt-3 relative z-10 w-full">
+                                            <div className="bg-gray-800 text-white font-bold py-1.5 px-3 rounded-md text-xs shadow-md group-hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+                                                {item.actionText} <ArrowRight className="w-3 h-3" />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -347,16 +423,15 @@ const GuestDashboardPage = () => {
                         
                         <div>
                              <SectionHeader title="Download Reports" animate={animate} delay={600} />
-                             {/* Reduced grid layout width since we only have 1 report now */}
                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                                 {reportItems.map((item, index) => (
-                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex items-center justify-between border border-white/20 relative overflow-hidden group min-h-[80px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${600 + index * 100}ms` }}>
+                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex items-center justify-between border border-white/20 relative overflow-hidden group min-h-[70px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${600 + index * 100}ms` }}>
                                         <div className="flex items-center relative z-10">
-                                            <div className="w-9 h-9 lg:w-10 lg:h-10 bg-white rounded-lg lg:rounded-xl flex items-center justify-center shadow-md transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0 mr-3">{item.icon}</div>
+                                            <div className="w-9 h-9 lg:w-10 lg:h-10 bg-white rounded-lg lg:rounded-xl flex items-center justify-center shadow-sm transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0 mr-3">{item.icon}</div>
                                             <h3 className="font-bold text-sm lg:text-base leading-tight pr-2">{item.title}</h3>
                                         </div>
                                         <div className="relative z-10">
-                                            <div className="bg-gray-200 group-hover:bg-gray-800 group-hover:text-white text-gray-600 p-2.5 rounded-full transition-colors self-end shadow-md flex items-center justify-center">
+                                            <div className="bg-gray-200 group-hover:bg-gray-800 group-hover:text-white text-gray-600 p-2.5 rounded-full transition-colors self-end shadow-sm flex items-center justify-center">
                                                 <ArrowRight className="w-4 h-4" />
                                             </div>
                                         </div>
@@ -369,13 +444,14 @@ const GuestDashboardPage = () => {
             </header>
 
             <main className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 relative z-10">
-                <div className={`flex items-center gap-3 text-[#071225] mb-4 transition-opacity duration-1000 delay-1000 ${animate ? 'opacity-100' : 'opacity-0'}`}>
+                <div className={`flex items-center gap-2.5 text-[#071225] mb-5 transition-opacity duration-1000 delay-1000 ${animate ? 'opacity-100' : 'opacity-0'}`}>
                     <UserCheck className="w-6 h-6"/>
-                    <h2 className="text-lg lg:text-xl font-bold">Your Attendance Status</h2>
+                    <h2 className="text-lg lg:text-xl font-extrabold tracking-tight">Your Attendance Status</h2>
                 </div>
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
                     {sessionItems.map((item, index) => (
-                        <div key={index} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-5 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col border border-white/50 relative overflow-hidden group ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${1000 + index * 100}ms` }}>
+                        <div key={index} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-5 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col border border-white/60 relative overflow-hidden group ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${1000 + index * 100}ms` }}>
                             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000"></div>
                             
                             <div className="flex items-center justify-between mb-4 relative z-10 border-b border-black/5 pb-2">

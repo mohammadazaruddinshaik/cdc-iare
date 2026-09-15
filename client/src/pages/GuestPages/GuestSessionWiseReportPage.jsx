@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, Clock3, Download, FileText, GraduationCap, Loader2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Clock3, Download, GraduationCap, Loader2, FileText } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext';
 
@@ -95,7 +95,7 @@ const GuestSessionWiseReportPage = () => {
                 <Header animate />
             </header>
 
-            <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+            <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
                 <button
                     type="button"
                     onClick={() => navigate('/guest/dashboard')}
@@ -105,28 +105,18 @@ const GuestSessionWiseReportPage = () => {
                     Back to dashboard
                 </button>
 
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-                    <section className="rounded-2xl bg-[#071225] p-6 text-white shadow-xl sm:p-8">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-blue-200 ring-1 ring-white/15">
-                            <FileText className="h-6 w-6" aria-hidden="true" />
-                        </span>
-                        <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">Session-wise report</h1>
-                        <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
-                            Generate a PDF for one teaching session from your assigned semester data.
-                        </p>
-                        <div className="mt-8 grid grid-cols-2 gap-3 text-xs text-slate-300">
-                            <div className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
-                                <GraduationCap className="mb-2 h-4 w-4 text-blue-300" aria-hidden="true" />
-                                Assigned semesters only
+                <div className="w-full">
+                    <form onSubmit={handleDownload} className="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-900/5 sm:p-8">
+                        <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                                <FileText className="h-5 w-5 text-blue-600" />
                             </div>
-                            <div className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
-                                <Download className="mb-2 h-4 w-4 text-emerald-300" aria-hidden="true" />
-                                PDF download
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-800">Download Session Report</h1>
+                                <p className="text-sm text-slate-500">Select details to generate your PDF</p>
                             </div>
                         </div>
-                    </section>
 
-                    <form onSubmit={handleDownload} className="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-900/5 sm:p-8">
                         <div className="grid gap-5 sm:grid-cols-2">
                             <label className="block sm:col-span-2">
                                 <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -180,7 +170,7 @@ const GuestSessionWiseReportPage = () => {
                         </div>
 
                         {message.text && (
-                            <p className={`mt-5 rounded-lg px-3 py-2 text-sm ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`} role="status">
+                            <p className={`mt-5 rounded-lg px-3 py-2 text-sm font-medium ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`} role="status">
                                 {message.text}
                             </p>
                         )}

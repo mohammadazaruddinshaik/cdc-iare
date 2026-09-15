@@ -11,7 +11,7 @@ import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
 
 
-// --- Main Action Page Component (Shared for Admin & Faculty) ---
+// --- Main Action Page Component (Shared for Admin, Faculty & Guest Faculty) ---
 const FacultyActionPage = () => {
     const { user, loading } = useAuth(); 
     const [animate, setAnimate] = useState(false);
@@ -26,8 +26,8 @@ const FacultyActionPage = () => {
                 return;
             }
 
-            // Redirect if user is NOT Admin AND NOT Faculty (e.g., Student)
-            if (user.role !== 'admin' && user.role !== 'faculty') {
+            // Redirect if user is NOT Admin AND NOT Faculty AND NOT Guest Faculty
+            if (user.role !== 'admin' && user.role !== 'faculty' && user.role !== 'guest_faculty') {
                 navigate('/unauthorized', { replace: true });
                 return;
             }
