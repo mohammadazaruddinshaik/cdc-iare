@@ -1,7 +1,8 @@
 import React from 'react';
 import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ErrorPage from './ErrorPage'; 
+import ErrorPage from './ErrorPage';
+import { getDashboardPath } from '../utils/roleDashboard';
 
 const ProtectedRoute = ({ allowedRoles, requiredRole }) => {
   const { user } = useAuth();
@@ -25,13 +26,8 @@ const ProtectedRoute = ({ allowedRoles, requiredRole }) => {
         type="notfound" 
         onRetry={() => {
             // "Go Back Home" button redirects to their proper dashboard
-            const dashboardMap = {
-                student: '/student/dashboard',
-                faculty: '/faculty/dashboard',
-                admin: '/admin/dashboard'
-            };
-            navigate(dashboardMap[user.role] || '/');
-        }} 
+            navigate(getDashboardPath(user.role));
+        }}
       />
     );
   }

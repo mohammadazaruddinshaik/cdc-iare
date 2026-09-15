@@ -406,12 +406,6 @@ const GuestDashboardPage = () => {
                                                 {item.renderContent()}
                                             </div>
                                         </div>
-
-                                        <div className="flex items-end justify-end mt-3 relative z-10 w-full">
-                                            <div className="bg-gray-800 text-white font-bold p-1.5 rounded-md shadow-md group-hover:bg-gray-700 transition-colors inline-flex items-center justify-center">
-                                                <ArrowRight className="w-3 h-3" />
-                                            </div>
-                                        </div>
                                     </div>
                                 ))}
                             </div>

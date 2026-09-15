@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode'; 
 import { useAuth } from '../../context/AuthContext';
+import { getDashboardPath } from '../../utils/roleDashboard';
 import { 
     Check, LogOut, ScanLine, ArrowRight, BookOpen, ChevronDown, 
     Users, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, 
@@ -430,7 +431,7 @@ export default function MultiBatchAttendancePage() {
 
     const handleExitSession = () => {
         toggleFullScreen('exit');
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard', { replace: true });
+        navigate(getDashboardPath(user?.role), { replace: true });
     };
 
     const handleScan = useCallback((text) => {
@@ -521,7 +522,7 @@ export default function MultiBatchAttendancePage() {
     const renderSplash = () => (
         <div className="flex flex-col items-center justify-center text-center px-4 sm:px-6 animate-fade-in min-h-[60vh] sm:min-h-[80vh] relative">
             <div className="absolute top-4 left-4 sm:top-8 sm:left-8">
-                <button onClick={() => navigate(user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-medium bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm hover:bg-white transition-all text-sm sm:text-base"><ArrowLeft className="w-4 h-4" /> Dashboard</button>
+                <button onClick={() => navigate(getDashboardPath(user?.role))} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-medium bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm hover:bg-white transition-all text-sm sm:text-base"><ArrowLeft className="w-4 h-4" /> Dashboard</button>
             </div>
             <div className="mb-8 sm:mb-10 relative mt-10">
                 <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
@@ -778,7 +779,7 @@ export default function MultiBatchAttendancePage() {
                     ))}
                 </div>
 
-                <button onClick={() => navigate(user?.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard')} className="w-full py-4 bg-slate-900 hover:bg-black text-white rounded-2xl font-bold text-base transition-all shadow-xl active:scale-95">Return to Dashboard</button>
+                <button onClick={() => navigate(getDashboardPath(user?.role))} className="w-full py-4 bg-slate-900 hover:bg-black text-white rounded-2xl font-bold text-base transition-all shadow-xl active:scale-95">Return to Dashboard</button>
             </div>
         </div>
     );

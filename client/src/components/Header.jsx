@@ -95,6 +95,17 @@ const Header = ({ animate, qrCode }) => {
             { path: '/admin/attendance', label: 'Attendance', icon: <History size={iconSize} /> },
             { path: '/admin/announcements', label: 'Notices', icon: <Megaphone size={iconSize} /> },
         ];
+    } else if (user?.role === 'guest_faculty') {
+        dashboardPath = '/guest/dashboard';
+        // No standalone guest profile page exists yet, so the profile trigger
+        // routes back to the dashboard instead of a dead link.
+        profilePath = dashboardPath;
+        navLinks = [
+            { path: dashboardPath, label: 'Dashboard', icon: <LayoutDashboard size={iconSize} /> },
+            { path: '/leaderboard', label: 'Leaderboard', icon: <ListOrdered size={iconSize} /> },
+            { path: '/timetable', label: 'Schedule', icon: <CalendarDays size={iconSize} /> },
+            { path: '/guest/session-report', label: 'Session Report', icon: <FileClock size={iconSize} /> },
+        ];
     }
 
     const handleLogout = () => {
