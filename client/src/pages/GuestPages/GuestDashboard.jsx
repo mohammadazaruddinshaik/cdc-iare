@@ -245,8 +245,7 @@ const GuestDashboardPage = () => {
             title: "Today's Schedule", 
             icon: <Clock className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />, 
             bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", 
-            path: "/guest/schedule", 
-            actionText: "View Schedule",
+            path: "/guest/schedule",
             renderContent: () => (
                 <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2">
                     {apiData.todayClasses?.length > 0 ? (
@@ -269,8 +268,7 @@ const GuestDashboardPage = () => {
             title: "Assigned Batches", 
             icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />, 
             bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", 
-            path: "/guest/batches", 
-            actionText: "View Details",
+            path: "/guest/batches",
             renderContent: () => (
                 <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-1.5 content-start">
                     {apiData.faculty?.batches_assigned?.length > 0 ? (
@@ -289,8 +287,7 @@ const GuestDashboardPage = () => {
             title: "Assigned Subjects", 
             icon: <BookOpen className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />, 
             bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50", 
-            path: "/guest/subjects", 
-            actionText: "View Subjects",
+            path: "/guest/subjects",
             renderContent: () => (
                 <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-2 content-start">
                     {apiData.faculty?.subjects_assigned?.length > 0 ? (
@@ -309,8 +306,7 @@ const GuestDashboardPage = () => {
             title: "Mark Attendance", 
             icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />, 
             bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", 
-            path: "/post-attendance", 
-            actionText: "Mark Now",
+            path: "/post-attendance",
             renderContent: () => (
                 <div className="mt-2 h-[90px] flex flex-col justify-center text-sm text-gray-700 leading-relaxed font-medium">
                     <p>Access the attendance portal to mark status for your current and upcoming assigned sessions.</p>
@@ -389,8 +385,8 @@ const GuestDashboardPage = () => {
 
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-4"></div>
                     
-                    <section className="space-y-6 lg:space-y-8">
-                        <div>
+                    <section className="flex flex-col gap-6 lg:gap-8">
+                        <div className="order-2 md:order-1">
                             <SectionHeader title="Dashboard Overview" animate={animate} delay={300} />
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
                                 {guestItems.map((item, index) => (
@@ -412,8 +408,8 @@ const GuestDashboardPage = () => {
                                         </div>
 
                                         <div className="flex items-end justify-end mt-3 relative z-10 w-full">
-                                            <div className="bg-gray-800 text-white font-bold py-1.5 px-3 rounded-md text-xs shadow-md group-hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
-                                                {item.actionText} <ArrowRight className="w-3 h-3" />
+                                            <div className="bg-gray-800 text-white font-bold p-1.5 rounded-md shadow-md group-hover:bg-gray-700 transition-colors inline-flex items-center justify-center">
+                                                <ArrowRight className="w-3 h-3" />
                                             </div>
                                         </div>
                                     </div>
@@ -421,7 +417,7 @@ const GuestDashboardPage = () => {
                             </div>
                         </div>
                         
-                        <div>
+                        <div className="order-1 md:order-2">
                              <SectionHeader title="Download Reports" animate={animate} delay={600} />
                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                                 {reportItems.map((item, index) => (
