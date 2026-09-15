@@ -4,9 +4,9 @@ import CryptoJS from 'crypto-js'; // Import Crypto JS
 
 import {
     LogIn, User, Linkedin, Github,  Lock, Unlock,
-    QrCode, Trophy, CheckCircle, 
+    QrCode, Trophy, CheckCircle,
     Battery, Wifi, Signal, Terminal, ScanLine, Server, Loader2, ChevronDown,
-    Handshake, XCircle, X, Info, Building2, ArrowRight
+    Handshake, XCircle, X, Info, Building2, ArrowRight, Cookie, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -181,6 +181,102 @@ const DeveloperCard = ({ dev, isMentor = false }) => (
     </motion.div>
 );
 
+// --- COOKIE PERMISSION HELPERS ---
+const PENDING_LOGIN_KEY = 'cdc_pending_login';
+
+const detectBrowser = () => {
+    const ua = navigator.userAgent;
+    if (/Edg\//.test(ua)) return 'edge';
+    if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) return 'chrome';
+    if (/Firefox\//.test(ua)) return 'firefox';
+    if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) return 'safari';
+    return 'other';
+};
+
+const cookieInstructions = [
+    {
+        id: 'chrome',
+        label: 'Chrome',
+        steps: [
+            'Open Settings → Privacy and security → Third-party cookies.',
+            'Choose "Allow third-party cookies", or add this site under "Sites allowed to use third-party cookies".',
+        ],
+    },
+    {
+        id: 'edge',
+        label: 'Edge',
+        steps: [
+            'Open Settings → Cookies and site permissions → Manage and delete cookies and site data.',
+            'Turn off "Block third-party cookies", or add this site as an allowed exception.',
+        ],
+    },
+    {
+        id: 'safari',
+        label: 'Safari',
+        steps: [
+            'macOS: Safari → Settings → Privacy → uncheck "Prevent cross-site tracking".',
+            'iOS: Settings app → Safari → turn off "Prevent Cross-Site Tracking".',
+        ],
+    },
+    {
+        id: 'firefox',
+        label: 'Firefox',
+        steps: [
+            'Open Settings → Privacy & Security → Enhanced Tracking Protection.',
+            'Switch from "Strict" to "Standard", or click the shield icon in the address bar and turn protection off for this site.',
+        ],
+    },
+];
+
+const CookieNoticeModal = ({ isOpen, onClose }) => {
+    const detected = detectBrowser();
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+                        <div className="bg-gray-900 p-5 flex justify-between items-center relative flex-shrink-0">
+                            <div>
+                                <h3 className="text-lg font-bold text-white tracking-tight">Enable Cookies</h3>
+                                <p className="text-gray-400 text-xs mt-0.5">Required to keep you signed in</p>
+                            </div>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors bg-white/10 rounded-full p-1.5"><X size={16} /></button>
+                        </div>
+                        <div className="p-6 space-y-4 overflow-y-auto">
+                            <div className="flex gap-3">
+                                <div className="bg-blue-50 p-2.5 rounded-full h-fit"><Cookie className="text-blue-600 w-5 h-5" /></div>
+                                <div className="space-y-1">
+                                    <h4 className="text-gray-900 font-bold text-sm">Why we need this</h4>
+                                    <p className="text-gray-500 text-xs leading-relaxed">This app uses a secure cookie to keep you signed in. Some browsers block this by default under "Block third-party cookies" — please allow cookies for this site to sign in.</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                {cookieInstructions.map((browser) => (
+                                    <div key={browser.id} className={`rounded-xl p-3 border ${detected === browser.id ? 'border-blue-200 bg-blue-50/60' : 'border-gray-100 bg-gray-50'}`}>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <span className="text-xs font-bold text-gray-900">{browser.label}</span>
+                                            {detected === browser.id && <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">Your Browser</span>}
+                                        </div>
+                                        <ul className="space-y-1">
+                                            {browser.steps.map((step, i) => (
+                                                <li key={i} className="text-[11px] text-gray-600 leading-relaxed pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">{step}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button onClick={onClose} className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm">Got it</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 const ForgotPasswordModal = ({ isOpen, onClose }) => (
     <AnimatePresence>
         {isOpen && (
@@ -317,8 +413,29 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [activeField, setActiveField] = useState(null); 
     const [showForgotModal, setShowForgotModal] = useState(false);
+    const [showCookieModal, setShowCookieModal] = useState(false);
+    const [cookieBlockedWarning, setCookieBlockedWarning] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const scrollContainerRef = useRef(null);
+
+    // Detect cookies disabled outright, or a login that succeeded but bounced
+    // back here — the classic symptom of a blocked third-party/session cookie.
+    useEffect(() => {
+        if (!navigator.cookieEnabled) {
+            setCookieBlockedWarning(true);
+            return;
+        }
+        try {
+            const pending = sessionStorage.getItem(PENDING_LOGIN_KEY);
+            sessionStorage.removeItem(PENDING_LOGIN_KEY);
+            if (pending && Date.now() - Number(pending) < 20000) {
+                setCookieBlockedWarning(true);
+                setShowCookieModal(true);
+            }
+        } catch {
+            // sessionStorage unavailable (e.g. private browsing) — nothing to detect
+        }
+    }, []);
 
     const handleScroll = () => {
         if (scrollContainerRef.current) {
@@ -374,8 +491,9 @@ const LoginPage = () => {
 
             if (response.ok && data) {
                 setActiveField('success');
-                
+
                 // REMOVED localStorage.setItem
+                try { sessionStorage.setItem(PENDING_LOGIN_KEY, Date.now().toString()); } catch { /* ignore */ }
                 setTimeout(() => {
                     let targetPath = '/';
                     switch (data.role) {
@@ -413,8 +531,9 @@ const LoginPage = () => {
             className="h-screen overflow-y-auto bg-[#F8FAFC] lg:bg-[#0B0F19] font-inter text-gray-800 selection:bg-blue-200"
         >
             <style>{`html { scroll-behavior: smooth; }`}</style>
-            
+
             <ForgotPasswordModal isOpen={showForgotModal} onClose={() => setShowForgotModal(false)} />
+            <CookieNoticeModal isOpen={showCookieModal} onClose={() => setShowCookieModal(false)} />
 
             {/* SECTION 1: FULL SCREEN LOGIN & HERO */}
             <div className="flex flex-col lg:flex-row min-h-screen w-full relative">
@@ -496,6 +615,23 @@ const LoginPage = () => {
 </p>
                             </div>
 
+                            <AnimatePresence>
+                                {cookieBlockedWarning && (
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-4 overflow-hidden">
+                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2.5 items-start text-left">
+                                            <ShieldAlert className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-amber-800">Cookies may be blocked</p>
+                                                <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                                                    Your browser might be blocking the secure cookie this app needs to sign you in.{' '}
+                                                    <button type="button" onClick={() => setShowCookieModal(true)} className="underline font-bold">Show me how to allow it</button>.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-500 ml-3 uppercase tracking-wider">Username</label>
@@ -526,6 +662,10 @@ const LoginPage = () => {
                                 <motion.button whileHover={{ scale: 1.01, boxShadow: "0 10px 25px -5px rgba(59, 130, 246, 0.4)" }} whileTap={{ scale: 0.98 }} type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-base font-bold py-3 rounded-full shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                                     {isLoading ? <><Loader2 className="animate-spin" size={18} /><span>Verifying...</span></> : <><span>Sign In</span><LogIn size={18} /></>}
                                 </motion.button>
+
+                                <button type="button" onClick={() => setShowCookieModal(true)} className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-400 hover:text-blue-600 transition-colors">
+                                    <Cookie size={12} /> This app requires cookies to sign in — trouble logging in?
+                                </button>
                             </form>
 
                             <div className="mt-2 flex justify-center">
