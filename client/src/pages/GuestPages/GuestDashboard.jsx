@@ -241,11 +241,10 @@ const GuestDashboardPage = () => {
 
     // Advanced Rendering logic for cards to show ACTUAL data
     const guestItems = [
-        { 
-            title: "Today's Schedule", 
-            icon: <Clock className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />, 
-            bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50", 
-            path: "/guest/schedule",
+        {
+            title: "Today's Schedule",
+            icon: <Clock className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />,
+            bgColor: "bg-gradient-to-br from-blue-100 via-blue-50 to-purple-50",
             renderContent: () => (
                 <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2">
                     {apiData.todayClasses?.length > 0 ? (
@@ -265,10 +264,9 @@ const GuestDashboardPage = () => {
             )
         },
         { 
-            title: "Assigned Batches", 
-            icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />, 
-            bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50", 
-            path: "/guest/batches",
+            title: "Assigned Batches",
+            icon: <Users className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />,
+            bgColor: "bg-gradient-to-br from-green-100 via-green-50 to-teal-50",
             renderContent: () => (
                 <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-1.5 content-start">
                     {apiData.faculty?.batches_assigned?.length > 0 ? (
@@ -284,10 +282,9 @@ const GuestDashboardPage = () => {
             )
         },
         { 
-            title: "Assigned Subjects", 
-            icon: <BookOpen className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />, 
-            bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50", 
-            path: "/guest/subjects",
+            title: "Assigned Subjects",
+            icon: <BookOpen className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />,
+            bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50",
             renderContent: () => (
                 <div className="mt-2 h-[90px] overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-2 content-start">
                     {apiData.faculty?.subjects_assigned?.length > 0 ? (
@@ -307,6 +304,7 @@ const GuestDashboardPage = () => {
             icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />,
             bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50",
             path: "/faculty/action",
+            cta: "Mark Now",
             renderContent: () => (
                 <div className="mt-2 h-[90px] flex flex-col justify-center text-sm text-gray-700 leading-relaxed font-medium">
                     <p>Access the attendance portal to mark status for your current and upcoming assigned sessions.</p>
@@ -390,9 +388,14 @@ const GuestDashboardPage = () => {
                             <SectionHeader title="Dashboard Overview" animate={animate} delay={300} />
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
                                 {guestItems.map((item, index) => (
-                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between border border-white/30 relative overflow-hidden group min-h-[170px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${300 + index * 100}ms` }}>
+                                    <div
+                                        key={index}
+                                        onClick={item.path ? () => navigate(item.path) : undefined}
+                                        className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform flex flex-col justify-between border border-white/30 relative overflow-hidden group min-h-[170px] ${item.path ? 'hover:-translate-y-1 hover:shadow-xl cursor-pointer' : 'cursor-default'} ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
+                                        style={{ transitionDelay: `${300 + index * 100}ms` }}
+                                    >
                                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000"></div>
-                                        
+
                                         <div className="w-full">
                                             <div className="flex items-start justify-between mb-1 relative z-10">
                                                 <h3 className="font-bold text-sm lg:text-[15px] leading-tight text-gray-900">{item.title}</h3>
@@ -400,12 +403,20 @@ const GuestDashboardPage = () => {
                                                     {item.icon}
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Dynamic Rendered Content (Actual Data) */}
                                             <div className="relative z-10 w-full">
                                                 {item.renderContent()}
                                             </div>
                                         </div>
+
+                                        {item.cta && (
+                                            <div className="flex items-center justify-end mt-2 relative z-10">
+                                                <div className="bg-gray-800 text-white font-bold py-1.5 px-3 rounded-lg text-xs shadow-md flex items-center gap-1.5 group-hover:bg-gray-900 transition-colors">
+                                                    {item.cta} <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -421,8 +432,8 @@ const GuestDashboardPage = () => {
                                             <h3 className="font-bold text-sm lg:text-base leading-tight pr-2">{item.title}</h3>
                                         </div>
                                         <div className="relative z-10">
-                                            <div className="bg-gray-200 group-hover:bg-gray-800 group-hover:text-white text-gray-600 p-2.5 rounded-full transition-colors self-end shadow-sm flex items-center justify-center">
-                                                <ArrowRight className="w-4 h-4" />
+                                            <div className="bg-gray-200 group-hover:bg-gray-800 group-hover:text-white text-gray-700 px-3 py-2 rounded-full transition-colors self-end shadow-sm flex items-center gap-1.5 text-xs font-bold">
+                                                View Report <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                                             </div>
                                         </div>
                                     </div>
