@@ -302,11 +302,11 @@ const GuestDashboardPage = () => {
                 </div>
             )
         },
-        { 
-            title: "Mark Attendance", 
-            icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />, 
-            bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", 
-            path: "/post-attendance",
+        {
+            title: "Mark Attendance",
+            icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />,
+            bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50",
+            path: "/faculty/action",
             renderContent: () => (
                 <div className="mt-2 h-[90px] flex flex-col justify-center text-sm text-gray-700 leading-relaxed font-medium">
                     <p>Access the attendance portal to mark status for your current and upcoming assigned sessions.</p>
