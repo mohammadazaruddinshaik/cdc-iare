@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserCheck, CalendarCheck, FileText, ArrowRight, AlertCircle, Settings, DatabaseBackup, Bug } from 'lucide-react';
+import { Users, UserCheck, CalendarCheck, FileText, FileImage, ArrowRight, AlertCircle, Settings, DatabaseBackup, Bug } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
 import Loader from '../../components/Loader';
@@ -284,9 +284,10 @@ const AdminDashboardPage = () => {
     ];
 
     const reportItems = [
-        { title: "Session Report", icon: <FileText className="w-6 h-6 text-red-600" />, path: '/session-report', bgColor: "bg-gradient-to-br from-red-100 via-red-50 to-pink-50" },
-        { title: "Batch Wise Report", icon: <FileText className="w-6 h-6 text-cyan-600" />, path: '/batch-report', bgColor: "bg-gradient-to-br from-cyan-100 via-cyan-50 to-teal-50" },
-        { title: "Monthly Report", icon: <FileText className="w-6 h-6 text-emerald-600" />, path: '/monthly-report', bgColor: "bg-gradient-to-br from-emerald-100 via-emerald-50 to-green-50" },
+        { title: "Session Report", icon: <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-red-600" />, path: '/session-report', bgColor: "bg-gradient-to-br from-red-100 via-red-50 to-pink-50" },
+        { title: "Batch Wise Report", icon: <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-cyan-600" />, path: '/batch-report', bgColor: "bg-gradient-to-br from-cyan-100 via-cyan-50 to-teal-50" },
+        { title: "Monthly Report", icon: <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-600" />, path: '/monthly-report', bgColor: "bg-gradient-to-br from-emerald-100 via-emerald-50 to-green-50" },
+        { title: "CDC Day Attendance Summary", icon: <FileImage className="w-5 h-5 lg:w-6 lg:h-6 text-violet-600" />, path: '/admin/combined-attendance-report', bgColor: "bg-gradient-to-br from-violet-100 via-violet-50 to-indigo-50" },
     ];
 
     return (
@@ -322,16 +323,16 @@ const AdminDashboardPage = () => {
                         </div>
                         <div>
                              <SectionHeader title="Download Reports" animate={animate} delay={600} />
-                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                             <div className="grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                                 {reportItems.map((item, index) => (
-                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-xl lg:rounded-2xl p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex items-center justify-between border border-white/20 relative overflow-hidden group min-h-[80px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${600 + index * 100}ms` }}>
-                                        <div className="flex items-center relative z-10">
-                                            <div className="w-9 h-9 lg:w-10 lg:h-10 bg-white rounded-lg lg:rounded-xl flex items-center justify-center shadow-md transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0 mr-3">{item.icon}</div>
-                                            <h3 className="font-bold text-sm lg:text-base leading-tight pr-2">{item.title}</h3>
+                                    <div key={index} onClick={() => navigate(item.path)} className={`${item.bgColor} rounded-lg lg:rounded-2xl p-2 sm:p-3 lg:p-4 text-gray-800 shadow-lg transition-all duration-500 transform hover:-translate-y-1 hover:shadow-xl flex flex-col sm:flex-row items-center sm:justify-between gap-1.5 sm:gap-2 border border-white/20 relative overflow-hidden group min-h-[70px] sm:min-h-[80px] cursor-pointer ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${600 + index * 100}ms` }}>
+                                        <div className="flex flex-col sm:flex-row items-center relative z-10 min-w-0">
+                                            <div className="w-7 h-7 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-white rounded-md sm:rounded-lg lg:rounded-xl flex items-center justify-center shadow-md transform group-hover:rotate-12 transition-transform duration-300 flex-shrink-0 sm:mr-2 lg:mr-3">{item.icon}</div>
+                                            <h3 className="font-bold text-[10px] sm:text-xs lg:text-base leading-tight text-center sm:text-left sm:pr-2 mt-1 sm:mt-0 line-clamp-2">{item.title}</h3>
                                         </div>
-                                        <div className="relative z-10">
-                                            <div className="bg-gray-200 group-hover:bg-gray-800 group-hover:text-white text-gray-600 p-2.5 rounded-full transition-colors self-end shadow-md flex items-center justify-center">
-                                                <ArrowRight className="w-4 h-4" />
+                                        <div className="relative z-10 hidden sm:block">
+                                            <div className="bg-gray-200 group-hover:bg-gray-800 group-hover:text-white text-gray-600 p-1.5 lg:p-2.5 rounded-full transition-colors self-end shadow-md flex items-center justify-center">
+                                                <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
                                             </div>
                                         </div>
                                     </div>

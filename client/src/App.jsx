@@ -32,6 +32,7 @@ const CreateTimetablePage = lazy(() => import('./pages/AdminPages/CreateTimeTabl
 const SystemAdministrationPage = lazy(() => import('./pages/AdminPages/SystemAdministration'));
 const SessionWiseReportPage = lazy(() => import('./pages/AdminPages/SessionWiseReportPage'));
 const MonthlyReport = lazy(() => import('./pages/AdminPages/MonthlyReportPage'));
+const CombinedAttendanceReportPage = lazy(() => import('./pages/AdminPages/CombinedAttendanceReportPage'));
 const ModifyTimetablePage = lazy(() => import('./pages/AdminPages/ModifyTimetablePage'));
 const AttendanceBackupsPage = lazy(() => import('./pages/AdminPages/AttendanceBackupsPage'));
 const DebuggingPage = lazy(() => import('./pages/AdminPages/DebuggingPage'));
@@ -148,6 +149,7 @@ const AppRoutes = () => {
           <Route path="/admin/debugging" element={<DebuggingPage />} />
           <Route path="/session-report" element={<SessionWiseReportPage />} />
           <Route path="/monthly-report" element={<MonthlyReport />} />
+          <Route path="/admin/combined-attendance-report" element={<CombinedAttendanceReportPage />} />
         </Route>
 
         {/* --- Faculty Only Routes --- */}
