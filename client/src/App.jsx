@@ -34,6 +34,7 @@ const SessionWiseReportPage = lazy(() => import('./pages/AdminPages/SessionWiseR
 const MonthlyReport = lazy(() => import('./pages/AdminPages/MonthlyReportPage'));
 const ModifyTimetablePage = lazy(() => import('./pages/AdminPages/ModifyTimetablePage'));
 const AttendanceBackupsPage = lazy(() => import('./pages/AdminPages/AttendanceBackupsPage'));
+const DebuggingPage = lazy(() => import('./pages/AdminPages/DebuggingPage'));
 
 // 3. Faculty Pages
 const FacultyDashboard = lazy(() => import('./pages/FacultyPages/FacultyDashboard'));
@@ -144,6 +145,7 @@ const AppRoutes = () => {
           <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
           <Route path="/admin/system-admin" element={<SystemAdministrationPage />} />
           <Route path="/admin/attendance-backups" element={<AttendanceBackupsPage />} />
+          <Route path="/admin/debugging" element={<DebuggingPage />} />
           <Route path="/session-report" element={<SessionWiseReportPage />} />
           <Route path="/monthly-report" element={<MonthlyReport />} />
         </Route>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserCheck, CalendarCheck, FileText, ArrowRight, AlertCircle, Settings, DatabaseBackup } from 'lucide-react';
+import { Users, UserCheck, CalendarCheck, FileText, ArrowRight, AlertCircle, Settings, DatabaseBackup, Bug } from 'lucide-react';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext'; 
 import Loader from '../../components/Loader';
@@ -257,6 +257,7 @@ const AdminDashboardPage = () => {
         { title: "Manage Attendance", icon: <CalendarCheck className="w-6 h-6 lg:w-7 lg:h-7 text-purple-600" />, description: "Mark or Update Student Attendance", bgColor: "bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-50", path: "/admin/manage-attendance" },
         { title: "System Administration", icon: <Settings className="w-6 h-6 lg:w-7 lg:h-7 text-orange-600" />, description: "Manage Semesters, Users & System Data...", bgColor: "bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50", path: "/admin/system-admin" },
         { title: "Attendance Backup's", icon: <DatabaseBackup className="w-6 h-6 lg:w-7 lg:h-7 text-rose-600" />, description: "View & Manage Recovered Attendance Records", bgColor: "bg-gradient-to-br from-rose-100 via-rose-50 to-pink-50", path: "/admin/attendance-backups" },
+        { title: "Debugging", icon: <Bug className="w-6 h-6 lg:w-7 lg:h-7 text-slate-600" />, description: "Run Data-Integrity & Maintenance Checks", bgColor: "bg-gradient-to-br from-slate-200 via-slate-100 to-gray-100", path: "/admin/debugging" },
     ];
 
     const sessionItems = [
