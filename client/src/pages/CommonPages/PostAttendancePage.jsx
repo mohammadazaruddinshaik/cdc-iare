@@ -32,6 +32,28 @@ const calculatePercentage = (present, total) => {
     return Math.round((present / total) * 100);
 };
 
+// FN: 09:30-12:40 IST, AN: 12:50-16:00 IST
+const getSessionForIST = () => {
+    const istString = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+    const [hh, mm] = istString.split(':').map(Number);
+    const minutesSinceMidnight = hh * 60 + mm;
+    const FN_START = 9 * 60 + 30, FN_END = 12 * 60 + 40;
+    const AN_START = 12 * 60 + 50, AN_END = 16 * 60;
+    if (minutesSinceMidnight >= FN_START && minutesSinceMidnight <= FN_END) return 'FN';
+    if (minutesSinceMidnight >= AN_START && minutesSinceMidnight <= AN_END) return 'AN';
+    return (minutesSinceMidnight < FN_START || minutesSinceMidnight > AN_END) ? 'FN' : 'AN';
+};
+
+const safeFetchJson = async (url, options) => {
+    try {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        return { ok: res.ok, data };
+    } catch (err) {
+        return { ok: false, data: null, error: err };
+    }
+};
+
 // ============================================================================
 // 1. VISUAL SUB-COMPONENTS (V1 Visuals Restored)
 // ============================================================================
@@ -424,21 +446,42 @@ export default function PostAttendancePage() {
         if (!checkInternetConnection()) return;
         setShowFinishConfirm(false);
         setIsSubmitting(true);
-        const payload = {
-            semname: semester, batch, date: new Date().toISOString().split('T')[0], course, presentMap
-        };
+
+        const submissionDate = new Date().toISOString().split('T')[0];
+        const attendancePayload = { semname: semester, batch, date: submissionDate, course, presentMap };
+        const backupPayload = { sem: semester, batch, session: getSessionForIST(), date: submissionDate, studentRolls: Object.keys(presentMap) };
+
         try {
-            const response = await fetch(`${BACKEND_URL}/api/attendance-mark-qr`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'include'
-            });
-            const result = await response.json();
-            if (response.ok || result.message?.toLowerCase().includes("already posted")) {
-                setAttendanceReport({ ...result, status: response.ok ? 'success' : 'error' });
+            const [attendanceRes, backupRes] = await Promise.all([
+                safeFetchJson(`${BACKEND_URL}/api/attendance-mark-qr`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(attendancePayload), credentials: 'include'
+                }),
+                safeFetchJson(`${BACKEND_URL}/api/backup-att`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(backupPayload), credentials: 'include'
+                })
+            ]);
+
+            console.log('Attendance response:', attendanceRes);
+            console.log('Backup response:', backupRes);
+
+            const attendanceSuccess = attendanceRes.ok || attendanceRes.data?.message?.toLowerCase().includes("already posted");
+            const backupSuccess = backupRes.ok && backupRes.data?.success;
+
+            if (attendanceSuccess) {
+                setAttendanceReport({ ...attendanceRes.data, status: attendanceRes.ok ? 'success' : 'error' });
                 setView('summary');
                 toggleFullScreen('exit');
-            } else throw new Error(result.message);
-        } catch (error) { setUserMsg({ text: error.message, type: "error" }); }
-        finally { setIsSubmitting(false); }
+                setUserMsg(backupSuccess
+                    ? { text: "Attendance submitted and backup saved successfully.", type: "info" }
+                    : { text: "Attendance submitted, but backup failed to save.", type: "error" });
+            } else if (backupSuccess) {
+                setAttendanceReport({ message: "Submission failed, but your attendance record was saved and reported to admin.", status: 'error' });
+                setView('summary');
+                toggleFullScreen('exit');
+            } else {
+                setUserMsg({ text: attendanceRes.data?.message || "Submission failed.", type: "error" });
+            }
+        } finally { setIsSubmitting(false); }
     };
 
     // ========================================================================
